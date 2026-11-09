@@ -1,143 +1,60 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#10271f">
-  <meta name="description" content="A home for baseball stats, experiments, and pages generated with Claude.">
-  <title>Baseball Stats</title>
-  <style>
-    :root {
-      color-scheme: light;
-      --ink: #17231d;
-      --muted: #64736a;
-      --paper: #f5f6ef;
-      --card: #fff;
-      --green: #164b36;
-      --lime: #d7ed9b;
-      --line: #e2e8de;
-    }
-
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      color: var(--ink);
-      background: var(--paper);
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      line-height: 1.6;
-    }
-    a { color: inherit; }
-    .topbar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 1rem;
-      padding: 1rem max(1.25rem, calc((100% - 1120px) / 2));
-      color: #fff;
-      background: #10271f;
-    }
-    .brand { display: flex; align-items: center; gap: .7rem; font-weight: 750; letter-spacing: .02em; }
-    .brand-mark { display: grid; width: 2rem; height: 2rem; place-items: center; border-radius: 50%; color: var(--green); background: var(--lime); }
-    .topbar a { text-decoration: none; }
-    .github-link { color: #dce8df; font-size: .9rem; }
-    main { width: min(1120px, calc(100% - 2.5rem)); margin: 0 auto; }
-    .hero {
-      display: grid;
-      grid-template-columns: minmax(0, 1.3fr) minmax(230px, .7fr);
-      gap: 2rem;
-      align-items: center;
-      margin: 2rem 0;
-      padding: clamp(2rem, 6vw, 4.5rem);
-      overflow: hidden;
-      border-radius: 1.5rem;
-      color: #fff;
-      background: radial-gradient(circle at 85% 20%, #39734b 0, transparent 34%), linear-gradient(130deg, #123b2b, #10271f 75%);
-    }
-    .eyebrow { margin: 0 0 .75rem; color: var(--lime); font-size: .78rem; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
-    h1 { max-width: 650px; margin: 0; font-size: clamp(2.5rem, 7vw, 4.7rem); line-height: 1.02; letter-spacing: -.055em; }
-    .hero-copy { max-width: 560px; margin: 1.2rem 0 0; color: #d1dfd5; font-size: 1.08rem; }
-    .hero-art { display: grid; min-height: 190px; place-items: center; font-size: clamp(6rem, 15vw, 10rem); filter: drop-shadow(0 16px 20px #0005); }
-    .section-heading { display: flex; align-items: end; justify-content: space-between; gap: 1rem; margin: 2.5rem 0 1rem; }
-    h2 { margin: 0; font-size: 1.55rem; letter-spacing: -.03em; }
-    .section-heading p { margin: 0; color: var(--muted); font-size: .92rem; }
-    .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
-    .card { min-height: 190px; padding: 1.35rem; border: 1px solid var(--line); border-radius: 1rem; background: var(--card); }
-    .card-icon { display: grid; width: 2.6rem; height: 2.6rem; place-items: center; border-radius: .8rem; background: #eef4e8; font-size: 1.25rem; }
-    .card h3 { margin: 1rem 0 .35rem; font-size: 1.08rem; }
-    .card p { margin: 0; color: var(--muted); font-size: .92rem; }
-    .card a { display: inline-block; margin-top: .9rem; color: var(--green); font-size: .9rem; font-weight: 700; text-decoration-thickness: 1px; text-underline-offset: 3px; }
-    .guide { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin: 2rem 0 3rem; padding: 1.5rem; border: 1px solid var(--line); border-radius: 1rem; background: #fff; }
-    .guide p { margin: .45rem 0 0; color: var(--muted); }
-    code { padding: .12rem .35rem; border-radius: .3rem; color: #264533; background: #eef4e8; font-size: .9em; }
-    .steps { margin: .6rem 0 0; padding-left: 1.25rem; color: var(--muted); }
-    .steps li + li { margin-top: .35rem; }
-    footer { padding: 1.5rem; color: var(--muted); text-align: center; font-size: .85rem; }
-    @media (max-width: 720px) {
-      .hero { grid-template-columns: 1fr; gap: 0; }
-      .hero-art { min-height: 120px; justify-content: start; }
-      .grid { grid-template-columns: 1fr; }
-      .guide { grid-template-columns: 1fr; }
-      .section-heading { align-items: start; flex-direction: column; }
-    }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Dugout Diary – A free career diary for young ballplayers</title>
+  <meta name="description" content="Log games, track batting, pitching and fielding stats, set goals and earn badges. Free, private, and no birthdays or emails collected.">
+  <meta name="theme-color" content="#0F1F0F">
+  <meta property="og:title" content="Dugout Diary - a free career diary for young ballplayers">
+  <meta property="og:description" content="Log games, track your stats, earn badges, and share your player card. Free, private, no sign-up.">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Dugout Diary">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Alfa+Slab+One&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <header class="topbar">
-    <a class="brand" href="./" aria-label="Baseball Stats home"><span class="brand-mark" aria-hidden="true">⚾</span> Baseball Stats</a>
-    <a class="github-link" href="https://github.com/shaunaksathe99/baseball-stats">View repository ↗</a>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header class="top" id="top">
+    <div class="top-row">
+      <div class="brand">
+        <h1>Dugout Diary</h1>
+        <p class="tag">Your baseball story, one game at a time</p>
+      </div>
+      <button class="who" id="who" data-action="open-players" hidden></button>
+    </div>
+    <div class="progress" id="progress" hidden>
+      <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Badges earned"><span id="bar-fill"></span></div>
+      <p id="bar-text">0 of 14 badges</p>
+    </div>
   </header>
 
-  <main>
-    <section class="hero" aria-labelledby="page-title">
-      <div>
-        <p class="eyebrow">The numbers behind the game</p>
-        <h1 id="page-title">Baseball, by the numbers.</h1>
-        <p class="hero-copy">A home for baseball stats, visualizations, and experiments. Add pages generated with Claude and link them here as your collection grows.</p>
-      </div>
-      <div class="hero-art" aria-hidden="true">⚾</div>
-    </section>
+  <div id="banner"></div>
+  <main id="main" tabindex="-1"></main>
 
-    <section aria-labelledby="pages-title">
-      <div class="section-heading">
-        <div><p class="eyebrow" style="color:#527044">Your lineup</p><h2 id="pages-title">Explore the site</h2></div>
-        <p>New pages you add can be linked here.</p>
-      </div>
-      <div class="grid">
-        <article class="card">
-          <span class="card-icon" aria-hidden="true">📊</span>
-          <h3>Stats &amp; analysis</h3>
-          <p>Put stats dashboards, charts, and analysis pages in the <code>pages/</code> folder.</p>
-          <a href="pages/README.md">See how to add a page →</a>
-        </article>
-        <article class="card">
-          <span class="card-icon" aria-hidden="true">🧰</span>
-          <h3>Reusable assets</h3>
-          <p>Keep shared styles, scripts, images, and data organized in <code>assets/</code>.</p>
-          <a href="README.md#site-structure">Browse the site structure →</a>
-        </article>
-        <article class="card">
-          <span class="card-icon" aria-hidden="true">✨</span>
-          <h3>Claude creations</h3>
-          <p>Upload generated HTML and supporting files to this repository, then add a link above.</p>
-          <a href="https://github.com/shaunaksathe99/baseball-stats">Open this project on GitHub →</a>
-        </article>
-      </div>
-    </section>
+  <nav class="tabs" aria-label="Main">
+    <a href="#home" data-tab="home"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg><span>Home</span></a>
+    <a href="#log" data-tab="log"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg><span>Log</span></a>
+    <a href="#career" data-tab="career"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span>Career</span></a>
+    <a href="#goals" data-tab="goals"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5"/></svg><span>Goals</span></a>
+    <a href="#about" data-tab="about"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></svg><span>About</span></a>
+  </nav>
 
-    <section class="guide" aria-label="Adding a page">
-      <div>
-        <h2>Bring in a new page</h2>
-        <p>Ask Claude for a self-contained HTML page or a set of files, then add them to this repository.</p>
-      </div>
-      <ol class="steps">
-        <li>Create a folder under <code>pages/</code>, such as <code>pages/season-dashboard/</code>.</li>
-        <li>Upload the generated page as <code>index.html</code> in that folder.</li>
-        <li>Place images, CSS, or JavaScript in <code>assets/</code> (or alongside the page).</li>
-        <li>Add a link to the page in this homepage's “Explore the site” section.</li>
-      </ol>
-    </section>
-  </main>
+  <div id="modal-root"></div>
 
-  <footer>Built for the love of baseball · Keep exploring the game.</footer>
+  <noscript><p style="padding:24px;color:#f4f1e8">Dugout Diary needs JavaScript to run. Nothing is sent anywhere – your stats stay in your browser.</p></noscript>
+
+  <script src="js/stats.js"></script>
+  <script src="js/app.js"></script>
 </body>
 </html>
