@@ -11,7 +11,7 @@
   --good: #7bd88f;
   --bad: #ff8b7d;
   --radius: 16px;
-  --display: "Alfa Slab One", Georgia, "Times New Roman", serif;
+  --display: Rockwell, "Rockwell Nova", "Roboto Slab", "Arvo", Georgia, "Times New Roman", serif;
   --body: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
@@ -307,3 +307,18 @@ textarea.copybox { min-height: 120px; resize: vertical; }
 .ps-inn thead th { height: 0.22in; }
 .ps-inn th.wd { width: 2in; }
 h3.sub-h { font-size: 1rem; margin: 14px 0 8px; color: var(--gold); }
+
+/* identity, PIN, terms */
+.pid { font-family: ui-monospace, Menlo, Consolas, monospace; letter-spacing: 0.08em; color: var(--gold); font-weight: 700; }
+.recovery { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 1.6rem; letter-spacing: 0.1em; text-align: center; color: var(--gold); background: rgba(0,0,0,0.3); border-radius: 14px; padding: 16px 8px; margin: 12px 0; user-select: all; }
+.pin-opt { margin: 4px 0 14px; }
+.pin-opt summary { cursor: pointer; font-weight: 600; min-height: 44px; display: flex; align-items: center; }
+.check.agree { align-items: flex-start; font-weight: 500; }
+.check.agree span { line-height: 1.4; }
+.player-pick { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.player-pick small { font-weight: 500; opacity: 0.8; font-size: 0.78rem; }
+.terms h4 { margin: 14px 0 4px; font-size: 1rem; }
+.terms p, .terms li { line-height: 1.5; }
+.terms ul, .terms ol { padding-left: 1.2rem; margin: 6px 0; }
+.terms li { margin-bottom: 6px; }
+.footer a { color: inherit; text-decoration: underline; }

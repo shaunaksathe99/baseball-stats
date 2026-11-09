@@ -25,6 +25,32 @@
   function uid(p) { return p + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
   function str(v, max) { return String(v == null ? '' : v).replace(/[\u0000-\u001f\u007f<>]/g, '').trim().slice(0, max); }
   function cleanId(v) { v = String(v || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 32); return v || uid('x'); }
+  const B32 = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
+  const TERMS_V = 1;
+  const CONTACT_EMAIL = '';   // set this before launch; shown on the Terms & Privacy page
+  const hasCrypto = !!(window.crypto && window.crypto.subtle && window.crypto.getRandomValues);
+  function randBytes(n) { const a = new Uint8Array(n); if (window.crypto && window.crypto.getRandomValues) window.crypto.getRandomValues(a); else for (let i = 0; i < n; i++) a[i] = Math.floor(Math.random() * 256); return a; }
+  function randChars(n) { let o = ''; randBytes(n).forEach((b) => { o += B32[b % 32]; }); return o; }
+  function normCode(v) { return String(v || '').toUpperCase().replace(/[^0-9A-Z]/g, '').replace(/O/g, '0').replace(/[IL]/g, '1').replace(/U/g, 'V'); }
+  function cleanPid(v) { v = normCode(v); return /^[0-9A-HJKMNP-TV-Z]{8}$/.test(v) ? v : ''; }
+  function fmtPid(pid) { return pid ? pid.slice(0, 4) + '-' + pid.slice(4) : ''; }
+  function hexOnly(v, n) { v = String(v || '').toLowerCase(); return v.length === n && /^[0-9a-f]+$/.test(v) ? v : ''; }
+  function toHex(buf) { return Array.from(new Uint8Array(buf)).map((b) => (b < 16 ? '0' : '') + b.toString(16)).join(''); }
+  function fromHex(h) { const a = new Uint8Array(h.length / 2); for (let i = 0; i < a.length; i++) a[i] = parseInt(h.substr(i * 2, 2), 16); return a; }
+  function derive(secret, saltHex, it) {
+    return window.crypto.subtle.importKey('raw', new TextEncoder().encode(secret), 'PBKDF2', false, ['deriveBits'])
+      .then((k) => window.crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt: fromHex(saltHex), iterations: it }, k, 256)).then(toHex);
+  }
+  function cleanLock(l) {
+    if (!l || typeof l !== 'object') return null;
+    const s = hexOnly(l.s, 32), h = hexOnly(l.h, 64), rs = hexOnly(l.rs, 32), rh = hexOnly(l.rh, 64);
+    if (!s || !h || !rs || !rh) return null;
+    return { s: s, h: h, rs: rs, rh: rh, it: Math.max(10000, Math.min(500000, Math.floor(Number(l.it)) || 120000)), fails: Math.max(0, Math.min(99, Math.floor(Number(l.fails)) || 0)), until: Math.max(0, Math.min(Date.now() + 900000, Number(l.until) || 0)) };
+  }
+  function makeLock(pin) {
+    const it = 120000, salt = toHex(randBytes(16)), rsalt = toHex(randBytes(16)), rec = randChars(12);
+    return Promise.all([derive(pin, salt, it), derive(rec, rsalt, it)]).then((r) => ({ lock: { s: salt, h: r[0], rs: rsalt, rh: r[1], it: it, fails: 0, until: 0 }, recovery: rec }));
+  }
   function pad(n) { return (n < 10 ? '0' : '') + n; }
   function today() { const d = new Date(); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
   function fmtDate(iso) {
@@ -43,7 +69,7 @@
   /* ---------- storage ---------- */
   let memoryOnly = false;
 
-  function emptyDb() { return { v: 1, active: null, players: [] }; }
+  function emptyDb() { return { v: 1, active: null, players: [], terms: null, bk: '', bkN: 0, snooze: '' }; }
 
   // CS and CI only exist for a catcher; clear them for any other position.
   function catcherOnly(f, pos) { if (pos !== 'C') { f.cs = 0; f.ci = 0; } return f; }
@@ -101,7 +127,7 @@
     const goals = (Array.isArray(p.goals) ? p.goals : []).slice(0, 60).map(cleanGoal).filter(Boolean);
     const last = p.last && typeof p.last === 'object' ? p.last : {};
     return {
-      id: cleanId(p.id), name: name, city: str(p.city, 40),
+      id: cleanId(p.id), pid: cleanPid(p.pid) || randChars(8), lock: cleanLock(p.lock), name: name, city: str(p.city, 40),
       state: STATES.indexOf(p.state) >= 0 ? p.state : '', zip: zip,
       innings: Number(p.innings) === 7 ? 7 : 6,
       created: Number(p.created) || Date.now(),
@@ -112,14 +138,20 @@
   function sanitizeDb(o) {
     const out = emptyDb();
     if (!o || typeof o !== 'object') return out;
-    const ids = {};
+    const ids = {}, pids = {};
     (Array.isArray(o.players) ? o.players : []).slice(0, 12).forEach((p) => {
       const c = cleanPlayer(p);
       if (!c) return;
       if (ids[c.id]) c.id = uid('p');
       ids[c.id] = 1;
+      while (pids[c.pid]) c.pid = randChars(8);
+      pids[c.pid] = 1;
       out.players.push(c);
     });
+    const isDay = (v) => /^\d{4}-\d{2}-\d{2}$/.test(String(v));
+    out.bk = isDay(o.bk) ? String(o.bk) : ''; out.bkN = S.int(o.bkN, 100000); out.snooze = isDay(o.snooze) ? String(o.snooze) : '';
+    const t = o.terms && typeof o.terms === 'object' ? o.terms : null;
+    if (t && Number(t.v) >= 1 && /^\d{4}-\d{2}-\d{2}$/.test(String(t.at))) out.terms = { v: Math.min(99, Number(t.v)), at: String(t.at) };
     out.active = ids[o.active] ? o.active : (out.players[0] ? out.players[0].id : null);
     return out;
   }
@@ -131,7 +163,11 @@
     let raw = null;
     try { raw = localStorage.getItem(KEY); } catch (e) { memoryOnly = true; }
     if (!raw) return emptyDb();
-    try { return sanitizeDb(JSON.parse(raw)); } catch (e) {
+    try {
+      const o = JSON.parse(raw), d = sanitizeDb(o);
+      if ((Array.isArray(o.players) ? o.players : []).some((x) => x && typeof x === 'object' && !cleanPid(x.pid))) { try { localStorage.setItem(KEY, JSON.stringify(d)); } catch (e3) { /* ignore */ } }
+      return d;
+    } catch (e) {
       try { localStorage.setItem(KEY + '.corrupt', raw); } catch (e2) { /* ignore */ }
       return emptyDb();
     }
@@ -141,8 +177,61 @@
   }
 
   let db = load();
-  const ui = { careerTab: 'bat', careerSeason: '', chart: { bat: 'avg', pit: 'era', fld: 'fpct' }, logTab: 'bat', draft: null, flash: '', lastTab: null, restore: null, ackKey: '', print: { fmt: 'game', copies: 2, prefill: true } };
+  const ui = { unlocked: loadUnlocked(), careerTab: 'bat', careerSeason: '', chart: { bat: 'avg', pit: 'era', fld: 'fpct' }, logTab: 'bat', draft: null, flash: '', lastTab: null, restore: null, ackKey: '', print: { fmt: 'game', copies: 2, prefill: true } };
 
+  function loadUnlocked() {
+    const o = {};
+    try { (JSON.parse(sessionStorage.getItem(KEY + '.u') || '[]') || []).forEach((id) => { o[String(id)] = 1; }); } catch (e) { /* ignore */ }
+    return o;
+  }
+  function setUnlocked(id, on) {
+    if (on) ui.unlocked[id] = 1; else delete ui.unlocked[id];
+    try { sessionStorage.setItem(KEY + '.u', JSON.stringify(Object.keys(ui.unlocked))); } catch (e) { /* ignore */ }
+  }
+  function isUnlocked(p) { return !p.lock || !!ui.unlocked[p.id]; }
+  function termsOk() { return !!(db.terms && db.terms.v >= TERMS_V); }
+  function tryPin(p, pin) {
+    const l = p.lock, now = Date.now();
+    if (l.until > now) return Promise.resolve({ ok: false, wait: Math.ceil((l.until - now) / 1000), left: 0 });
+    return derive(pin, l.s, l.it).then((h) => {
+      if (h === l.h) { l.fails = 0; l.until = 0; save(); return { ok: true }; }
+      l.fails++;
+      if (l.fails >= 5) l.until = Date.now() + Math.min(900, 30 * Math.pow(2, l.fails - 5)) * 1000;
+      save();
+      return { ok: false, wait: l.until > Date.now() ? Math.ceil((l.until - Date.now()) / 1000) : 0, left: Math.max(0, 5 - l.fails) };
+    });
+  }
+  function totalGames() { return db.players.reduce((n, p) => n + p.games.length, 0); }
+  function addDays(n) { const d = new Date(); d.setDate(d.getDate() + n); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+  function backupDue() {
+    const n = totalGames();
+    if (!n) return false;
+    if (!db.bk) return n >= 3;
+    return (Date.now() - new Date(db.bk + 'T12:00:00').getTime()) / 86400000 >= 30 || n - db.bkN >= 10;
+  }
+  function backupAgo() {
+    if (!db.bk) return 'never';
+    const d = Math.max(0, Math.round((Date.now() - new Date(db.bk + 'T12:00:00').getTime()) / 86400000));
+    return d === 0 ? 'today' : d === 1 ? 'yesterday' : d + ' days ago';
+  }
+  function isInstalled() { try { return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true; } catch (e) { return false; } }
+  function isMobile() { return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || ''); }
+  function askPersist() {
+    try {
+      if (!(navigator.storage && navigator.storage.persist) || !db.players.length || ui.persistAsked) return;
+      ui.persistAsked = true;
+      navigator.storage.persisted().then((was) => (was ? true : navigator.storage.persist())).then((ok) => { ui.persist = !!ok; }, () => {});
+    } catch (e) { /* ignore */ }
+  }
+  function safeCard() {
+    if (!db.players.length || !totalGames() || (db.snooze && db.snooze >= today())) return '';
+    const due = backupDue(), tip = isMobile() && !isInstalled();
+    if (!due && !tip) return '';
+    const why = due ? (db.bk ? 'Your last backup was ' + backupAgo() + (totalGames() - db.bkN >= 1 ? ', and you have logged ' + plural(totalGames() - db.bkN, 'game') + ' since.' : '.') : 'You have not saved a backup yet.') : 'Your diary lives in this browser.';
+    return '<section class="card safe"><h3>Keep your stats safe</h3><p class="muted">' + why + ' Clearing browser data or switching phones would erase it, so save a copy now. It takes two taps.</p>' +
+      '<div class="row wrap"><button class="btn grow" data-action="export">Export backup</button><button class="btn ghost grow" data-action="snooze-safe">Not now</button></div>' +
+      (tip ? '<details class="pin-opt"><summary>Add Dugout Diary to your Home Screen</summary><p class="hint">iPhone: tap Share, then Add to Home Screen. Android: open the browser menu, then Install app or Add to Home screen. It opens like an app, works offline, and your browser is far less likely to clear it.</p></details>' : '') + '</section>';
+  }
   function player() { return db.players.find((p) => p.id === db.active) || null; }
 
   /* ---------- drafts (the log form) ---------- */
@@ -245,7 +334,7 @@
     const b = S.batting(pool), pi = S.pitching(pool, p.innings), f = S.fielding(pool);
     const pick = (o, keys) => { const r = {}; keys.forEach((k) => { r[k] = o[k]; }); return r; };
     return {
-      v: 1, n: p.name, l: withCity ? placeText(p) : '', k: label, t: last.team || '', lv: last.level || '', g: pool.length, one: one ? 1 : 0, i: p.innings,
+      v: 1, id: p.pid, n: p.name, l: withCity ? placeText(p) : '', k: label, t: last.team || '', lv: last.level || '', g: pool.length, one: one ? 1 : 0, i: p.innings,
       bat: pick(b, S.BAT_KEYS), pit: pick(pi, S.PIT_KEYS), fld: pick(f, S.FLD_KEYS),
       b: S.badges(p.games).filter((x) => x.earned).map((x) => x.id)
     };
@@ -257,7 +346,7 @@
     if (!name) return null;
     const ids = S.badgeIds();
     return {
-      v: 1, n: name, l: str(o.l, 60), k: str(o.k, 30), t: str(o.t, 40), lv: LEVELS.indexOf(o.lv) >= 0 ? o.lv : '',
+      v: 1, id: cleanPid(o.id), n: name, l: str(o.l, 60), k: str(o.k, 30), t: str(o.t, 40), lv: LEVELS.indexOf(o.lv) >= 0 ? o.lv : '',
       g: S.int(o.g, 3000), one: o.one ? 1 : 0, i: Number(o.i) === 7 ? 7 : 6,
       bat: S.cleanSection(o.bat, S.BAT_KEYS), pit: S.cleanSection(o.pit, S.PIT_KEYS), fld: S.cleanSection(o.fld, S.FLD_KEYS),
       b: (Array.isArray(o.b) ? o.b : []).filter((x, i, a) => ids.indexOf(x) >= 0 && a.indexOf(x) === i).slice(0, 20)
@@ -285,7 +374,7 @@
     x.beginPath(); x.moveTo(a + r, b); x.arcTo(a + w, b, a + w, b + h, r); x.arcTo(a + w, b + h, a, b + h, r); x.arcTo(a, b + h, a, b, r); x.arcTo(a, b, a + w, b, r); x.closePath();
   }
   function drawCard(cv, c) {
-    const W = 1080, H = 1350, slab = '"Alfa Slab One", Georgia, "Times New Roman", serif', sans = 'system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif';
+    const W = 1080, H = 1350, slab = 'Rockwell, "Roboto Slab", Georgia, "Times New Roman", serif', sans = 'system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif';
     const paint = () => {
       cv.width = W; cv.height = H;
       const x = cv.getContext('2d');
@@ -301,6 +390,7 @@
       x.fillText(c.n, W / 2, 275);
       x.fillStyle = '#a9b9a5'; x.font = '600 40px ' + sans;
       x.fillText([c.t, c.l].filter(Boolean).join('  ·  ').slice(0, 50) || (c.g + (c.g === 1 ? ' game' : ' games')), W / 2, 345);
+      if (c.id) { x.fillStyle = '#f2c14e'; x.font = '700 28px ui-monospace, Menlo, Consolas, monospace'; x.fillText('PLAYER ID  ' + fmtPid(c.id), W / 2, 392); }
       const f = cardFacts(c);
       const bw = 290, gap = 30, left = (W - (bw * 3 + gap * 2)) / 2;
       f.heads.forEach((h, i) => {
@@ -328,7 +418,6 @@
       x.fillText((location.host + location.pathname).replace(/index\.html$/, '').replace(/\/$/, '') || 'Dugout Diary', W / 2, 1296);
     };
     paint();
-    if (document.fonts && document.fonts.load) document.fonts.load('80px "Alfa Slab One"').then(() => { if (document.contains(cv)) paint(); }, () => {});
   }
 
   /* ---------- modal ---------- */
@@ -358,17 +447,17 @@
   function renderChrome(tab, p) {
     const who = $('#who');
     who.hidden = !p;
-    if (p) { who.textContent = p.name + (db.players.length > 1 ? ' ▾' : ''); who.setAttribute('aria-label', 'Player: ' + p.name + '. Switch or add player'); }
+    if (p) { who.textContent = (p.lock ? '🔒 ' : '') + p.name + (db.players.length > 1 ? ' ▾' : ''); who.setAttribute('aria-label', 'Player: ' + p.name + '. Switch or add player'); }
     const prog = $('#progress');
-    prog.hidden = !p;
-    if (p) {
+    prog.hidden = !p || !isUnlocked(p);
+    if (p && isUnlocked(p)) {
       const bs = S.badges(p.games), n = bs.filter((b) => b.earned).length, pct = Math.round((n / bs.length) * 100);
       $('#bar-fill').style.width = pct + '%';
       $('.bar').setAttribute('aria-valuenow', pct);
       $('#bar-text').textContent = n + ' of ' + bs.length + ' badges';
     }
     document.querySelectorAll('.tabs a').forEach((a) => {
-      if (a.dataset.tab === (tab === 'print' ? 'log' : tab)) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
+      if (a.dataset.tab === (tab === 'print' ? 'log' : tab === 'terms' ? 'about' : tab)) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
     });
     renderBanner();
   }
@@ -385,10 +474,14 @@
       '<div class="grid2"><div class="field"><label for="pf-city">City</label><input id="pf-city" name="city" type="text" maxlength="40" autocomplete="off" value="' + esc(v.city) + '"></div>' +
       '<div class="field"><label for="pf-state">State</label><select id="pf-state" name="state">' + stateOptions(v.state) + '</select></div></div>' +
       '<div class="field"><label for="pf-zip">&hellip;or just a ZIP code</label><input id="pf-zip" name="zip" type="text" inputmode="numeric" maxlength="5" autocomplete="off" placeholder="5-digit ZIP" value="' + esc(v.zip) + '"></div>' +
+      (p ? '' : (hasCrypto ? '<details class="pin-opt"><summary>Protect with a PIN (optional)</summary><p class="hint">Keeps teammates and siblings out of this diary on a shared device.</p>' +
+        '<div class="grid2"><div class="field"><label for="pf-pin">PIN (4 to 8 digits)</label><input id="pf-pin" name="pin" type="password" inputmode="numeric" autocomplete="off" maxlength="8"></div>' +
+        '<div class="field"><label for="pf-pin2">Repeat PIN</label><input id="pf-pin2" name="pin2" type="password" inputmode="numeric" autocomplete="off" maxlength="8"></div></div></details>' : '') +
+        (termsOk() ? '' : '<label class="check agree"><input type="checkbox" name="agree" id="pf-agree"> <span>I agree to the <a href="#terms">Terms &amp; Privacy Notice</a>. Younger players: please read them with a parent or guardian.</span></label>')) +
       '<button class="btn block" type="submit">' + (p ? 'Save player card' : 'Create player card') + '</button>' +
       '<p class="hint">We never ask for birthdays, emails, phone numbers, or photos.</p></form>';
   }
-  function footer() { return '<p class="footer">&copy; 2026 Dugout Diary &middot; v' + VERSION + ' &middot; Free for every ballplayer</p>'; }
+  function footer() { return '<p class="footer">&copy; 2026 Dugout Diary &middot; v' + VERSION + ' &middot; Free for every ballplayer &middot; <a href="#terms">Terms &amp; Privacy</a></p>'; }
   function emptyState(icon, title, text, btn) {
     return '<div class="card empty"><div class="big" aria-hidden="true">' + icon + '</div><h3>' + esc(title) + '</h3><p>' + esc(text) + '</p>' + (btn || '') + '</div>';
   }
@@ -427,6 +520,7 @@
       '<div class="stats four"><div class="stat"><b>' + p.games.length + '</b><span>Games</span></div><div class="stat"><b>' + S.fmtRate(bat.avg) + '</b><span>AVG</span></div><div class="stat"><b>' + S.fmtEra(pit.era) + '</b><span>ERA</span></div><div class="stat"><b>' + earned + '</b><span>Badges</span></div></div>' +
       '<div class="row wrap" style="margin-top:16px"><button class="btn grow" data-action="go" data-to="log">Log a game &rarr;</button><button class="btn ghost grow" data-action="go" data-to="career">My career</button></div>' +
       (p.games.length ? '<button class="btn ghost block" style="margin-top:10px" data-action="share-open">📣 Share my player card</button>' : '') + '</section>' +
+      safeCard() +
       (streak.current >= 2 ? '<section class="card"><b>🔥 ' + streak.current + '-game hit streak!</b><span class="muted small"> Best: ' + streak.best + '</span></section>' : '') +
       '<section class="card"><h3>Recent games</h3>' + (recent.length ? '<ul class="games">' + recent.map((g) => gameItem(g, false)).join('') + '</ul>' : '<p class="muted">Nothing yet. Your first game is a big one!</p>') + '</section>' +
       '<section class="card"><div class="row between"><div><b>No phone in the dugout?</b><br><span class="muted small">Print a game sheet, fill it in by hand, then enter it here later.</span></div><a class="btn small" href="#print">Print</a></div></section>' +
@@ -619,18 +713,26 @@
   function viewAbout(p) {
     const edit = p ? '<section class="card"><h3>Player card</h3>' + playerForm(p) +
       '<div class="field" style="margin-top:14px"><label for="s-inn">Innings in a regulation game</label><select id="s-inn" data-setting="innings"><option value="6"' + (p.innings === 6 ? ' selected' : '') + '>6 innings</option><option value="7"' + (p.innings === 7 ? ' selected' : '') + '>7 innings</option></select><p class="hint">Used to calculate ERA. Check your league’s rules.</p></div></section>' : '';
+    const sec = p ? '<section class="card"><h3>Player ID &amp; PIN</h3>' +
+      '<p>Player ID <b class="pid">' + esc(fmtPid(p.pid)) + '</b></p>' +
+      '<p class="muted small">Two players can share a name, so every card gets a random ID that tells them apart. It is not tied to a real person, and it appears on share cards.</p>' +
+      (p.lock ? '<p><b>PIN is on.</b></p><div class="row wrap"><button class="btn ghost grow" data-action="lock-now">Lock now</button><button class="btn ghost grow" data-action="pin-change">Change PIN</button><button class="btn ghost grow" data-action="pin-remove">Remove PIN</button></div>'
+        : (hasCrypto ? '<p><b>No PIN set.</b></p><button class="btn block" data-action="pin-set">Set a PIN</button>' : '<p class="muted">PINs need a secure (https) connection, so they are not available here.</p>')) +
+      '<p class="hint">A PIN keeps teammates, siblings, and curious friends out of this diary on a shared device. It does not encrypt the data stored in this browser, and it travels with your backup file.</p></section>' : '';
     const backup = '<section class="card"><h3>Backup &amp; restore</h3><p class="muted">Your stats live only in this browser. Export a backup file now and then, especially before clearing browser data or switching phones.</p>' +
+      (db.players.length ? '<p><b>Last backup:</b> ' + esc(backupAgo()) + (backupDue() ? ' <span style="color:var(--gold)">&middot; time for a new one</span>' : '') + '</p>' : '') +
+      (ui.persist ? '<p class="hint">Browser storage protection is on, so your browser is less likely to clear this data on its own.</p>' : '') +
       '<div class="row wrap"><button class="btn grow" data-action="export">Export backup</button><button class="btn ghost grow" data-action="import">Import backup</button></div>' +
       '<input type="file" id="import-file" accept="application/json,.json" hidden></section>';
     const danger = (p ? '<button class="btn danger block" data-action="reset-player" style="margin-bottom:10px">Delete ' + esc(p.name) + '’s data</button>' : '') +
       (db.players.length ? '<button class="btn danger block" data-action="reset-all">Erase everything on this device</button>' : '');
     return '<section class="card hero"><p class="eyebrow">About</p><h2>A free diary for young ballplayers</h2>' +
       '<p class="muted">Dugout Diary helps players and parents keep a lasting record of batting, pitching and fielding across every season, from the first tee ball swing and beyond. It is free, with no paywall and no ads.</p></section>' +
-      '<section class="card"><h3>Your privacy</h3><p><b>What we keep:</b> a name or nickname, a city and state or ZIP code, and the stats you enter. That is all, and it never leaves your device.</p>' +
+      '<section class="card"><h3>Your privacy</h3><p><b>What is stored:</b> a name or nickname, a city and state or ZIP code, the stats you enter, a random Player ID, and (if you choose) a PIN. All of it stays on your device. We have no server and no accounts.</p>' +
       '<p><b>What we never ask for:</b> birthdates, emails, phone numbers, photos, passwords, or payment info.</p>' +
-      '<p class="muted small">There is no account and no server holding your data. Clearing your browser data erases it, so keep a backup.</p></section>' +
+      '<p class="muted small">Clearing your browser data erases it, so keep a backup. Read the full <a href="#terms">Terms &amp; Privacy Notice</a>.</p></section>' +
       '<section class="card"><h3>Print sheets</h3><p class="muted">Take a paper game sheet or season grid to the field, then enter the numbers later.</p><a class="btn block" href="#print">Open printable sheets</a></section>' +
-      edit + backup + (danger ? '<section class="card"><h3>Reset</h3>' + danger + '</section>' : '') +
+      edit + sec + backup + (danger ? '<section class="card"><h3>Reset</h3>' + danger + '</section>' : '') +
       '<section class="card"><h3>The fine print</h3><p class="muted small">Dugout Diary is an independent project. It is not affiliated with or endorsed by Little League International, GameChanger, Sports Connect, or any league. Stats are self-reported by families and are not official records. Accessibility: large tap targets, keyboard navigation, and screen reader labels are built in; tell us if something is hard to use.</p></section>' + footer();
   }
 
@@ -639,13 +741,49 @@
     S.badges([]).forEach((b) => { info[b.id] = b; });
     const mine = player();
     return '<section class="card hero"><p class="eyebrow">' + esc([c.k, c.lv].filter(Boolean).join(' · ') || 'Player card') + '</p><h2>' + esc(c.n) + '</h2>' +
-      '<p class="muted">' + esc([c.t, c.l, plural(c.g, 'game')].filter(Boolean).join(' · ')) + '</p>' +
+      '<p class="muted">' + esc([c.t, c.l, plural(c.g, 'game')].filter(Boolean).join(' · ')) + '</p>' + (c.id ? '<p class="small">Player ID <b class="pid">' + esc(fmtPid(c.id)) + '</b></p>' : '') +
       '<div class="stats">' + f.heads.map((h) => '<div class="stat"><b>' + esc(h[1]) + '</b><span>' + esc(h[0]) + '</span></div>').join('') + '</div>' +
       '<div class="stats four">' + f.rows.map((r) => '<div class="stat"><b>' + esc(r[1]) + '</b><span>' + esc(r[0]) + '</span></div>').join('') + '</div>' +
       (c.b.length ? '<div class="chips">' + c.b.map((id) => '<span class="chip">' + info[id].icon + ' ' + esc(info[id].name) + '</span>').join('') + '</div>' : '') + '</section>' +
       '<section class="card"><h3>' + (mine ? 'Welcome back' : 'Think you can top that?') + '</h3>' +
       '<p class="muted">' + (mine ? 'This card was shared with you.' : 'Build your own player card in under a minute. Free, no sign-up, and no email or birthday needed.') + '</p>' +
       '<button class="btn block" data-action="go" data-to="' + (mine ? 'career' : 'home') + '">' + (mine ? 'Back to my diary' : 'Create my card →') + '</button></section>' + footer();
+  }
+
+  function viewLock(p) {
+    return '<section class="card hero"><p class="eyebrow">&#128274; Locked</p><h2>Hi, ' + esc(p.name) + '!</h2>' +
+      '<p class="muted">Enter your PIN to open this diary. <span class="pid">' + esc(fmtPid(p.pid)) + '</span></p>' +
+      '<form data-form="unlock" novalidate><div class="error" data-errbox hidden role="alert"></div>' +
+      '<div class="field"><label for="ul-pin">PIN</label><input id="ul-pin" name="pin" type="password" inputmode="numeric" autocomplete="off" maxlength="8"></div>' +
+      '<button class="btn block" type="submit">Unlock</button></form>' +
+      '<div class="row wrap" style="margin-top:10px">' + (db.players.length > 1 ? '<button class="btn ghost grow" data-action="open-players">Switch player</button>' : '') +
+      '<button class="btn ghost grow" data-action="forgot-pin">Forgot PIN?</button></div></section>' + footer();
+  }
+
+  function viewTerms() {
+    const contact = CONTACT_EMAIL ? 'Email us at <a href="mailto:' + esc(CONTACT_EMAIL) + '">' + esc(CONTACT_EMAIL) + '</a>.' : 'Contact details are listed on the site where you found this app.';
+    return '<section class="card hero"><p class="eyebrow">Version ' + TERMS_V + ' &middot; In plain English</p><h2>Terms &amp; Privacy</h2>' +
+      '<p class="muted">Dugout Diary is a free stat diary for baseball and softball players of all ages, with their families and coaches. There are no ads, no purchases, no chat, no public profiles, and no tracking. It is built to be suitable for everyone, including our youngest ballplayers.</p></section>' +
+      '<section class="card terms"><h3>Privacy notice</h3>' +
+      '<p><b>The short version:</b> everything you enter stays in your own browser. We do not run a server that receives it, and we cannot see it.</p>' +
+      '<h4>Stored only on your device</h4><ul><li>A name or nickname, and a city and state or ZIP code</li><li>The games and stats you enter, and your goals</li><li>A random Player ID made on your device</li><li>If you choose one, a scrambled (hashed) PIN and recovery code</li></ul>' +
+      '<h4>Never collected</h4><ul><li>Birthdates or ages</li><li>Emails, phone numbers, or home addresses</li><li>Photos, videos, or microphone and camera access</li><li>Precise location (GPS)</li><li>Payment information</li><li>Advertising, analytics, cookies, or third-party trackers, fonts, or scripts</li></ul>' +
+      '<h4>Children</h4><p>Because personal information stays on the device and nothing is sent to us, we do not collect personal information from anyone, including children. There are no accounts, no messaging, and no way for strangers to contact a player. A parent or guardian can erase everything at any time from About &rarr; Erase everything on this device. We encourage younger players to use a first name or nickname and to set the app up with a parent or guardian.</p>' +
+      '<h4>Hosting</h4><p>The pages are delivered by a web host (currently GitHub Pages). Like any website, the host may record technical details such as an IP address when a page is requested. We do not receive or use those logs, and the app does not send your stats to the host.</p>' +
+      '<h4>Sharing</h4><p>Sharing is your choice. A share card (image or link) contains only what is shown on the card: the name or nickname, optional city and state, the stats you picked, and the random Player ID. A card link holds its data inside the link itself, so anyone who has the link can see the card. Share with people you trust, and think twice before posting publicly.</p>' +
+      '<h4>Player ID and PIN</h4><p>The Player ID keeps players with the same name apart. A PIN keeps teammates and siblings out of a diary on a shared device. It is a privacy lock, not encryption: someone with technical skill and access to your device can still reach the data stored in the browser. Write down your recovery code, because we cannot reset a PIN for you.</p>' +
+      '<h4>Backups</h4><p>Backup files are saved wherever you choose. They contain everything in the diary, so store them somewhere private.</p>' +
+      '<h4>Changes and questions</h4><p>If this notice changes in a meaningful way, the version number above changes and you will be asked to agree again when you add a player. ' + contact + '</p></section>' +
+      '<section class="card terms"><h3>Terms of use</h3>' +
+      '<ol><li><b>What this is.</b> Dugout Diary is a free tool for keeping your own baseball or softball stats. By using it you agree to these terms.</li>' +
+      '<li><b>Families first.</b> Younger players should set up and use the app with a parent or guardian, who is responsible for what is entered and shared.</li>' +
+      '<li><b>Your data, your job.</b> Your stats live in your browser. Clearing browser data, switching phones, or private browsing can erase them. Please export backups. We cannot recover lost data.</li>' +
+      '<li><b>Be kind and be careful.</b> Enter only information about yourself or your own child. Do not enter other people’s private details. Use a first name or nickname. Do not use the app to harass anyone, break the law, or try to disrupt or copy the site.</li>' +
+      '<li><b>Not official.</b> Stats are self-reported and not official league records. Check with your league for official numbers.</li>' +
+      '<li><b>Independent project.</b> Dugout Diary is not affiliated with or endorsed by Little League International, GameChanger, Sports Connect, or any league or team. Their names belong to their owners.</li>' +
+      '<li><b>As is.</b> The app is provided as is, without promises that it will always work or be error free. To the extent the law allows, we are not liable for lost data or for decisions made using the stats.</li>' +
+      '<li><b>Changes.</b> We may update the app or these terms. Continuing to use the app after a change means you accept it.</li></ol></section>' +
+      '<button class="btn ghost block" data-action="go" data-to="' + (player() ? 'about' : 'home') + '">Back</button>' + footer();
   }
 
   /* ---------- printable sheets (paper game log for the dugout) ---------- */
@@ -746,6 +884,7 @@
     let h = (location.hash || '#home').slice(1);
     if (h.indexOf('card=') === 0) return 'card';
     if (h === 'print') return 'print';
+    if (h === 'terms') return 'terms';
     if (TABS.indexOf(h) < 0) h = 'home';
     if (!player() && h !== 'home' && h !== 'about') h = 'home';
     return h;
@@ -761,6 +900,8 @@
       try { c = sanitizeCard(b64d(location.hash.slice(6))); } catch (e) { c = null; }
       html += c ? viewCard(c) : emptyState('🤔', 'That card link looks broken', 'Ask your friend to share it again, or make your own card.', '<button class="btn" data-action="go" data-to="home">Make my own card</button>');
     }
+    else if (tab === 'terms') html += viewTerms();
+    else if (p && !isUnlocked(p)) html += viewLock(p);
     else if (tab === 'print') html += viewPrint(p);
     else if (tab === 'home') html += viewHome(p);
     else if (tab === 'log') html += viewLog(p);
@@ -896,6 +1037,7 @@
       a.href = url; a.download = 'dugout-diary-backup-' + today() + '.json';
       document.body.appendChild(a); a.click(); a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 2000);
+      db.bk = today(); db.bkN = totalGames(); db.snooze = ''; save();
       ui.flash = 'Backup file created. Keep it somewhere safe, like email or cloud storage.';
       render();
     } catch (e) {
@@ -916,7 +1058,7 @@
       }
       let added = 0, skipped = 0;
       incoming.players.forEach((pl) => {
-        if (db.players.some((x) => x.id === pl.id)) { skipped++; return; }
+        if (db.players.some((x) => x.id === pl.id || x.pid === pl.pid)) { skipped++; return; }
         if (db.players.length >= 12) { skipped++; return; }
         db.players.push(pl); added++;
       });
@@ -984,7 +1126,43 @@
     }, 'image/png');
   }
 
+  function waitText(sec) { return sec >= 90 ? Math.ceil(sec / 60) + ' minutes' : sec + ' seconds'; }
+  function pinField(id, name, label) {
+    return '<div class="field"><label for="' + id + '">' + label + '</label><input id="' + id + '" name="' + name + '" type="password" inputmode="numeric" autocomplete="off" maxlength="8"></div>';
+  }
+  function openPinModal(mode) {
+    const title = { set: 'Set a PIN', change: 'Change PIN', remove: 'Remove PIN' }[mode];
+    openModal('<h3>' + title + '</h3><form data-form="pin" data-mode="' + mode + '" novalidate><div class="error" data-errbox hidden role="alert"></div>' +
+      (mode !== 'set' ? pinField('pm-cur', 'cur', 'Current PIN') : '') +
+      (mode !== 'remove' ? pinField('pm-pin', 'pin', mode === 'set' ? 'New PIN (4 to 8 digits)' : 'New PIN') + pinField('pm-pin2', 'pin2', 'Repeat PIN') : '') +
+      '<div class="actions"><button type="button" class="btn ghost" data-action="modal-close">Cancel</button><button class="btn" type="submit">' + (mode === 'remove' ? 'Remove PIN' : 'Save PIN') + '</button></div></form>');
+  }
+  function showRecovery(rec) {
+    const shown = rec.slice(0, 4) + '-' + rec.slice(4, 8) + '-' + rec.slice(8);
+    openModal('<h3>Save your recovery code</h3><p class="recovery" id="rec-code">' + esc(shown) + '</p>' +
+      '<p class="muted">If you ever forget your PIN, this code lets you remove it. We cannot recover it for you, so write it down or save it somewhere private. It will not be shown again.</p>' +
+      '<div class="actions"><button class="btn ghost" data-action="copy-recovery">Copy</button><button class="btn" data-action="modal-close">I saved it</button></div>');
+  }
+
   const actions = {
+    'snooze-safe': () => { db.snooze = addDays(7); save(); render(); },
+    'lock-now': () => { const p = player(); if (p && p.lock) { setUnlocked(p.id, false); go('home'); } },
+    'pin-set': () => openPinModal('set'),
+    'pin-change': () => openPinModal('change'),
+    'pin-remove': () => openPinModal('remove'),
+    'forgot-pin': () => {
+      openModal('<h3>Forgot your PIN?</h3><p class="muted">Enter the recovery code you saved when you set the PIN. It will remove the PIN so you can set a new one.</p>' +
+        '<form data-form="recover" novalidate><div class="error" data-errbox hidden role="alert"></div>' +
+        '<div class="field"><label for="rc-code">Recovery code</label><input id="rc-code" name="code" type="text" autocomplete="off" autocapitalize="characters" maxlength="14" placeholder="XXXX-XXXX-XXXX"></div>' +
+        '<div class="actions"><button type="button" class="btn ghost" data-action="modal-close">Cancel</button><button class="btn" type="submit">Remove PIN</button></div></form>' +
+        '<p class="hint">No code? The only way in is to delete this player from this device and start a new card. Backup files keep the same PIN.</p>' +
+        '<button class="btn danger block" data-action="reset-player">Delete this player</button>');
+    },
+    'copy-recovery': (el) => {
+      const t = ($('#rec-code') || {}).textContent || '';
+      const done = () => { el.textContent = 'Copied ✓'; };
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(done, () => { el.textContent = 'Select and copy it'; }); else el.textContent = 'Select and copy it';
+    },
     go: (el) => go(el.dataset.to),
     'print-now': () => { try { window.print(); } catch (e) { /* ignore */ } },
     'share-open': () => openShare('all'),
@@ -1044,7 +1222,7 @@
     'new-player': () => { closeModal(); openModal('<h3>Add a player</h3>' + playerForm(null)); },
     'open-players': () => {
       openModal('<h3>Players</h3><div class="stack">' + db.players.map((p) =>
-        '<button class="btn ' + (p.id === db.active ? '' : 'ghost') + ' block" data-action="switch-player" data-id="' + esc(p.id) + '">' + esc(p.name) + (p.id === db.active ? ' ✓' : '') + '</button>').join('') + '</div>' +
+        '<button class="btn ' + (p.id === db.active ? '' : 'ghost') + ' block player-pick" data-action="switch-player" data-id="' + esc(p.id) + '"><span>' + (p.lock ? '🔒 ' : '') + esc(p.name) + (p.id === db.active ? ' ✓' : '') + '</span><small>' + esc([placeText(p), fmtPid(p.pid)].filter(Boolean).join(' · ')) + '</small></button>').join('') + '</div>' +
         '<div class="actions"><button class="btn ghost" data-action="modal-close">Close</button><button class="btn" data-action="new-player">+ Add player</button></div>');
     },
     'switch-player': (el) => { db.active = el.dataset.id; ui.draft = null; ui.careerSeason = ''; save(); closeModal(); render(); },
@@ -1080,6 +1258,11 @@
       if (!data.name) errs.push('Add a first name or nickname.');
       if (data.zip && !/^\d{5}$/.test(data.zip)) errs.push('A ZIP code should be 5 digits.');
       if (!data.zip && !(data.city && data.state)) errs.push('Add a city and state, or just a ZIP code.');
+      const pin = !id && el.pin ? String(el.pin.value) : '', pin2 = !id && el.pin2 ? String(el.pin2.value) : '';
+      if (!id) {
+        if (!termsOk() && !(el.agree && el.agree.checked)) errs.push('Please agree to the Terms & Privacy Notice to continue.');
+        if (pin || pin2) { if (!/^\d{4,8}$/.test(pin)) errs.push('A PIN is 4 to 8 digits.'); else if (pin !== pin2) errs.push('The two PINs do not match.'); }
+      }
       showErrors(f.querySelector('[data-errbox]'), errs);
       if (errs.length) return;
       if (id) {
@@ -1088,12 +1271,62 @@
         ui.flash = 'Player card saved.';
       } else {
         if (db.players.length >= 12) { showErrors(f.querySelector('[data-errbox]'), ['This device can hold up to 12 players.']); return; }
-        const p = cleanPlayer(Object.assign({ id: uid('p'), created: Date.now(), innings: 6, games: [], goals: [] }, data));
-        db.players.push(p); db.active = p.id; ui.draft = null; ui.careerSeason = '';
-        ui.flash = 'Player card created. Log your first game when you are ready!';
+        const np = cleanPlayer(Object.assign({ id: uid('p'), created: Date.now(), innings: 6, games: [], goals: [] }, data));
+        const commit = (rec) => {
+          if (!termsOk()) db.terms = { v: TERMS_V, at: today() };
+          db.players.push(np); db.active = np.id; ui.draft = null; ui.careerSeason = '';
+          ui.flash = 'Player card created. Log your first game when you are ready!';
+          save(); askPersist(); closeModal(); go('log');
+          if (rec) showRecovery(rec);
+        };
+        if (pin) {
+          const btn = f.querySelector('button[type=submit]'); if (btn) btn.disabled = true;
+          makeLock(pin).then((r) => { np.lock = r.lock; setUnlocked(np.id, true); commit(r.recovery); }, () => { if (btn) btn.disabled = false; showErrors(f.querySelector('[data-errbox]'), ['Could not set the PIN on this browser.']); });
+        } else commit(null);
+        return;
       }
-      save(); closeModal();
-      if (!id) go('log'); else render();
+      save(); closeModal(); render();
+    },
+    unlock: (f) => {
+      const p = player();
+      if (!p || !p.lock) { render(); return; }
+      const pin = String(f.elements.pin.value), box = f.querySelector('[data-errbox]');
+      if (!/^\d{4,8}$/.test(pin)) { showErrors(box, ['Enter your 4 to 8 digit PIN.']); return; }
+      tryPin(p, pin).then((r) => {
+        if (r.ok) { setUnlocked(p.id, true); render(); return; }
+        const b2 = document.querySelector('form[data-form=unlock] [data-errbox]'), inp = document.querySelector('form[data-form=unlock] input');
+        showErrors(b2, [r.wait ? 'Too many tries. Wait ' + waitText(r.wait) + ', or use Forgot PIN.' : 'That PIN is not right. ' + r.left + ' ' + (r.left === 1 ? 'try' : 'tries') + ' left before a short pause.']);
+        if (inp) { inp.value = ''; inp.focus(); }
+      });
+    },
+    pin: (f) => {
+      const p = player(), mode = f.dataset.mode, el = f.elements, box = f.querySelector('[data-errbox]');
+      if (!p) return;
+      const cur = el.cur ? String(el.cur.value) : '', pin = el.pin ? String(el.pin.value) : '', pin2 = el.pin2 ? String(el.pin2.value) : '';
+      const errs = [];
+      if (mode !== 'set' && !/^\d{4,8}$/.test(cur)) errs.push('Enter your current PIN.');
+      if (mode !== 'remove') { if (!/^\d{4,8}$/.test(pin)) errs.push('A PIN is 4 to 8 digits.'); else if (pin !== pin2) errs.push('The two PINs do not match.'); }
+      showErrors(box, errs);
+      if (errs.length) return;
+      const apply = () => {
+        if (mode === 'remove') { p.lock = null; save(); closeModal(); ui.flash = 'PIN removed.'; render(); return; }
+        makeLock(pin).then((r) => { p.lock = r.lock; setUnlocked(p.id, true); save(); closeModal(); ui.flash = 'PIN saved.'; render(); showRecovery(r.recovery); });
+      };
+      if (mode === 'set') { apply(); return; }
+      tryPin(p, cur).then((r) => {
+        if (r.ok) apply();
+        else showErrors(box, [r.wait ? 'Too many tries. Wait ' + waitText(r.wait) + '.' : 'That is not your current PIN.']);
+      });
+    },
+    recover: (f) => {
+      const p = player(), box = f.querySelector('[data-errbox]');
+      if (!p || !p.lock) return;
+      const code = normCode(f.elements.code.value);
+      if (code.length !== 12) { showErrors(box, ['The recovery code has 12 letters and numbers.']); return; }
+      derive(code, p.lock.rs, p.lock.it).then((h) => {
+        if (h !== p.lock.rh) { showErrors(box, ['That recovery code does not match.']); return; }
+        p.lock = null; setUnlocked(p.id, true); save(); closeModal(); ui.flash = 'PIN removed. You can set a new one in About.'; render();
+      });
     },
     goal: (f) => {
       const p = player(), el = f.elements;
@@ -1173,6 +1406,7 @@
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && $('#modal-root').firstChild) closeModal(); });
   window.addEventListener('hashchange', render);
 
+  askPersist();
   render();
 
   if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
