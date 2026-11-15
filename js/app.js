@@ -19,7 +19,7 @@
     const v = themePref(), root = document.documentElement;
     if (v === 'auto') root.removeAttribute('data-theme'); else root.setAttribute('data-theme', v);
     const light = themeIsLight(), meta = document.querySelector('meta[name=theme-color]'), b = document.getElementById('theme-btn');
-    if (meta) meta.setAttribute('content', light ? '#F6F3EA' : '#0F1F0F');
+    if (meta) meta.setAttribute('content', light ? '#FBF8F1' : '#1A1A18');
     if (b) { b.textContent = light ? '\u263E' : '\u2600'; b.title = light ? 'Switch to dark mode' : 'Switch to light mode'; }
   }
   function setTheme(v) { try { if (v === 'auto') localStorage.removeItem(THEME_KEY); else localStorage.setItem(THEME_KEY, v); } catch (e) { /* private mode: applies until reload */ } applyTheme(); }
@@ -421,44 +421,47 @@
     const paint = () => {
       cv.width = W; cv.height = H;
       const x = cv.getContext('2d');
-      const bg = x.createLinearGradient(0, 0, W, H); bg.addColorStop(0, '#22421f'); bg.addColorStop(1, '#0a160a');
+      const bg = x.createLinearGradient(0, 0, W, H); bg.addColorStop(0, '#2C2C2A'); bg.addColorStop(1, '#1A1A18');
       x.fillStyle = bg; x.fillRect(0, 0, W, H);
-      x.globalAlpha = 0.07; x.fillStyle = '#f4f1e8'; x.beginPath(); x.arc(W - 120, 260, 340, 0, Math.PI * 2); x.fill(); x.globalAlpha = 1;
-      x.lineWidth = 14; x.strokeStyle = '#e07b45'; rrect(x, 36, 36, W - 72, H - 72, 52); x.stroke();
+      x.globalAlpha = 0.07; x.fillStyle = '#F5EFE0'; x.beginPath(); x.arc(W - 120, 260, 340, 0, Math.PI * 2); x.fill(); x.globalAlpha = 1;
+      x.lineWidth = 14; x.strokeStyle = '#EF9F27'; rrect(x, 36, 36, W - 72, H - 72, 52); x.stroke();
       x.textAlign = 'center'; x.textBaseline = 'alphabetic';
-      x.fillStyle = '#f2c14e'; x.font = '700 40px ' + sans;
+      x.fillStyle = '#EF9F27'; x.font = '700 40px ' + sans;
       x.fillText([c.k, c.lv].filter(Boolean).join('  ·  ').toUpperCase().slice(0, 44), W / 2, 130);
-      let size = 108; x.fillStyle = '#f4f1e8';
+      let size = 108; x.fillStyle = '#F5EFE0';
       do { x.font = size + 'px ' + slab; size -= 4; } while (x.measureText(c.n).width > W - 160 && size > 40);
       x.fillText(c.n, W / 2, 275);
-      x.fillStyle = '#a9b9a5'; x.font = '600 40px ' + sans;
+      x.fillStyle = '#ADA99E'; x.font = '600 40px ' + sans;
       x.fillText([c.t, c.l].filter(Boolean).join('  ·  ').slice(0, 50) || (c.g + (c.g === 1 ? ' game' : ' games')), W / 2, 345);
-      if (c.id) { x.fillStyle = '#f2c14e'; x.font = '700 28px ui-monospace, Menlo, Consolas, monospace'; x.fillText('PLAYER ID  ' + fmtPid(c.id), W / 2, 392); }
+      if (c.id) { x.fillStyle = '#EF9F27'; x.font = '700 28px ui-monospace, Menlo, Consolas, monospace'; x.fillText('PLAYER ID  ' + fmtPid(c.id), W / 2, 392); }
       const f = cardFacts(c);
       const bw = 290, gap = 30, left = (W - (bw * 3 + gap * 2)) / 2;
       f.heads.forEach((h, i) => {
         const bx = left + i * (bw + gap);
         x.fillStyle = 'rgba(0,0,0,0.3)'; rrect(x, bx, 410, bw, 310, 28); x.fill();
-        x.strokeStyle = 'rgba(244,241,232,0.15)'; x.lineWidth = 3; x.stroke();
-        x.fillStyle = '#f2c14e'; x.font = '112px ' + slab; x.fillText(String(h[1]), bx + bw / 2, 590);
-        x.fillStyle = '#a9b9a5'; x.font = '700 38px ' + sans; x.fillText(h[0], bx + bw / 2, 670);
+        x.strokeStyle = 'rgba(245,239,224,0.16)'; x.lineWidth = 3; x.stroke();
+        x.fillStyle = '#EF9F27'; x.font = '112px ' + slab; x.fillText(String(h[1]), bx + bw / 2, 590);
+        x.fillStyle = '#ADA99E'; x.font = '700 38px ' + sans; x.fillText(h[0], bx + bw / 2, 670);
       });
       const sw = 215, sg = 20, sl = (W - (sw * 4 + sg * 3)) / 2;
       f.rows.forEach((r, i) => {
         const bx = sl + i * (sw + sg);
         x.fillStyle = 'rgba(0,0,0,0.22)'; rrect(x, bx, 765, sw, 150, 22); x.fill();
-        x.fillStyle = '#f4f1e8'; x.font = '54px ' + slab; x.fillText(String(r[1]), bx + sw / 2, 845);
-        x.fillStyle = '#a9b9a5'; x.font = '700 28px ' + sans; x.fillText(r[0], bx + sw / 2, 890);
+        x.fillStyle = '#F5EFE0'; x.font = '54px ' + slab; x.fillText(String(r[1]), bx + sw / 2, 845);
+        x.fillStyle = '#ADA99E'; x.font = '700 28px ' + sans; x.fillText(r[0], bx + sw / 2, 890);
       });
       const icons = {}; S.badges([]).forEach((b) => { icons[b.id] = b.icon; });
-      x.fillStyle = '#a9b9a5'; x.font = '700 30px ' + sans;
+      x.fillStyle = '#ADA99E'; x.font = '700 30px ' + sans;
       x.fillText(c.b.length ? c.b.length + (c.b.length === 1 ? ' BADGE EARNED' : ' BADGES EARNED') : 'BADGES: JUST GETTING STARTED', W / 2, 990);
-      x.font = '70px ' + sans; x.fillStyle = '#f4f1e8';
+      x.font = '70px ' + sans; x.fillStyle = '#F5EFE0';
       x.fillText(c.b.slice(0, 8).map((id) => icons[id]).join(' '), W / 2, 1085);
-      x.fillStyle = '#e07b45'; rrect(x, 190, 1150, W - 380, 96, 48); x.fill();
-      x.fillStyle = '#1d0f07'; x.font = '800 42px ' + sans; x.fillText('Build your own card — free', W / 2, 1214);
-      x.fillStyle = '#a9b9a5'; x.font = '600 32px ' + sans;
-      x.fillText((location.host + location.pathname).replace(/index\.html$/, '').replace(/\/$/, '') || 'Dugout Diary', W / 2, 1296);
+      x.fillStyle = '#EF9F27'; rrect(x, 190, 1150, W - 380, 96, 48); x.fill();
+      x.fillStyle = '#412402'; x.font = '800 42px ' + sans; x.fillText('Build your own card — free', W / 2, 1214);
+      if (window.Brand) {
+        window.Brand.crest(x, W / 2 - 205, 1296, 64);
+        x.textAlign = 'left'; x.fillStyle = '#F5EFE0'; x.font = '700 34px ' + sans; x.fillText('Dugout Diary', W / 2 - 160, 1294);
+        x.fillStyle = '#ADA99E'; x.font = '600 24px ' + sans; x.fillText('by Plate 450', W / 2 - 160, 1324); x.textAlign = 'center';
+      } else { x.fillStyle = '#ADA99E'; x.font = '600 32px ' + sans; x.fillText('Dugout Diary', W / 2, 1296); }
     };
     paint();
   }
@@ -524,7 +527,7 @@
       '<button class="btn block" type="submit">' + (p ? 'Save player card' : 'Create player card') + '</button>' +
       '<p class="hint">We never ask for birthdays, emails, phone numbers, or photos.</p></form>';
   }
-  function footer() { return '<p class="footer">&copy; 2026 Dugout Diary &middot; v' + VERSION + ' &middot; Free for every ballplayer &middot; <a href="#terms">Terms &amp; Privacy</a></p>'; }
+  function footer() { return '<p class="footer">&copy; 2026 Plate 450 &middot; Dugout Diary v' + VERSION + ' &middot; Free for every ballplayer &middot; <a href="#terms">Terms &amp; Privacy</a></p>'; }
   function emptyState(icon, title, text, btn) {
     return '<div class="card empty"><div class="big" aria-hidden="true">' + icon + '</div><h3>' + esc(title) + '</h3><p>' + esc(text) + '</p>' + (btn || '') + '</div>';
   }
@@ -780,7 +783,7 @@
       '<section class="card"><h3>Appearance</h3><div class="seg" role="group" aria-label="Theme">' + [['auto', 'Auto'], ['light', 'Light'], ['dark', 'Dark']].map((o) => '<button data-action="theme-set" data-v="' + o[0] + '" aria-pressed="' + (themePref() === o[0]) + '">' + o[1] + '</button>').join('') + '</div><p class="hint">Auto follows your phone. Saved on this device only.</p></section>' +
       '<section class="card"><h3>Print sheets</h3><p class="muted">Take a paper game sheet or season grid to the field, then enter the numbers later.</p><a class="btn block" href="#print">Open printable sheets</a></section>' +
       edit + sec + backup + (danger ? '<section class="card"><h3>Reset</h3>' + danger + '</section>' : '') +
-      '<section class="card"><h3>The fine print</h3><p class="muted small">Dugout Diary is an independent project. It is not affiliated with or endorsed by Little League International, GameChanger, Sports Connect, or any league. Stats are self-reported by families and are not official records. Accessibility: large tap targets, keyboard navigation, and screen reader labels are built in; tell us if something is hard to use.</p></section>' + footer();
+      '<section class="card"><h3>The fine print</h3><p class="muted small">Dugout Diary is a product of Plate 450, an independent project. It is not affiliated with or endorsed by Little League International, GameChanger, Sports Connect, or any league. Stats are self-reported by families and are not official records. Accessibility: large tap targets, keyboard navigation, and screen reader labels are built in; tell us if something is hard to use.</p></section>' + footer();
   }
 
   function viewCard(c) {
@@ -920,7 +923,7 @@
       '<h4>Backups</h4><p>Backup files are saved wherever you choose. They contain everything in the diary, so store them somewhere private.</p>' +
       '<h4>Changes and questions</h4><p>If this notice changes in a meaningful way, the version number above changes and you will be asked to agree again when you add a player. ' + contact + '</p></section>' +
       '<section class="card terms"><h3>Terms of use</h3>' +
-      '<ol><li><b>What this is.</b> Dugout Diary is a free tool for keeping your own baseball or softball stats. By using it you agree to these terms.</li>' +
+      '<ol><li><b>What this is.</b> Dugout Diary is a free tool provided by Plate 450 for keeping your own baseball or softball stats. By using it you agree to these terms.</li>' +
       '<li><b>Families first.</b> Younger players should set up and use the app with a parent or guardian, who is responsible for what is entered and shared.</li>' +
       '<li><b>Your data, your job.</b> Your stats live in your browser. Clearing browser data, switching phones, or private browsing can erase them. Please export backups. We cannot recover lost data.</li>' +
       '<li><b>Be kind and be careful.</b> Enter only information about yourself or your own child. Do not enter other people’s private details. Use a first name or nickname. Do not use the app to harass anyone, break the law, or try to disrupt or copy the site.</li>' +
@@ -975,7 +978,7 @@
       (byInning ? psFieldByInning() :
         '<div class="ps-row"><div class="ps-f ps-grow"><span>Position (circle)</span><div class="ps-line">' + psOpts(['P', 'C', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF']) + '</div></div>' + psBoxes(PS_FLD.concat(PS_CATCH), 'ps-narrow') + '</div><p class="ps-note">CS and CI are for catchers only. Catcher\u2019s interference also counts as an error (E).</p>') +
       '<h3 class="ps-h">NOTES <small>Best moment? One thing to work on?</small></h3><div class="ps-lines">' + (byInning ? '<div></div><div></div>' : '<div></div><div></div><div></div>') + '</div>' +
-      '<footer class="ps-foot">Enter these later at ' + esc(psSite()) + ' &rarr; Log tab. The boxes are in the same order as the Log screen.</footer></section>';
+      '<footer class="ps-foot">Dugout Diary by Plate 450 &middot; enter these later at ' + esc(psSite()) + ' &rarr; Log tab. The boxes are in the same order as the Log screen.</footer></section>';
   }
 
   function psGrid(kind, v) {
@@ -991,7 +994,7 @@
       '<div class="ps-info four">' + psField('Season', v.season) + psField('Team', v.team) + psField('Level', v.level) + psField('League / notes', '') + '</div>' +
       '<table class="ps-grid"><thead><tr><th>#</th><th class="wd">Date</th><th class="wd">Opponent</th>' + cols.map((c) => '<th>' + c + '</th>').join('') + '</tr></thead><tbody>' + rows + '</tbody></table>' +
       '<p class="ps-note">' + legend + '</p>' +
-      '<footer class="ps-foot">Enter each row later at ' + esc(psSite()) + ' &rarr; Log tab, in the same order as the columns.</footer></section>';
+      '<footer class="ps-foot">Dugout Diary by Plate 450 &middot; enter each row later at ' + esc(psSite()) + ' &rarr; Log tab, in the same order as the columns.</footer></section>';
   }
 
   function viewPrint(p) {
