@@ -1,8 +1,8 @@
 :root {
-  --bg: #1a1a18;
-  --card: #242422;
-  --card2: #2c2c2a;
-  --line: #3c3c38;
+  --bg: #121210;
+  --card: #2c2c2a;
+  --card2: #3a3a37;
+  --line: #6a675f;
   --chalk: #f5efe0;
   --muted: #ada99e;
   --faint: #86827a;
@@ -12,11 +12,11 @@
   --gold-bg: #ef9f27;
   --good: #a3c464;
   --bad: #e88d85;
-  --ov: rgba(0, 0, 0, 0.22);
-  --ov2: rgba(0, 0, 0, 0.32);
-  --navbg: rgba(26, 26, 24, 0.96);
+  --ov: rgba(0, 0, 0, 0.34);
+  --ov2: rgba(0, 0, 0, 0.45);
+  --navbg: rgba(18, 18, 16, 0.97);
   --tint: rgba(245, 239, 224, 0.1);
-  --line2: rgba(245, 239, 224, 0.16);
+  --line2: #78756c;
   --err-ink: #f6c3be;
   --warn-ink: #f6dca4;
   --on-good: #1a1a18;
@@ -479,3 +479,8 @@ a.cat { text-decoration: none; color: inherit; }
 
 html[data-theme=light] body { background-image: radial-gradient(1200px 400px at 50% -120px, rgba(239, 159, 39, 0.16), transparent 70%); }
 @media (prefers-color-scheme: light) { :root:not([data-theme=dark]) body { background-image: radial-gradient(1200px 400px at 50% -120px, rgba(239, 159, 39, 0.16), transparent 70%); } }
+
+/* Dark mode: clearer separation between page, cards and controls */
+:root:not([data-theme=light]) .card, :root:not([data-theme=light]) .notice { box-shadow: 0 1px 0 rgba(245, 239, 224, 0.06) inset, 0 6px 16px rgba(0, 0, 0, 0.45); border-width: 1.5px; }
+@media (prefers-color-scheme: light) { :root:not([data-theme=dark]) .card, :root:not([data-theme=dark]) .notice { box-shadow: none; border-width: 1px; } }
+html[data-theme=light] .card, html[data-theme=light] .notice { box-shadow: none; border-width: 1px; }
