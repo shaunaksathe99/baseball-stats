@@ -1163,6 +1163,114 @@
    "ans": 0,
    "why": "With a lead late in the game the biggest danger is a ball over your head that scores runs quickly. Playing deeper keeps everything in front of you and you give up only a single.",
    "tip": "Late with a lead? Keep it in front."
+  },
+  {
+   "id": "sco1",
+   "cat": "sco",
+   "lvl": 1,
+   "sit": {
+    "inn": 3,
+    "outs": 1,
+    "b": [
+     0,
+     0,
+     0
+    ],
+    "us": 2,
+    "them": 2,
+    "cnt": "",
+    "you": "SS"
+   },
+   "q": "The shortstop fields a ground ball and makes a good throw to first, but the runner simply beats the throw. How is the play scored?",
+   "opts": [
+    "A hit (or fielder’s choice): no assist and no error",
+    "An assist for the shortstop",
+    "An error on the shortstop"
+   ],
+   "ans": 0,
+   "why": "The runner was just faster than the throw, so the defense did nothing wrong. It is scored as a hit or fielder’s choice, and nobody gets an assist or an error.",
+   "tip": "Beat the throw? No A, no E."
+  },
+  {
+   "id": "sco2",
+   "cat": "sco",
+   "lvl": 2,
+   "sit": {
+    "inn": 5,
+    "outs": 1,
+    "b": [
+     0,
+     0,
+     1
+    ],
+    "us": 3,
+    "them": 4,
+    "cnt": "",
+    "you": "SS"
+   },
+   "q": "Runner on third. The shortstop fields a grounder and throws home, but the throw is wild and the runner scores. An accurate throw with ordinary effort would have gotten the out. How is it scored?",
+   "opts": [
+    "An error on the shortstop and no assist",
+    "An assist for the shortstop",
+    "No error: the runner just beat the throw"
+   ],
+   "ans": 0,
+   "why": "If an accurate throw with ordinary effort would have gotten the out, the bad throw is an error. There is no assist because the throw did not help record an out.",
+   "tip": "Wild throw, out was there? Error."
+  },
+  {
+   "id": "sco3",
+   "cat": "sco",
+   "lvl": 2,
+   "sit": {
+    "inn": 6,
+    "outs": 2,
+    "b": [
+     0,
+     0,
+     1
+    ],
+    "us": 4,
+    "them": 4,
+    "cnt": "",
+    "you": "C"
+   },
+   "q": "The third baseman makes a good throw home that beats the runner, but the catcher drops the ball and the runner is safe. How is it scored?",
+   "opts": [
+    "An assist for the thrower and an error on the catcher",
+    "An error on the thrower and no assist",
+    "No assist and no error: it is a hit"
+   ],
+   "ans": 0,
+   "why": "The thrower did his job: the throw beat the runner, so he earns the assist. The catcher should have held the ball, so the catcher gets the error.",
+   "tip": "Good throw, ball dropped? A and E."
+  },
+  {
+   "id": "sco4",
+   "cat": "sco",
+   "lvl": 3,
+   "sit": {
+    "inn": 7,
+    "outs": 1,
+    "b": [
+     0,
+     0,
+     1
+    ],
+    "us": 5,
+    "them": 5,
+    "cnt": "",
+    "you": "C"
+   },
+   "q": "Runner on third, one out. The shortstop fields a grounder and throws home. The catcher tags out the runner at the plate, but the batter reaches first. How are the fielders credited?",
+   "opts": [
+    "An assist for the shortstop and a putout for the catcher",
+    "No credit for anyone because the batter reached base",
+    "An error on the shortstop because the batter was safe"
+   ],
+   "ans": 0,
+   "why": "An out was recorded at the plate, so the shortstop who threw gets an assist and the catcher who tagged the runner gets the putout. The batter is on with a fielder’s choice.",
+   "tip": "Out at home: assist + putout."
   }
  ],
  "trivia": [

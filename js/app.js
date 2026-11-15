@@ -4,6 +4,7 @@
 
   const S = window.Stats;
   const Sim = window.Sim;
+  const Rv = window.Review;
   const Content = window.Content;
   // Site content (scenarios, trivia, quizzes, articles, glossary, directory) comes from content/content.js.
   // If this device has Preview turned on in the Content Studio, the unpublished draft is shown instead.
@@ -25,7 +26,7 @@
   function setTheme(v) { try { if (v === 'auto') localStorage.removeItem(THEME_KEY); else localStorage.setItem(THEME_KEY, v); } catch (e) { /* private mode: applies until reload */ } applyTheme(); }
   try { window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', applyTheme); } catch (e) { /* older browsers */ }
   applyTheme();
-  const ext = { views: {}, actions: {}, forms: {}, homeCard: null };
+  const ext = { views: {}, actions: {}, forms: {}, homeCard: null, onSave: null, aboutCard: null };
   const KEY = 'dugoutDiary.v1';
   const VERSION = '0.1.0';
   const LEVELS = ['Tee Ball', 'Coach Pitch', 'Minors', 'Majors', 'Intermediate (50/70)', 'Juniors', 'Seniors', 'Travel / Club', 'Middle School', 'High School', 'College', 'Other'];
@@ -49,8 +50,8 @@
   function str(v, max) { return String(v == null ? '' : v).replace(/[\u0000-\u001f\u007f<>]/g, '').trim().slice(0, max); }
   function cleanId(v) { v = String(v || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 32); return v || uid('x'); }
   const B32 = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
-  const TERMS_V = 2;
-  const CONTACT_EMAIL = '';   // set this before launch; shown on the Terms & Privacy page
+  const TERMS_V = 3;
+  const CONTACT_EMAIL = 'Contact.Plate450@gmail.com';   // shown as "Contact Us" in the footer and on the Terms & Privacy page
   const hasCrypto = !!(window.crypto && window.crypto.subtle && window.crypto.getRandomValues);
   function randBytes(n) { const a = new Uint8Array(n); if (window.crypto && window.crypto.getRandomValues) window.crypto.getRandomValues(a); else for (let i = 0; i < n; i++) a[i] = Math.floor(Math.random() * 256); return a; }
   function randChars(n) { let o = ''; randBytes(n).forEach((b) => { o += B32[b % 32]; }); return o; }
@@ -92,7 +93,7 @@
   /* ---------- storage ---------- */
   let memoryOnly = false;
 
-  function emptyDb() { return { v: 1, active: null, players: [], terms: null, bk: '', bkN: 0, snooze: '' }; }
+  function emptyDb() { return { v: 1, active: null, players: [], terms: null, cons: null, bk: '', bkN: 0, snooze: '' }; }
 
   // CS and CI only exist for a catcher; clear them for any other position.
   function catcherOnly(f, pos) { if (pos !== 'C') { f.cs = 0; f.ci = 0; } return f; }
@@ -113,6 +114,7 @@
     const fld = fi.length
       ? S.cleanSection({ po: fi.reduce((n, r) => n + r.po, 0), a: fi.reduce((n, r) => n + r.a, 0), e: fi.reduce((n, r) => n + r.e, 0), cs: fi.reduce((n, r) => n + r.cs, 0), ci: fi.reduce((n, r) => n + r.ci, 0) }, S.FLD_KEYS)
       : catcherOnly(S.cleanSection(g.fld, S.FLD_KEYS), g.pos);
+    const us = Rv.cleanScore(g.us), them = Rv.cleanScore(g.them), scored = us !== null && them !== null;
     return {
       id: cleanId(g.id),
       created: Number(g.created) || 0,
@@ -121,7 +123,9 @@
       team: str(g.team, 40),
       level: LEVELS.indexOf(g.level) >= 0 ? g.level : '',
       opp: str(g.opp, 40),
-      result: ['W', 'L', 'T'].indexOf(g.result) >= 0 ? g.result : '',
+      result: scored ? Rv.resultOf(us, them) : (['W', 'L', 'T'].indexOf(g.result) >= 0 ? g.result : ''),
+      us: scored ? us : null, them: scored ? them : null,
+      rv: Rv.clean(g.rv),
       pos: fi.length ? '' : (POSITIONS.indexOf(g.pos) >= 0 ? g.pos : ''),
       fi: fi,
       bat: S.cleanSection(g.bat, S.BAT_KEYS),
@@ -175,7 +179,7 @@
       innings: Number(p.innings) === 7 ? 7 : 6, iq: cleanIq(p.iq),
       created: Number(p.created) || Date.now(),
       last: { season: str(last.season, 30), team: str(last.team, 40), level: LEVELS.indexOf(last.level) >= 0 ? last.level : '' },
-      games: games, goals: goals
+      games: games, goals: goals, plan: Rv.note(p.plan)
     };
   }
   function sanitizeDb(o) {
@@ -195,6 +199,8 @@
     out.bk = isDay(o.bk) ? String(o.bk) : ''; out.bkN = S.int(o.bkN, 100000); out.snooze = isDay(o.snooze) ? String(o.snooze) : '';
     const t = o.terms && typeof o.terms === 'object' ? o.terms : null;
     if (t && Number(t.v) >= 1 && /^\d{4}-\d{2}-\d{2}$/.test(String(t.at))) out.terms = { v: Math.min(99, Number(t.v)), at: String(t.at) };
+    const cn = o.cons && typeof o.cons === 'object' ? o.cons : null;
+    if (cn && Number(cn.v) >= 1 && /^\d{4}-\d{2}-\d{2}$/.test(String(cn.at))) out.cons = { v: Math.min(99, Number(cn.v)), at: String(cn.at) };
     out.active = ids[o.active] ? o.active : (out.players[0] ? out.players[0].id : null);
     return out;
   }
@@ -215,8 +221,17 @@
       return emptyDb();
     }
   }
-  function save() {
+  function save(quiet) {
     try { localStorage.setItem(KEY, JSON.stringify(db)); } catch (e) { memoryOnly = true; renderBanner(); }
+    if (!quiet && ext.onSave) { try { ext.onSave(); } catch (e2) { /* sync problems never block saving */ } }
+  }
+  // Replaces the whole diary (used by online sync). quiet = do not treat it as a local edit.
+  function setDb(next, quiet) {
+    const d = sanitizeDb(next);
+    if (!d.terms && db.terms) d.terms = db.terms;
+    if (!d.cons && db.cons) d.cons = db.cons;
+    if (!d.players.some((x) => x.id === db.active)) d.active = d.players[0] ? d.players[0].id : null; else d.active = db.active;
+    db = d; save(quiet); if (!quiet) render();
   }
 
   let db = load();
@@ -278,11 +293,12 @@
   function player() { return db.players.find((p) => p.id === db.active) || null; }
 
   /* ---------- drafts (the log form) ---------- */
+  function blankRv(i) { return { i: i, well: [], work: [], wn: '', kn: '' }; }
   function newDraft(p) {
     const last = (p && p.last) || {};
     return {
       id: null, created: 0, date: today(), season: last.season || defaultSeason(), team: last.team || '', level: last.level || '',
-      opp: '', result: '', pos: '',
+      opp: '', result: '', us: '', them: '', rv: [blankRv(0)], pos: '',
       bat: blank(S.BAT_KEYS),
       pit: { ip: '', h: 0, r: 0, er: 0, bb: 0, k: 0, pitches: 0 },
       fld: blank(S.FLD_KEYS), fldMode: 'game', fi: []
@@ -291,6 +307,8 @@
   function draftFromGame(g) {
     return {
       id: g.id, created: g.created, date: g.date, season: g.season, team: g.team, level: g.level, opp: g.opp, result: g.result, pos: g.pos,
+      us: g.us === null || g.us === undefined ? '' : String(g.us), them: g.them === null || g.them === undefined ? '' : String(g.them),
+      rv: (g.rv && g.rv.some((e) => e.i === 0) ? [] : [blankRv(0)]).concat((g.rv || []).map((e) => ({ i: e.i, well: e.well.slice(), work: e.work.slice(), wn: e.wn, kn: e.kn }))),
       bat: Object.assign({}, g.bat),
       pit: { ip: g.pit.outs ? S.fmtInnings(g.pit.outs) : '', h: g.pit.h, r: g.pit.r, er: g.pit.er, bb: g.pit.bb, k: g.pit.k, pitches: g.pit.pitches },
       fld: Object.assign({}, g.fld), fldMode: g.fi && g.fi.length ? 'inning' : 'game', fi: (g.fi || []).map((r) => Object.assign({}, r))
@@ -377,7 +395,7 @@
     const b = S.batting(pool), pi = S.pitching(pool, p.innings), f = S.fielding(pool);
     const pick = (o, keys) => { const r = {}; keys.forEach((k) => { r[k] = o[k]; }); return r; };
     return {
-      v: 1, id: p.pid, n: p.name, l: withCity ? placeText(p) : '', k: label, t: last.team || '', lv: last.level || '', g: pool.length, one: one ? 1 : 0, i: p.innings,
+      v: 1, id: '', n: p.name, l: withCity ? placeText(p) : '', k: label, t: last.team || '', lv: last.level || '', g: pool.length, one: one ? 1 : 0, i: p.innings,
       bat: pick(b, S.BAT_KEYS), pit: pick(pi, S.PIT_KEYS), fld: pick(f, S.FLD_KEYS),
       b: S.badges(p.games).filter((x) => x.earned).map((x) => x.id)
     };
@@ -389,7 +407,7 @@
     if (!name) return null;
     const ids = S.badgeIds();
     return {
-      v: 1, id: cleanPid(o.id), n: name, l: str(o.l, 60), k: str(o.k, 30), t: str(o.t, 40), lv: LEVELS.indexOf(o.lv) >= 0 ? o.lv : '',
+      v: 1, id: '', n: name, l: str(o.l, 60), k: str(o.k, 30), t: str(o.t, 40), lv: LEVELS.indexOf(o.lv) >= 0 ? o.lv : '',
       g: S.int(o.g, 3000), one: o.one ? 1 : 0, i: Number(o.i) === 7 ? 7 : 6,
       bat: S.cleanSection(o.bat, S.BAT_KEYS), pit: S.cleanSection(o.pit, S.PIT_KEYS), fld: S.cleanSection(o.fld, S.FLD_KEYS),
       b: (Array.isArray(o.b) ? o.b : []).filter((x, i, a) => ids.indexOf(x) >= 0 && a.indexOf(x) === i).slice(0, 20)
@@ -503,7 +521,7 @@
       $('#bar-text').textContent = n + ' of ' + bs.length + ' badges';
     }
     document.querySelectorAll('.tabs a').forEach((a) => {
-      if (a.dataset.tab === (tab === 'print' ? 'log' : tab === 'terms' || tab === 'studio' ? 'about' : tab === 'iq' ? 'learn' : tab)) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
+      if (a.dataset.tab === (tab === 'print' ? 'log' : tab === 'terms' || tab === 'studio' ? 'about' : tab === 'iq' ? 'learn' : tab === 'plan' ? 'career' : tab)) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
     });
     renderBanner();
   }
@@ -527,7 +545,7 @@
       '<button class="btn block" type="submit">' + (p ? 'Save player card' : 'Create player card') + '</button>' +
       '<p class="hint">We never ask for birthdays, emails, phone numbers, or photos.</p></form>';
   }
-  function footer() { return '<p class="footer">&copy; 2026 Plate 450 &middot; Dugout Diary v' + VERSION + ' &middot; Free for every ballplayer &middot; <a href="#terms">Terms &amp; Privacy</a></p>'; }
+  function footer() { return '<p class="footer">&copy; 2026 Plate 450 &middot; Dugout Diary v' + VERSION + ' &middot; Free for every ballplayer &middot; <a href="#terms">Terms &amp; Privacy</a>' + (CONTACT_EMAIL ? ' &middot; <a href="mailto:' + esc(CONTACT_EMAIL) + '">Contact Us</a>' : '') + '</p>'; }
   function emptyState(icon, title, text, btn) {
     return '<div class="card empty"><div class="big" aria-hidden="true">' + icon + '</div><h3>' + esc(title) + '</h3><p>' + esc(text) + '</p>' + (btn || '') + '</div>';
   }
@@ -536,7 +554,12 @@
     if (S.hasBat(g)) lines.push('<div class="line">⚾ ' + esc(batText(g.bat)) + '</div>');
     if (S.hasPit(g)) lines.push('<div class="line">🔥 ' + esc(pitText(g.pit)) + '</div>');
     if (S.hasFld(g)) lines.push('<div class="line">🧤 ' + esc(fldLine(g)) + '</div>');
+    if (Rv.has(g)) {
+      const cnt = (k) => { const s = {}; g.rv.forEach((e) => e[k].forEach((id) => { s[id] = 1; })); return Object.keys(s).length; };
+      lines.push('<div class="line">📝 Review: ' + cnt('well') + ' went well &middot; ' + cnt('work') + ' to work on</div>');
+    }
     const head = (g.result ? '<span class="pill ' + g.result + '">' + g.result + '</span>' : '') +
+      (g.us !== null && g.us !== undefined ? '<b class="gscore">' + g.us + '&ndash;' + g.them + '</b> &middot; ' : '') +
       esc(fmtDate(g.date)) + (g.opp ? ' &middot; vs ' + esc(g.opp) : '');
     const sub = [g.season, g.team, g.level].filter(Boolean).map(esc).join(' &middot; ');
     return '<li><div class="meta">' + head + '</div>' + lines.join('') + '<div class="meta">' + sub + '</div>' +
@@ -546,10 +569,10 @@
   /* ---------- views ---------- */
   function viewHome(p) {
     if (!p) {
-      return '<section class="card hero"><p class="eyebrow">Free &middot; Private &middot; No sign-up</p>' +
+      return '<section class="card hero"><p class="eyebrow">Free &middot; Private &middot; No sign-up needed</p>' +
         '<h2>Build your baseball career, one game at a time.</h2>' +
         '<p class="muted">Log games in under a minute, watch your batting, pitching and fielding numbers grow, and earn badges along the way.</p>' +
-        '<div class="stats"><div class="stat"><b>3</b><span>Stat types</span></div><div class="stat"><b>0</b><span>Emails asked</span></div><div class="stat"><b>Free</b><span>No paywall</span></div></div></section>' +
+        '<div class="stats"><div class="stat"><b>3</b><span>Stat types</span></div><div class="stat"><b>Opt-in</b><span>Online sign-in</span></div><div class="stat"><b>Free</b><span>No paywall</span></div></div></section>' +
         '<section class="card"><h3>Start your player card</h3>' + playerForm(null) + '</section>' +
         '<section class="card"><h3>Test your Game IQ</h3><p class="muted">Try five real game situations: what would you do? No sign-up needed.</p><a class="btn ghost block" href="#iq">Try a Game IQ round &rarr;</a></section>' +
         (ext.homeCard ? ext.homeCard(null) : '') + '<section class="card"><h3>How it works</h3><ol class="steps">' +
@@ -584,6 +607,31 @@
       '<button type="button" data-action="step" data-d="1" aria-label="Increase ' + esc(label) + '">+</button></div></div>';
   }
 
+  function scoreHint(d) {
+    const us = Rv.cleanScore(d.us), them = Rv.cleanScore(d.them);
+    if (us !== null && them !== null) return 'Saved as a <b>' + { W: 'win', L: 'loss', T: 'tie' }[Rv.resultOf(us, them)] + '</b> (' + us + '&ndash;' + them + '). The result is filled in from the score.';
+    return 'Add both scores and the result fills itself in. Or leave them blank and pick a result above.';
+  }
+  function rvChips(idx, kind, sel) {
+    return Rv.GROUPS.map((g) => '<div class="rv-grp"><span class="rv-gl">' + esc(g[1]) + '</span><div class="chips rv-chips">' +
+      Rv.TOPICS.filter((x) => x.group === g[0]).map((x) => '<button type="button" class="chip' + (sel.indexOf(x.id) >= 0 ? ' on' : '') + '" data-action="rv-tag" data-idx="' + idx + '" data-kind="' + kind + '" data-id="' + x.id + '" aria-pressed="' + (sel.indexOf(x.id) >= 0) + '">' + esc(x.label) + '</button>').join('') + '</div></div>').join('');
+  }
+  function revEditor(d) {
+    const entries = d.rv.map((e, idx) => {
+      const title = e.i === 0
+        ? '<h3 class="sub-h">Whole game</h3>'
+        : '<div class="row between"><div class="field" style="margin:0"><label for="rv-i-' + idx + '">Inning</label><select id="rv-i-' + idx + '" data-rvi="1" data-idx="' + idx + '">' +
+          Array.from({ length: 12 }, (_, k) => '<option value="' + (k + 1) + '"' + (k + 1 === e.i ? ' selected' : '') + '>' + (k + 1) + '</option>').join('') + '</select></div>' +
+          '<button type="button" class="btn ghost small" data-action="rv-remove" data-idx="' + idx + '" aria-label="Remove inning ' + e.i + ' notes">✕ Remove</button></div>';
+      return '<div class="rv-entry">' + title +
+        '<h4>✅ What went well</h4><details' + (e.well.length ? ' open' : '') + '><summary>Pick topics</summary>' + rvChips(idx, 'well', e.well) + '</details>' +
+        '<label class="sr" for="rv-wn-' + idx + '">Notes on what went well</label><textarea id="rv-wn-' + idx + '" rows="2" maxlength="' + Rv.NOTE_MAX + '" data-rv="wn" data-idx="' + idx + '" placeholder="In my own words: what did I do well?">' + esc(e.wn) + '</textarea>' +
+        '<h4>🎯 What to work on</h4><details' + (e.work.length ? ' open' : '') + '><summary>Pick topics</summary>' + rvChips(idx, 'work', e.work) + '</details>' +
+        '<label class="sr" for="rv-kn-' + idx + '">Notes on what to work on</label><textarea id="rv-kn-' + idx + '" rows="2" maxlength="' + Rv.NOTE_MAX + '" data-rv="kn" data-idx="' + idx + '" placeholder="What do I want to fix, and how?">' + esc(e.kn) + '</textarea></div>';
+    }).join('');
+    return '<p class="hint">Look back at the game like a pro. Tap topics and add a note on what went well and what to work on. Your <a href="#plan">Improvement Plan</a> turns these into a progress chart you can share with a coach.</p>' + entries +
+      (d.rv.length < Rv.MAX_ENTRIES ? '<button type="button" class="btn ghost block" data-action="rv-add">+ Add notes for an inning</button>' : '');
+  }
   function viewLog(p) {
     if (!ui.draft) ui.draft = newDraft(p);
     const d = ui.draft, editing = !!d.id, tab = ui.logTab;
@@ -626,6 +674,7 @@
       }
     }
     const segBtn = (k, label) => '<button type="button" data-action="seg" data-grp="logTab" data-val="' + k + '" aria-pressed="' + (tab === k) + '">' + label + '</button>';
+    if (tab === 'rev') fields = revEditor(d);
     return editBar + '<section class="card"><h2>' + (editing ? 'Edit game' : 'Log a game') + '</h2><p class="muted">For ' + esc(p.name) + '. Fill in only what applies. Logging from paper? <a href="#print">Print a game sheet</a> for next time.</p>' +
       '<div class="field"><label for="f-date">Game date</label><input id="f-date" type="date" data-field="date" value="' + esc(d.date) + '"></div>' +
       '<div class="grid2"><div class="field"><label for="f-season">Season</label><input id="f-season" type="text" maxlength="30" data-field="season" value="' + esc(d.season) + '" placeholder="Spring 2026"></div>' +
@@ -634,8 +683,11 @@
       LEVELS.map((l) => '<option' + (l === d.level ? ' selected' : '') + '>' + esc(l) + '</option>').join('') + '</select></div>' +
       '<div class="field"><label for="f-result">Result</label><select id="f-result" data-field="result">' +
       [['', 'Skip'], ['W', 'Win'], ['L', 'Loss'], ['T', 'Tie']].map((x) => '<option value="' + x[0] + '"' + (x[0] === d.result ? ' selected' : '') + '>' + x[1] + '</option>').join('') + '</select></div></div>' +
-      '<div class="field"><label for="f-opp">Opponent <span class="muted">(optional)</span></label><input id="f-opp" type="text" maxlength="40" data-field="opp" value="' + esc(d.opp) + '" placeholder="Team name"></div></section>' +
-      '<section class="card"><div class="seg" role="group" aria-label="Stat type">' + segBtn('bat', 'Batting') + segBtn('pit', 'Pitching') + segBtn('fld', 'Fielding') + '</div>' + fields + '<p class="live" id="live-sum" aria-live="polite">' + esc(liveText(d)) + '</p></section>' +
+      '<div class="field"><label for="f-opp">Opponent <span class="muted">(optional)</span></label><input id="f-opp" type="text" maxlength="40" data-field="opp" value="' + esc(d.opp) + '" placeholder="Team name"></div>' +
+      '<div class="grid2"><div class="field"><label for="f-us">Final score: us</label><input id="f-us" type="number" inputmode="numeric" min="0" max="99" data-field="us" value="' + esc(d.us) + '" placeholder="0"></div>' +
+      '<div class="field"><label for="f-them">Final score: them</label><input id="f-them" type="number" inputmode="numeric" min="0" max="99" data-field="them" value="' + esc(d.them) + '" placeholder="0"></div></div>' +
+      '<p class="hint" id="score-hint" aria-live="polite">' + scoreHint(d) + '</p></section>' +
+      '<section class="card"><div class="seg" role="group" aria-label="Stat type">' + segBtn('bat', 'Batting') + segBtn('pit', 'Pitching') + segBtn('fld', 'Fielding') + segBtn('rev', 'Review') + '</div>' + fields + '<p class="live" id="live-sum" aria-live="polite">' + esc(liveText(d)) + '</p></section>' +
       '<div class="error" id="log-errors" hidden role="alert"></div>' +
       '<div class="row wrap"><button class="btn grow" data-action="save-game">' + (editing ? 'Save changes' : 'Save game') + '</button>' +
       (editing ? '<button class="btn ghost" data-action="cancel-edit">Cancel</button>' : '') + '</div>';
@@ -692,7 +744,8 @@
     const label = ui.careerSeason || 'All time';
     const grp = S.groups(p.games);
 
-    const shareCta = '<section class="card"><div class="row between"><div><b>Show off your card</b><br><span class="muted small">A shareable image and link for friends and family</span></div><button class="btn small" data-action="share-open">Share</button></div></section>';
+    const planCta = '<section class="card"><div class="row between"><div><b>My improvement plan</b><br><span class="muted small">See which habits are fixed and which still need work</span></div><button class="btn small" data-action="go" data-to="plan">Open</button></div></section>';
+    const shareCta = planCta + '<section class="card"><div class="row between"><div><b>Show off your card</b><br><span class="muted small">A shareable image and link for friends and family</span></div><button class="btn small" data-action="share-open">Share</button></div></section>';
     const path = shareCta + '<section class="card"><h3>My path</h3><ul class="path">' + grp.map((g) =>
       '<li><b>' + esc(g.season) + (g.level ? '<span class="level">' + esc(g.level) + '</span>' : '') + '</b><span class="muted small">' + (g.team ? esc(g.team) + ' &middot; ' : '') + plural(g.games.length, 'game') + '</span></li>').join('') + '</ul></section>';
 
@@ -776,13 +829,13 @@
       (db.players.length ? '<button class="btn danger block" data-action="reset-all">Erase everything on this device</button>' : '');
     return '<section class="card hero"><p class="eyebrow">About</p><h2>A free diary for young ballplayers</h2>' +
       '<p class="muted">Dugout Diary helps players and parents keep a lasting record of batting, pitching and fielding across every season, from the first tee ball swing and beyond. It is free, with no paywall and no ads.</p></section>' +
-      '<section class="card"><h3>Your privacy</h3><p><b>What is stored:</b> a name or nickname, a city and state or ZIP code, the stats you enter, a random Player ID, and (if you choose) a PIN. All of it stays on your device. We have no server and no accounts.</p>' +
-      '<p><b>What we never ask for:</b> birthdates, emails, phone numbers, photos, passwords, or payment info.</p>' +
+      '<section class="card"><h3>Your privacy</h3><p><b>What is stored:</b> a name or nickname, a city and state or ZIP code, the stats you enter, a random Player ID, and (if you choose) a PIN. All of it stays on your device. By default nothing leaves your device. If a parent or guardian chooses to sign in, the diary is also saved online under their email so it can follow them across devices.</p>' +
+      '<p><b>What we never ask for:</b> birthdates, phone numbers, photos, passwords, or payment info. An email address is asked for only if a parent or guardian turns on online saving.</p>' +
       '<p class="muted small">Clearing your browser data erases it, so keep a backup. Read the full <a href="#terms">Terms &amp; Privacy Notice</a>.</p></section>' +
       '<section class="card"><h3>Coaches, trainers &amp; teams</h3><p class="muted">Find a trainer, clinic or travel ball team, or ask to be listed.</p><div class="row wrap"><a class="btn grow" href="#learn/directory">Browse the directory</a><a class="btn ghost grow" href="#find-list">Get listed</a></div><p class="hint"><a href="#studio">Site editor (Content Studio)</a></p></section>' +
       '<section class="card"><h3>Appearance</h3><div class="seg" role="group" aria-label="Theme">' + [['auto', 'Auto'], ['light', 'Light'], ['dark', 'Dark']].map((o) => '<button data-action="theme-set" data-v="' + o[0] + '" aria-pressed="' + (themePref() === o[0]) + '">' + o[1] + '</button>').join('') + '</div><p class="hint">Auto follows your phone. Saved on this device only.</p></section>' +
       '<section class="card"><h3>Print sheets</h3><p class="muted">Take a paper game sheet or season grid to the field, then enter the numbers later.</p><a class="btn block" href="#print">Open printable sheets</a></section>' +
-      edit + sec + backup + (danger ? '<section class="card"><h3>Reset</h3>' + danger + '</section>' : '') +
+      edit + sec + (ext.aboutCard ? ext.aboutCard(p) : '') + backup + (danger ? '<section class="card"><h3>Reset</h3>' + danger + '</section>' : '') +
       '<section class="card"><h3>The fine print</h3><p class="muted small">Dugout Diary is a product of Plate 450, an independent project. It is not affiliated with or endorsed by Little League International, GameChanger, Sports Connect, or any league. Stats are self-reported by families and are not official records. Accessibility: large tap targets, keyboard navigation, and screen reader labels are built in; tell us if something is hard to use.</p></section>' + footer();
   }
 
@@ -908,24 +961,24 @@
   }
 
   function viewTerms() {
-    const contact = CONTACT_EMAIL ? 'Email us at <a href="mailto:' + esc(CONTACT_EMAIL) + '">' + esc(CONTACT_EMAIL) + '</a>.' : 'Contact details are listed on the site where you found this app.';
+    const contact = CONTACT_EMAIL ? '<a href="mailto:' + esc(CONTACT_EMAIL) + '">Contact Us</a> with any questions.' : 'Contact details are listed on the site where you found this app.';
     return '<section class="card hero"><p class="eyebrow">Version ' + TERMS_V + ' &middot; In plain English</p><h2>Terms &amp; Privacy</h2>' +
       '<p class="muted">Dugout Diary is a free stat diary for baseball and softball players of all ages, with their families and coaches. There are no ads, no purchases, no chat, no public profiles, and no tracking. It is built to be suitable for everyone, including our youngest ballplayers.</p></section>' +
       '<section class="card terms"><h3>Privacy notice</h3>' +
-      '<p><b>The short version:</b> everything you enter stays in your own browser. We do not run a server that receives it, and we cannot see it.</p>' +
+      '<p><b>The short version:</b> by default, everything you enter stays in your own browser and we cannot see it. A parent or guardian can optionally sign in with an email address to save the diary online. Only then is it stored on a server.</p>' +
       '<h4>Stored only on your device</h4><ul><li>A name or nickname, and a city and state or ZIP code</li><li>The games and stats you enter, and your goals</li><li>A random Player ID made on your device</li><li>If you choose one, a scrambled (hashed) PIN and recovery code</li></ul>' +
-      '<h4>Never collected</h4><ul><li>Birthdates or ages</li><li>Emails, phone numbers, or home addresses</li><li>Photos, videos, or microphone and camera access</li><li>Precise location (GPS)</li><li>Payment information</li><li>Advertising, analytics, cookies, or third-party trackers, fonts, or scripts</li></ul>' +
-      '<h4>Children</h4><p>Because personal information stays on the device and nothing is sent to us, we do not collect personal information from anyone, including children. There are no accounts, no messaging, and no way for strangers to contact a player. A parent or guardian can erase everything at any time from About &rarr; Erase everything on this device. We encourage younger players to use a first name or nickname and to set the app up with a parent or guardian.</p>' +
+      '<h4>Never collected</h4><ul><li>Birthdates or ages</li><li>Phone numbers or home addresses, and any email address unless a parent or guardian signs in (see Online accounts)</li><li>Photos, videos, or microphone and camera access</li><li>Precise location (GPS)</li><li>Payment information</li><li>Advertising, analytics, cookies, or third-party trackers, fonts, or scripts</li></ul>' +
+      '<h4>Children</h4><p>By default personal information stays on the device and nothing is sent to us. Online accounts are for parents and guardians (18 or older) only: a player under 13 must never create an account or enter their own email. The only account information stored is the parent or guardian\u2019s email address. There is no messaging, and no way for strangers to contact a player. A parent or guardian can erase everything at any time from About &rarr; Erase everything on this device. We encourage younger players to use a first name or nickname and to set the app up with a parent or guardian.</p>' +
       '<h4>Hosting</h4><p>The pages are delivered by a web host (currently GitHub Pages). Like any website, the host may record technical details such as an IP address when a page is requested. We do not receive or use those logs, and the app does not send your stats to the host.</p>' +
-      '<h4>Sharing</h4><p>Sharing is your choice. A share card (image or link) contains only what is shown on the card: the name or nickname, optional city and state, the stats you picked, and the random Player ID. A card link holds its data inside the link itself, so anyone who has the link can see the card. Share with people you trust, and think twice before posting publicly.</p>' +
+      '<h4>Sharing</h4><p>Sharing is your choice. A share card (image or link) contains only what is shown on the card: the name or nickname, optional city and state, and the stats you picked. It never includes your Player ID. A card link holds its data inside the link itself, so anyone who has the link can see the card. Share with people you trust, and think twice before posting publicly.</p>' +
       '<h4>Player ID and PIN</h4><p>The Player ID keeps players with the same name apart. A PIN keeps teammates and siblings out of a diary on a shared device. It is a privacy lock, not encryption: someone with technical skill and access to your device can still reach the data stored in the browser. Write down your recovery code, because we cannot reset a PIN for you.</p>' +
       '<h4>Directory of trainers, coaches and teams</h4><p>The Learn section includes a directory of trainers, coaches, clinics, facilities and travel ball teams. Listings are added by the site owner at the request of the businesses and teams themselves, and contain business contact details only (no player information). We do not run background checks, verify credentials or results, or endorse anyone listed, and we are not part of any agreement between you and a listing. Do your own research, meet in public or with other families, and never let a child arrange anything alone: a parent or guardian should always make the contact. Links go to outside websites that have their own rules and privacy practices.</p>' +
-      '<h4>Backups</h4><p>Backup files are saved wherever you choose. They contain everything in the diary, so store them somewhere private.</p>' +
+      '<h4>Online accounts (optional)</h4><p>If a parent or guardian signs in, we store their email address and a copy of the diary (names or nicknames, optional city and state or ZIP code, stats, goals, game reviews, the random Player ID and any PIN hash) so it can sync between devices. It is stored with Supabase, a hosting provider, and is readable only by that account. We do not sell it, show ads with it, or share it with anyone else. To start, the person is asked to confirm they are a parent or guardian aged 18 or older, and a one-time approval code is emailed to that address. We keep a record of the date and version of the Terms they agreed to. We cannot confirm who owns an email address, so please use your own and never give the code to a child unless you have approved the account. If we learn that an account was made without a parent or guardian\u2019s permission, we will delete it. One account holds every player in the family. A parent or guardian can delete the online copy and account at any time from About &rarr; Delete my online account, and can contact us to ask what is stored or to have it removed. Signing in is never required to use the app.</p><h4>Backups</h4><p>Backup files are saved wherever you choose. They contain everything in the diary, so store them somewhere private.</p>' +
       '<h4>Changes and questions</h4><p>If this notice changes in a meaningful way, the version number above changes and you will be asked to agree again when you add a player. ' + contact + '</p></section>' +
       '<section class="card terms"><h3>Terms of use</h3>' +
       '<ol><li><b>What this is.</b> Dugout Diary is a free tool provided by Plate 450 for keeping your own baseball or softball stats. By using it you agree to these terms.</li>' +
       '<li><b>Families first.</b> Younger players should set up and use the app with a parent or guardian, who is responsible for what is entered and shared.</li>' +
-      '<li><b>Your data, your job.</b> Your stats live in your browser. Clearing browser data, switching phones, or private browsing can erase them. Please export backups. We cannot recover lost data.</li>' +
+      '<li><b>Your data, your job.</b> Unless a parent or guardian signs in to save online, your stats live in your browser. Clearing browser data, switching phones, or private browsing can erase them. Please export backups. We cannot recover lost data.</li>' +
       '<li><b>Be kind and be careful.</b> Enter only information about yourself or your own child. Do not enter other people’s private details. Use a first name or nickname. Do not use the app to harass anyone, break the law, or try to disrupt or copy the site.</li>' +
       '<li><b>Listings are not endorsements.</b> The directory is a convenience. We do not vet, rank or guarantee the people and teams in it, and you deal with them at your own risk. Listings are for adults to read, and parents or guardians make all contact on behalf of children.</li>' +
       '<li><b>Not official.</b> Stats are self-reported and not official league records. Check with your league for official numbers.</li>' +
@@ -1123,7 +1176,12 @@
     if (sec.ipBad) errs.push('Innings pitched should look like 3 1/3, 3 2/3, or 4 (3.1 and 3.2 work too).');
     const vf = d.fldMode === 'inning' ? S.validateFi(d.fi) : { errors: [], warnings: [] };
     vf.errors.forEach((m) => errs.push(m));
-    if (!S.anyPositive(sec.bat) && !S.anyPositive(sec.pit) && !S.anyPositive(sec.fld) && !sec.fi.length) errs.push('Enter at least one stat before saving.');
+    const sUs = Rv.cleanScore(d.us), sThem = Rv.cleanScore(d.them);
+    if ((String(d.us).trim() !== '' || String(d.them).trim() !== '') && (sUs === null || sThem === null)) errs.push('Enter both final scores (0 to 99), or leave both blank.');
+    const rvIn = d.rv.filter((e) => e.well.length || e.work.length || e.wn.trim() || e.kn.trim());
+    const rvInn = rvIn.map((e) => e.i);
+    if (rvInn.some((v, k) => rvInn.indexOf(v) !== k)) errs.push('Two review notes are for the same inning. Pick different innings or remove one.');
+    if (!S.anyPositive(sec.bat) && !S.anyPositive(sec.pit) && !S.anyPositive(sec.fld) && !sec.fi.length && sUs === null && !rvIn.length) errs.push('Enter at least one stat, a final score, or a review note before saving.');
     showErrors($('#log-errors'), errs);
     if (errs.length) return;
     const vc = d.fldMode === 'inning' ? [] : S.validateCatcher(sec.fld, d.pos);
@@ -1138,7 +1196,7 @@
     ui.ackKey = '';
 
     const before = earnedIds(p.games);
-    const game = cleanGame(Object.assign({ id: d.id || uid('g'), created: d.created || Date.now(), date: d.date, season: d.season, team: d.team, level: d.level, opp: d.opp, result: d.result, pos: d.fldMode === 'inning' ? '' : d.pos }, sec));
+    const game = cleanGame(Object.assign({ id: d.id || uid('g'), created: d.created || Date.now(), date: d.date, season: d.season, team: d.team, level: d.level, opp: d.opp, result: d.result, us: d.us, them: d.them, rv: d.rv, pos: d.fldMode === 'inning' ? '' : d.pos }, sec));
     const idx = p.games.findIndex((g) => g.id === game.id);
     if (idx >= 0) p.games[idx] = game; else p.games.push(game);
     p.last = { season: game.season, team: game.team, level: game.level };
@@ -1312,7 +1370,7 @@
     ext: ext, Sim: Sim, content: () => CONTENT, preview: () => PREVIEW, contactEmail: CONTACT_EMAIL, esc: esc,
     player: () => { const p = player(); return p && isUnlocked(p) ? p : null; },
     iqData: iqData, recordQuiz: recordQuiz, diamondSvg: diamondSvg, scoreboard: scoreboard, render: render, go: go, footer: footer, emptyState: emptyState,
-    flash: (m) => { ui.flash = m; }, openModal: openModal, closeModal: closeModal
+    flash: (m) => { ui.flash = m; }, save: () => save(), getDb: () => db, setDb: setDb, setConsent: () => { db.cons = { v: TERMS_V, at: today() }; save(); }, sanitizeDb: sanitizeDb, openModal: openModal, closeModal: closeModal
   };
 
   const actions = {
@@ -1410,6 +1468,22 @@
     'save-game': () => saveGame(),
     'after-save': (el) => { closeModal(); go(el.dataset.id); },
     'cancel-edit': () => { ui.draft = null; go('career'); },
+    'rv-tag': (el) => {
+      const e = ui.draft && ui.draft.rv[Number(el.dataset.idx)];
+      if (!e || !(el.dataset.kind === 'well' || el.dataset.kind === 'work') || !Rv.topic(el.dataset.id)) return;
+      const list = e[el.dataset.kind], at = list.indexOf(el.dataset.id);
+      if (at >= 0) list.splice(at, 1);
+      else if (list.length >= Rv.MAX_TAGS) { showErrors($('#log-errors'), ['Pick up to ' + Rv.MAX_TAGS + ' topics per list. Focus on the biggest ones.'], 'warn'); return; }
+      else list.push(el.dataset.id);
+      el.classList.toggle('on', at < 0); el.setAttribute('aria-pressed', String(at < 0));
+      showErrors($('#log-errors'), []);
+    },
+    'rv-add': () => {
+      const d = ui.draft; if (!d || d.rv.length >= Rv.MAX_ENTRIES) return;
+      let n = 1; while (d.rv.some((e) => e.i === n) && n < 12) n++;
+      d.rv.push(blankRv(n)); render();
+    },
+    'rv-remove': (el) => { const d = ui.draft, k = Number(el.dataset.idx); if (!d || !d.rv[k] || d.rv[k].i === 0) return; d.rv.splice(k, 1); render(); },
     'edit-game': (el) => {
       const g = player().games.find((x) => x.id === el.dataset.id);
       if (!g) return;
@@ -1573,7 +1647,9 @@
   });
   function onField(e) {
     const t = e.target;
-    if (t.dataset && t.dataset.sec) setDraftStat(t.dataset.sec, t.dataset.key, t.value, Number(t.max) || 999, t.dataset.idx === undefined ? undefined : Number(t.dataset.idx));
+    if (t.dataset && t.dataset.rv && ui.draft && ui.draft.rv[Number(t.dataset.idx)]) ui.draft.rv[Number(t.dataset.idx)][t.dataset.rv] = t.value;
+    else if (t.dataset && t.dataset.rvi && ui.draft && ui.draft.rv[Number(t.dataset.idx)]) ui.draft.rv[Number(t.dataset.idx)].i = Number(t.value) || 1;
+    else if (t.dataset && t.dataset.sec) setDraftStat(t.dataset.sec, t.dataset.key, t.value, Number(t.max) || 999, t.dataset.idx === undefined ? undefined : Number(t.dataset.idx));
     else if (t.dataset && t.dataset.ip && ui.draft) { ui.draft.pit.ip = t.value; updateLive(); }
     else if (t.dataset && t.dataset.fi !== undefined && ui.draft) {
       const row = ui.draft.fi[Number(t.dataset.idx)];
@@ -1587,7 +1663,10 @@
       ui.draft.pos = t.value;
       if ((was === 'C') !== (t.value === 'C')) render();
     }
-    else if (t.dataset && t.dataset.field && ui.draft) ui.draft[t.dataset.field] = t.value;
+    else if (t.dataset && t.dataset.field && ui.draft) {
+      ui.draft[t.dataset.field] = t.value;
+      if (t.dataset.field === 'us' || t.dataset.field === 'them') { const h = $('#score-hint'); if (h) h.innerHTML = scoreHint(ui.draft); }
+    }
   }
   document.addEventListener('input', onField);
   document.addEventListener('change', (e) => {

@@ -11,7 +11,8 @@
     { id: 'fld', name: 'Fielding', icon: '🧤' },
     { id: 'pit', name: 'Pitching & Catching', icon: '🔥' },
     { id: 'rul', name: 'Rules', icon: '📋' },
-    { id: 'iq', name: 'Smart Play', icon: '🧠' }
+    { id: 'iq', name: 'Smart Play', icon: '🧠' },
+    { id: 'sco', name: 'Scoring the Play', icon: '📝' }
   ];
   // League levels, like the minors: A is the basics, AA is tougher, AAA is big-league smarts.
   var LEVELS = { 1: 'A', 2: 'AA', 3: 'AAA' };

@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Dugout Diary by Plate 450 – A free career diary for young ballplayers</title>
+  <meta name="description" content="Log games, track batting, pitching and fielding stats, set goals and earn badges. Free, private, and no birthdays or emails collected.">
+  <meta name="theme-color" content="#1A1A18">
+  <script>try{var _t=localStorage.getItem('dugoutDiary.theme');if(_t==='light'||_t==='dark')document.documentElement.setAttribute('data-theme',_t)}catch(e){}</script>
+  <meta property="og:title" content="Dugout Diary - a free career diary for young ballplayers">
+  <meta property="og:description" content="Log games, track your stats, earn badges, and share your player card. Free, private, no sign-up.">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Dugout Diary">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header class="top" id="top">
+    <div class="top-row">
+      <a class="brand" href="#home" aria-label="Dugout Diary by Plate 450, home">
+        <img class="logo logo-light" src="brand/plate450-mark.svg" width="44" height="44" alt="">
+        <img class="logo logo-dark" src="brand/plate450-mark-dark.svg" width="44" height="44" alt="">
+        <span class="brand-text"><span class="h1" role="heading" aria-level="1">Dugout Diary</span><span class="tag">by Plate 450</span></span>
+      </a>
+      <button class="who" id="who" data-action="open-players" hidden></button>
+      <button class="theme-btn" id="theme-btn" data-action="theme-cycle" type="button" aria-label="Switch between light and dark mode"></button>
+    </div>
+    <div class="progress" id="progress" hidden>
+      <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Badges earned"><span id="bar-fill"></span></div>
+      <p id="bar-text">0 of 14 badges</p>
+    </div>
+  </header>
+
+  <div id="banner"></div>
+  <main id="main" tabindex="-1"></main>
+
+  <nav class="tabs" aria-label="Main">
+    <a href="#home" data-tab="home"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg><span>Home</span></a>
+    <a href="#log" data-tab="log"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg><span>Log</span></a>
+    <a href="#career" data-tab="career"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span>Career</span></a>
+    <a href="#goals" data-tab="goals"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5"/></svg><span>Goals</span></a>
+    <a href="#learn" data-tab="learn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5C6.5 4 9.5 4 12 5.5c2.5-1.5 5.5-1.5 8 0V19c-2.5-1.5-5.5-1.5-8 0-2.5-1.5-5.5-1.5-8 0z"/><path d="M12 5.5V19"/></svg><span>Learn</span></a>
+    <a href="#about" data-tab="about"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></svg><span>About</span></a>
+  </nav>
+
+  <div id="modal-root"></div>
+
+  <noscript><p style="padding:24px;color:#f4f1e8">Dugout Diary needs JavaScript to run. Nothing is sent anywhere – your stats stay in your browser.</p></noscript>
+
+  <script src="js/stats.js"></script>
+  <script src="js/sim.js"></script>
+  <script src="content/content.js"></script>
+  <script src="js/content.js"></script>
+  <script src="js/brand.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/learn.js"></script>
+  <script src="js/studio.js"></script>
+</body>
+</html>
