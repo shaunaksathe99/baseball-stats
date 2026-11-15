@@ -6,6 +6,7 @@
   <title>Dugout Diary – A free career diary for young ballplayers</title>
   <meta name="description" content="Log games, track batting, pitching and fielding stats, set goals and earn badges. Free, private, and no birthdays or emails collected.">
   <meta name="theme-color" content="#0F1F0F">
+  <script>try{var _t=localStorage.getItem('dugoutDiary.theme');if(_t==='light'||_t==='dark')document.documentElement.setAttribute('data-theme',_t)}catch(e){}</script>
   <meta property="og:title" content="Dugout Diary - a free career diary for young ballplayers">
   <meta property="og:description" content="Log games, track your stats, earn badges, and share your player card. Free, private, no sign-up.">
   <meta property="og:type" content="website">
@@ -29,6 +30,7 @@
         <p class="tag">Your baseball story, one game at a time</p>
       </div>
       <button class="who" id="who" data-action="open-players" hidden></button>
+      <button class="theme-btn" id="theme-btn" data-action="theme-cycle" type="button" aria-label="Switch between light and dark mode"></button>
     </div>
     <div class="progress" id="progress" hidden>
       <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Badges earned"><span id="bar-fill"></span></div>

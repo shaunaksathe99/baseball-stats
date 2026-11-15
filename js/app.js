@@ -11,6 +11,20 @@
   try { const a = Content.active(window.DD_CONTENT, window.localStorage); CONTENT = a.content; PREVIEW = a.preview; }
   catch (e) { CONTENT = Content.normalize(window.DD_CONTENT).content; }
   Sim.setScenarios(CONTENT.scenarios);
+  // Light / dark / auto. The choice is stored on this device only; "auto" follows the phone's setting.
+  const THEME_KEY = 'dugoutDiary.theme';
+  function themePref() { try { const v = localStorage.getItem(THEME_KEY); return v === 'light' || v === 'dark' ? v : 'auto'; } catch (e) { return 'auto'; } }
+  function themeIsLight() { const v = themePref(); return v === 'light' || (v === 'auto' && !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches)); }
+  function applyTheme() {
+    const v = themePref(), root = document.documentElement;
+    if (v === 'auto') root.removeAttribute('data-theme'); else root.setAttribute('data-theme', v);
+    const light = themeIsLight(), meta = document.querySelector('meta[name=theme-color]'), b = document.getElementById('theme-btn');
+    if (meta) meta.setAttribute('content', light ? '#F6F3EA' : '#0F1F0F');
+    if (b) { b.textContent = light ? '\u263E' : '\u2600'; b.title = light ? 'Switch to dark mode' : 'Switch to light mode'; }
+  }
+  function setTheme(v) { try { if (v === 'auto') localStorage.removeItem(THEME_KEY); else localStorage.setItem(THEME_KEY, v); } catch (e) { /* private mode: applies until reload */ } applyTheme(); }
+  try { window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', applyTheme); } catch (e) { /* older browsers */ }
+  applyTheme();
   const ext = { views: {}, actions: {}, forms: {}, homeCard: null };
   const KEY = 'dugoutDiary.v1';
   const VERSION = '0.1.0';
@@ -763,6 +777,7 @@
       '<p><b>What we never ask for:</b> birthdates, emails, phone numbers, photos, passwords, or payment info.</p>' +
       '<p class="muted small">Clearing your browser data erases it, so keep a backup. Read the full <a href="#terms">Terms &amp; Privacy Notice</a>.</p></section>' +
       '<section class="card"><h3>Coaches, trainers &amp; teams</h3><p class="muted">Find a trainer, clinic or travel ball team, or ask to be listed.</p><div class="row wrap"><a class="btn grow" href="#learn/directory">Browse the directory</a><a class="btn ghost grow" href="#find-list">Get listed</a></div><p class="hint"><a href="#studio">Site editor (Content Studio)</a></p></section>' +
+      '<section class="card"><h3>Appearance</h3><div class="seg" role="group" aria-label="Theme">' + [['auto', 'Auto'], ['light', 'Light'], ['dark', 'Dark']].map((o) => '<button data-action="theme-set" data-v="' + o[0] + '" aria-pressed="' + (themePref() === o[0]) + '">' + o[1] + '</button>').join('') + '</div><p class="hint">Auto follows your phone. Saved on this device only.</p></section>' +
       '<section class="card"><h3>Print sheets</h3><p class="muted">Take a paper game sheet or season grid to the field, then enter the numbers later.</p><a class="btn block" href="#print">Open printable sheets</a></section>' +
       edit + sec + backup + (danger ? '<section class="card"><h3>Reset</h3>' + danger + '</section>' : '') +
       '<section class="card"><h3>The fine print</h3><p class="muted small">Dugout Diary is an independent project. It is not affiliated with or endorsed by Little League International, GameChanger, Sports Connect, or any league. Stats are self-reported by families and are not official records. Accessibility: large tap targets, keyboard navigation, and screen reader labels are built in; tell us if something is hard to use.</p></section>' + footer();
@@ -1294,6 +1309,8 @@
   };
 
   const actions = {
+    'theme-cycle': () => { setTheme(themeIsLight() ? 'dark' : 'light'); render(); },
+    'theme-set': (el) => { setTheme(el.dataset.v); render(); },
     'sim-start': (el) => {
       const cat = Sim.catOf(el.dataset.cat) ? el.dataset.cat : 'mix', d = iqData(player());
       const ids = Sim.pickRound(d.r, cat, 5);
