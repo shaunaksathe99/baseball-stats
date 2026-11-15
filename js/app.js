@@ -3,12 +3,21 @@
   'use strict';
 
   const S = window.Stats;
+  const Sim = window.Sim;
+  const Content = window.Content;
+  // Site content (scenarios, trivia, quizzes, articles, glossary, directory) comes from content/content.js.
+  // If this device has Preview turned on in the Content Studio, the unpublished draft is shown instead.
+  let CONTENT, PREVIEW = false;
+  try { const a = Content.active(window.DD_CONTENT, window.localStorage); CONTENT = a.content; PREVIEW = a.preview; }
+  catch (e) { CONTENT = Content.normalize(window.DD_CONTENT).content; }
+  Sim.setScenarios(CONTENT.scenarios);
+  const ext = { views: {}, actions: {}, forms: {}, homeCard: null };
   const KEY = 'dugoutDiary.v1';
   const VERSION = '0.1.0';
   const LEVELS = ['Tee Ball', 'Coach Pitch', 'Minors', 'Majors', 'Intermediate (50/70)', 'Juniors', 'Seniors', 'Travel / Club', 'Middle School', 'High School', 'College', 'Other'];
   const POSITIONS = ['', 'P', 'C', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF'];
   const STATES = 'AL AK AZ AR CA CO CT DE DC FL GA HI ID IL IN IA KS KY LA ME MD MA MI MN MS MO MT NE NV NH NJ NM NY NC ND OH OK OR PA RI SC SD TN TX UT VT VA WA WV WI WY'.split(' ');
-  const TABS = ['home', 'log', 'career', 'goals', 'about'];
+  const TABS = ['home', 'log', 'career', 'goals', 'iq', 'about'];  // the Learn tab and Studio are extension views (see ext)
 
   const BAT_FIELDS = [['ab', 'At bats'], ['h', 'Hits'], ['d', 'Doubles'], ['t', 'Triples'], ['hr', 'Home runs'], ['rbi', 'RBI'], ['r', 'Runs'], ['bb', 'Walks'], ['k', 'Strikeouts'], ['hbp', 'Hit by pitch'], ['sf', 'Sac flies'], ['sb', 'Stolen bases']];
   const PIT_FIELDS = [['h', 'Hits allowed'], ['r', 'Runs allowed'], ['er', 'Earned runs'], ['bb', 'Walks'], ['k', 'Strikeouts']];
@@ -26,7 +35,7 @@
   function str(v, max) { return String(v == null ? '' : v).replace(/[\u0000-\u001f\u007f<>]/g, '').trim().slice(0, max); }
   function cleanId(v) { v = String(v || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 32); return v || uid('x'); }
   const B32 = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
-  const TERMS_V = 1;
+  const TERMS_V = 2;
   const CONTACT_EMAIL = '';   // set this before launch; shown on the Terms & Privacy page
   const hasCrypto = !!(window.crypto && window.crypto.subtle && window.crypto.getRandomValues);
   function randBytes(n) { const a = new Uint8Array(n); if (window.crypto && window.crypto.getRandomValues) window.crypto.getRandomValues(a); else for (let i = 0; i < n; i++) a[i] = Math.floor(Math.random() * 256); return a; }
@@ -112,6 +121,26 @@
     if (!m || !isFinite(t) || t <= 0) return null;
     return { id: cleanId(x.id), metric: m.id, target: Math.min(t, 9999), scope: str(x.scope, 30) || 'career', created: Number(x.created) || Date.now() };
   }
+  function emptyIq() { return { r: {}, qz: {}, xp: 0, best: 0 }; }
+  function cleanIq(o) {
+    const out = emptyIq();
+    if (!o || typeof o !== 'object') return out;
+    const r = o.r && typeof o.r === 'object' ? o.r : {};
+    Object.keys(r).slice(0, 1000).forEach((id) => {
+      if (!/^[a-z]{2,4}\d{1,3}$/.test(id) || !Array.isArray(r[id])) return;
+      const a = S.int(r[id][0], 9999), c = Math.min(a, S.int(r[id][1], 9999));
+      if (a < 1) return;
+      out.r[id] = [a, c, r[id][2] && c >= 1 ? 1 : 0];
+    });
+    const qz = o.qz && typeof o.qz === 'object' ? o.qz : {};
+    Object.keys(qz).slice(0, 200).forEach((id) => {
+      if (!/^[a-z0-9_-]{1,40}$/i.test(id) || !Array.isArray(qz[id])) return;
+      const tot = S.int(qz[id][1], 99), best = Math.min(tot, S.int(qz[id][0], 99));
+      if (tot >= 1) out.qz[id] = [best, tot];
+    });
+    out.xp = S.int(o.xp, 999999); out.best = S.int(o.best, 99);
+    return out;
+  }
   function cleanPlayer(p) {
     if (!p || typeof p !== 'object') return null;
     const name = str(p.name, 40);
@@ -129,7 +158,7 @@
     return {
       id: cleanId(p.id), pid: cleanPid(p.pid) || randChars(8), lock: cleanLock(p.lock), name: name, city: str(p.city, 40),
       state: STATES.indexOf(p.state) >= 0 ? p.state : '', zip: zip,
-      innings: Number(p.innings) === 7 ? 7 : 6,
+      innings: Number(p.innings) === 7 ? 7 : 6, iq: cleanIq(p.iq),
       created: Number(p.created) || Date.now(),
       last: { season: str(last.season, 30), team: str(last.team, 40), level: LEVELS.indexOf(last.level) >= 0 ? last.level : '' },
       games: games, goals: goals
@@ -177,7 +206,7 @@
   }
 
   let db = load();
-  const ui = { unlocked: loadUnlocked(), careerTab: 'bat', careerSeason: '', chart: { bat: 'avg', pit: 'era', fld: 'fpct' }, logTab: 'bat', draft: null, flash: '', lastTab: null, restore: null, ackKey: '', print: { fmt: 'game', copies: 2, prefill: true } };
+  const ui = { sim: { round: null, pid: '' }, simGuest: null, unlocked: loadUnlocked(), careerTab: 'bat', careerSeason: '', chart: { bat: 'avg', pit: 'era', fld: 'fpct' }, logTab: 'bat', draft: null, flash: '', lastTab: null, restore: null, ackKey: '', print: { fmt: 'game', copies: 2, prefill: true } };
 
   function loadUnlocked() {
     const o = {};
@@ -440,9 +469,9 @@
 
   /* ---------- chrome (header, tabs, banner) ---------- */
   function renderBanner() {
-    $('#banner').innerHTML = memoryOnly
+    $('#banner').innerHTML = (PREVIEW ? '<div class="notice" role="status"><b>Preview mode.</b> You are looking at the unpublished draft from the Content Studio, on this device only. <a href="#studio">Open the Studio</a> to turn it off.</div>' : '') + (memoryOnly
       ? '<div class="notice" role="alert"><b>Heads up:</b> your browser is not letting this page save data (private mode?). Stats will disappear when you close the tab, so use <b>About &rarr; Export backup</b> before leaving.</div>'
-      : '';
+      : '');
   }
   function renderChrome(tab, p) {
     const who = $('#who');
@@ -457,7 +486,7 @@
       $('#bar-text').textContent = n + ' of ' + bs.length + ' badges';
     }
     document.querySelectorAll('.tabs a').forEach((a) => {
-      if (a.dataset.tab === (tab === 'print' ? 'log' : tab === 'terms' ? 'about' : tab)) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
+      if (a.dataset.tab === (tab === 'print' ? 'log' : tab === 'terms' || tab === 'studio' ? 'about' : tab === 'iq' ? 'learn' : tab)) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
     });
     renderBanner();
   }
@@ -505,7 +534,8 @@
         '<p class="muted">Log games in under a minute, watch your batting, pitching and fielding numbers grow, and earn badges along the way.</p>' +
         '<div class="stats"><div class="stat"><b>3</b><span>Stat types</span></div><div class="stat"><b>0</b><span>Emails asked</span></div><div class="stat"><b>Free</b><span>No paywall</span></div></div></section>' +
         '<section class="card"><h3>Start your player card</h3>' + playerForm(null) + '</section>' +
-        '<section class="card"><h3>How it works</h3><ol class="steps">' +
+        '<section class="card"><h3>Test your Game IQ</h3><p class="muted">Try five real game situations: what would you do? No sign-up needed.</p><a class="btn ghost block" href="#iq">Try a Game IQ round &rarr;</a></section>' +
+        (ext.homeCard ? ext.homeCard(null) : '') + '<section class="card"><h3>How it works</h3><ol class="steps">' +
         '<li><div><b>Create a player card.</b><br><span class="muted">Just a name and where you play. No birthday, no email.</span></div></li>' +
         '<li><div><b>Log a game.</b><br><span class="muted">Big buttons built for the bleachers, or <a href="#print">print a sheet</a> to fill in by hand at the game.</span></div></li>' +
         '<li><div><b>Watch your career grow.</b><br><span class="muted">AVG, OBP, ERA and more are calculated for you, with trend charts.</span></div></li>' +
@@ -520,9 +550,9 @@
       '<div class="stats four"><div class="stat"><b>' + p.games.length + '</b><span>Games</span></div><div class="stat"><b>' + S.fmtRate(bat.avg) + '</b><span>AVG</span></div><div class="stat"><b>' + S.fmtEra(pit.era) + '</b><span>ERA</span></div><div class="stat"><b>' + earned + '</b><span>Badges</span></div></div>' +
       '<div class="row wrap" style="margin-top:16px"><button class="btn grow" data-action="go" data-to="log">Log a game &rarr;</button><button class="btn ghost grow" data-action="go" data-to="career">My career</button></div>' +
       (p.games.length ? '<button class="btn ghost block" style="margin-top:10px" data-action="share-open">📣 Share my player card</button>' : '') + '</section>' +
-      safeCard() +
+      safeCard() + iqHomeCard(p) + (ext.homeCard ? ext.homeCard(p) : '') +
       (streak.current >= 2 ? '<section class="card"><b>🔥 ' + streak.current + '-game hit streak!</b><span class="muted small"> Best: ' + streak.best + '</span></section>' : '') +
-      '<section class="card"><h3>Recent games</h3>' + (recent.length ? '<ul class="games">' + recent.map((g) => gameItem(g, false)).join('') + '</ul>' : '<p class="muted">Nothing yet. Your first game is a big one!</p>') + '</section>' +
+      '<section class="card"><h3>Recent games</h3>' + (recent.length ? '<ul class="games">' + recent.map((g) => gameItem(g, true)).join('') + '</ul>' : '<p class="muted">Nothing yet. Your first game is a big one!</p>') + '</section>' +
       '<section class="card"><div class="row between"><div><b>No phone in the dugout?</b><br><span class="muted small">Print a game sheet, fill it in by hand, then enter it here later.</span></div><a class="btn small" href="#print">Print</a></div></section>' +
       '<p style="text-align:center"><button class="link" data-action="new-player">+ Add another player</button></p>' + footer();
   }
@@ -540,6 +570,7 @@
   function viewLog(p) {
     if (!ui.draft) ui.draft = newDraft(p);
     const d = ui.draft, editing = !!d.id, tab = ui.logTab;
+    const editBar = editing ? '<div class="notice edit-bar" role="status"><b>Editing a saved game</b> &middot; ' + esc(fmtDate(d.date)) + (d.opp ? ' vs ' + esc(d.opp) : '') + '<br><span class="small">Fix anything that is wrong, then tap Save changes. Your career totals update right away.</span></div>' : '';
     let fields = '';
     if (tab === 'bat') {
       fields = '<div class="steppers">' + BAT_FIELDS.map((f) => stepper('bat', f[0], f[1], d.bat[f[0]])).join('') + '</div>' +
@@ -578,7 +609,7 @@
       }
     }
     const segBtn = (k, label) => '<button type="button" data-action="seg" data-grp="logTab" data-val="' + k + '" aria-pressed="' + (tab === k) + '">' + label + '</button>';
-    return '<section class="card"><h2>' + (editing ? 'Edit game' : 'Log a game') + '</h2><p class="muted">For ' + esc(p.name) + '. Fill in only what applies. Logging from paper? <a href="#print">Print a game sheet</a> for next time.</p>' +
+    return editBar + '<section class="card"><h2>' + (editing ? 'Edit game' : 'Log a game') + '</h2><p class="muted">For ' + esc(p.name) + '. Fill in only what applies. Logging from paper? <a href="#print">Print a game sheet</a> for next time.</p>' +
       '<div class="field"><label for="f-date">Game date</label><input id="f-date" type="date" data-field="date" value="' + esc(d.date) + '"></div>' +
       '<div class="grid2"><div class="field"><label for="f-season">Season</label><input id="f-season" type="text" maxlength="30" data-field="season" value="' + esc(d.season) + '" placeholder="Spring 2026"></div>' +
       '<div class="field"><label for="f-team">Team <span class="muted">(optional)</span></label><input id="f-team" type="text" maxlength="40" data-field="team" value="' + esc(d.team) + '" placeholder="Cubs"></div></div>' +
@@ -731,6 +762,7 @@
       '<section class="card"><h3>Your privacy</h3><p><b>What is stored:</b> a name or nickname, a city and state or ZIP code, the stats you enter, a random Player ID, and (if you choose) a PIN. All of it stays on your device. We have no server and no accounts.</p>' +
       '<p><b>What we never ask for:</b> birthdates, emails, phone numbers, photos, passwords, or payment info.</p>' +
       '<p class="muted small">Clearing your browser data erases it, so keep a backup. Read the full <a href="#terms">Terms &amp; Privacy Notice</a>.</p></section>' +
+      '<section class="card"><h3>Coaches, trainers &amp; teams</h3><p class="muted">Find a trainer, clinic or travel ball team, or ask to be listed.</p><div class="row wrap"><a class="btn grow" href="#learn/directory">Browse the directory</a><a class="btn ghost grow" href="#find-list">Get listed</a></div><p class="hint"><a href="#studio">Site editor (Content Studio)</a></p></section>' +
       '<section class="card"><h3>Print sheets</h3><p class="muted">Take a paper game sheet or season grid to the field, then enter the numbers later.</p><a class="btn block" href="#print">Open printable sheets</a></section>' +
       edit + sec + backup + (danger ? '<section class="card"><h3>Reset</h3>' + danger + '</section>' : '') +
       '<section class="card"><h3>The fine print</h3><p class="muted small">Dugout Diary is an independent project. It is not affiliated with or endorsed by Little League International, GameChanger, Sports Connect, or any league. Stats are self-reported by families and are not official records. Accessibility: large tap targets, keyboard navigation, and screen reader labels are built in; tell us if something is hard to use.</p></section>' + footer();
@@ -748,6 +780,99 @@
       '<section class="card"><h3>' + (mine ? 'Welcome back' : 'Think you can top that?') + '</h3>' +
       '<p class="muted">' + (mine ? 'This card was shared with you.' : 'Build your own player card in under a minute. Free, no sign-up, and no email or birthday needed.') + '</p>' +
       '<button class="btn block" data-action="go" data-to="' + (mine ? 'career' : 'home') + '">' + (mine ? 'Back to my diary' : 'Create my card →') + '</button></section>' + footer();
+  }
+
+  /* ---------- Game IQ simulator ---------- */
+  const POS_XY = { bat: [80, 152], '1': [146, 104], '2': [100, 58], '3': [54, 104], P: [100, 106], C: [100, 166], '1B': [138, 98], '2B': [122, 74], SS: [78, 74], '3B': [62, 98], LF: [34, 46], CF: [100, 22], RF: [166, 46] };
+  const POS_NAME = { bat: 'the batter', '1': 'the runner on first', '2': 'the runner on second', '3': 'the runner on third', P: 'the pitcher', C: 'the catcher', '1B': 'the first baseman', '2B': 'the second baseman', SS: 'the shortstop', '3B': 'the third baseman', LF: 'the left fielder', CF: 'the center fielder', RF: 'the right fielder' };
+  const BASE_XY = [[146, 104], [100, 58], [54, 104]], BASE_WORD = ['first', 'second', 'third'];
+  function iqData(p) { return p ? p.iq : (ui.simGuest || (ui.simGuest = emptyIq())); }
+  function sitLabel(t) {
+    const on = BASE_WORD.filter((w, i) => t.b[i]);
+    return 'Baseball diamond. ' + (on.length ? 'Runners on ' + on.join(' and ') + '.' : 'Bases empty.') + ' ' + t.outs + (t.outs === 1 ? ' out' : ' outs') + '. You are ' + POS_NAME[t.you] + '.';
+  }
+  function diamondSvg(t) {
+    const bag = (xy, on) => '<polygon class="bag' + (on ? ' on' : '') + '" points="' + xy[0] + ',' + (xy[1] - 8) + ' ' + (xy[0] + 8) + ',' + xy[1] + ' ' + xy[0] + ',' + (xy[1] + 8) + ' ' + (xy[0] - 8) + ',' + xy[1] + '"/>';
+    const y = POS_XY[t.you];
+    return '<svg class="diamond" viewBox="0 12 200 156" role="img" aria-label="' + esc(sitLabel(t)) + '">' +
+      '<path class="grass" d="M100 150 L190 60 A127 127 0 0 0 10 60 Z"/>' +
+      '<polygon class="dirt" points="100,152 162,98 100,40 38,98"/><polygon class="turf" points="100,138 140,102 100,66 60,102"/>' +
+      '<circle class="mound" cx="100" cy="104" r="7"/><line class="chalk" x1="100" y1="150" x2="190" y2="60"/><line class="chalk" x1="100" y1="150" x2="10" y2="60"/>' +
+      BASE_XY.map((xy, i) => bag(xy, t.b[i])).join('') +
+      '<polygon class="plate" points="100,144 107,150 104,157 96,157 93,150"/>' +
+      t.b.map((on, i) => on ? '<circle class="runner" cx="' + BASE_XY[i][0] + '" cy="' + BASE_XY[i][1] + '" r="6"/>' : '').join('') +
+      '<circle class="you" cx="' + y[0] + '" cy="' + y[1] + '" r="12"/></svg>';
+  }
+  function scoreboard(t) {
+    return '<div class="sb"><div><b>Inning ' + t.inn + '</b></div><div class="outs" role="img" aria-label="' + t.outs + (t.outs === 1 ? ' out' : ' outs') + '">' +
+      [0, 1, 2].map((i) => '<i class="out' + (i < t.outs ? ' on' : '') + '"></i>').join('') + '<span>' + t.outs + (t.outs === 1 ? ' out' : ' outs') + '</span></div>' +
+      '<div>Us <b>' + t.us + '</b> &ndash; <b>' + t.them + '</b> Them</div>' + (t.cnt ? '<div>Count <b>' + esc(t.cnt) + '</b></div>' : '') + '</div>';
+  }
+  function iqRankBlock(d) {
+    const total = Sim.SCENARIOS.length, m = Sim.masteredCount(d.r), rk = Sim.rank(m, total);
+    return '<div class="rank"><div class="rank-ic" aria-hidden="true">' + rk.icon + '</div><div class="grow"><b>' + esc(rk.name) + '</b><span class="muted small"> &middot; ' + m + ' of ' + total + ' situations mastered</span>' +
+      '<div class="meter" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + Math.round(rk.pct * 100) + '"><span style="width:' + Math.round(rk.pct * 100) + '%"></span></div>' +
+      '<div class="small muted">' + (rk.next ? rk.need + ' more to reach ' + esc(rk.next) : 'Top rank reached!') + ' &middot; ' + d.xp + ' XP' + (d.best ? ' &middot; best streak ' + d.best : '') + '</div></div></div>';
+  }
+  function iqHomeCard(p) {
+    if (!Sim.SCENARIOS.length) return '';
+    const m = Sim.masteredCount(p.iq.r), rk = Sim.rank(m, Sim.SCENARIOS.length);
+    return '<section class="card"><div class="row between"><div><b>' + rk.icon + ' Game IQ: ' + esc(rk.name) + '</b><br><span class="muted small">' + m + ' of ' + Sim.SCENARIOS.length + ' situations mastered</span></div><a class="btn small" href="#iq">Train</a></div></section>';
+  }
+  function viewIq(p) {
+    if (ui.sim.pid !== (p ? p.id : '')) { ui.sim.round = null; ui.sim.pid = p ? p.id : ''; }
+    const d = iqData(p), r = ui.sim.round;
+    if (r && !r.done) return viewIqQuestion(d, r);
+    if (r && r.done) return viewIqSummary(p, d, r);
+    return viewIqMenu(p, d);
+  }
+  function viewIqMenu(p, d) {
+    if (!Sim.SCENARIOS.length) return emptyState('🧢', 'No situations yet', 'The coaches are still writing the playbook. Check back soon.', '<a class="btn" href="#learn">Back to Learn</a>') + footer();
+    const cats = Sim.CATS.map((c) => {
+      const list = Sim.inCat(c.id), m = list.filter((x) => d.r[x.id] && d.r[x.id][2]).length;
+      return '<button class="cat" data-action="sim-start" data-cat="' + c.id + '"><span class="cat-ic" aria-hidden="true">' + c.icon + '</span><span class="grow"><b>' + esc(c.name) + '</b><span class="muted small">' + m + ' of ' + list.length + ' mastered</span></span><span class="cat-go" aria-hidden="true">&rsaquo;</span></button>';
+    }).join('');
+    return '<section class="card hero"><p class="eyebrow">Game IQ Simulator</p><h2>Make the call.</h2>' +
+      '<p class="muted">Real game situations. Pick the best play, learn why, and come back to the ones you missed until you have mastered them. Great ballplayers win with their heads, not just their arms.</p>' +
+      iqRankBlock(d) + '<button class="btn block" data-action="sim-start" data-cat="mix" style="margin-top:14px">Play a 5-question round &rarr;</button></section>' +
+      '<section class="card"><h3>Practice by skill</h3><div class="cats">' + cats + '</div></section>' +
+      (p ? '' : '<section class="card"><h3>Keep your progress</h3><p class="muted">Create a free player card to save your Game IQ. No email or birthday needed.</p><button class="btn ghost block" data-action="go" data-to="home">Create my card</button></section>') + footer();
+  }
+  function viewIqQuestion(d, r) {
+    const sc = Sim.byId(r.ids[r.i]), order = r.orders[r.i], answered = r.picked >= 0, cat = Sim.catOf(sc.cat), last = r.i + 1 >= r.ids.length;
+    const dots = r.ids.map((id, k) => '<i class="dot' + (k < r.results.length ? (r.results[k] ? ' ok' : ' no') : (k === r.i ? ' cur' : '')) + '"></i>').join('');
+    const opts = order.map((oi, k) => {
+      let cls = 'opt';
+      if (answered) { if (oi === sc.ans) cls += ' right'; else if (k === r.picked) cls += ' wrong'; }
+      return '<button class="' + cls + '" data-action="sim-pick" data-i="' + k + '"' + (answered ? ' disabled' : '') + '><b>' + 'ABCD'[k] + '</b><span>' + esc(sc.opts[oi]) + '</span></button>';
+    }).join('');
+    let fb = '';
+    if (answered) {
+      const ok = r.last && r.last.ok;
+      fb = '<div id="sim-feedback" class="feedback ' + (ok ? 'good' : 'bad') + '" role="status"><b>' + (ok ? 'Great read!' + (r.last.xp ? ' +' + r.last.xp + ' XP' : '') : 'Not this time. Here is the play:') + '</b>' +
+        (ok ? '' : '<p class="best">' + esc(sc.opts[sc.ans]) + '</p>') + '<p>' + esc(sc.why) + '</p><p class="tipline">Remember: ' + esc(sc.tip) + '</p>' +
+        '<button class="btn block" data-action="sim-next">' + (last ? 'See my results' : 'Next situation &rarr;') + '</button></div>';
+    }
+    return '<div class="row between" style="margin-bottom:8px"><button class="link small" data-action="sim-menu">&larr; Menu</button><span class="muted small">Question ' + (r.i + 1) + ' of ' + r.ids.length + '</span></div>' +
+      '<div class="dots" aria-hidden="true">' + dots + '</div>' +
+      '<section class="card"><div class="chips"><span class="chip">' + cat.icon + ' ' + esc(cat.name) + '</span><span class="chip">' + esc(Sim.LEVELS[sc.lvl]) + '</span></div>' +
+      scoreboard(sc.sit) + diamondSvg(sc.sit) + '<p class="hint" style="text-align:center">Gold ring: you &middot; Orange dots: runners</p>' +
+      '<h3 class="sim-q">' + esc(sc.q) + '</h3><div class="opts" role="group" aria-label="Answer choices">' + opts + '</div>' + fb + '</section>';
+  }
+  function viewIqSummary(p, d, r) {
+    const ok = r.results.filter(Boolean).length, n = r.ids.length;
+    const stars = ok === n ? 'Perfect round!' : ok >= n - 1 ? 'Great round!' : ok >= Math.ceil(n / 2) ? 'Solid round.' : 'Keep training. Every miss is a lesson.';
+    const rows = r.ids.map((id, k) => {
+      const sc = Sim.byId(id), c = Sim.catOf(sc.cat);
+      return '<li class="' + (r.results[k] ? 'ok' : 'no') + '"><span class="mark" aria-label="' + (r.results[k] ? 'Correct' : 'Missed') + '">' + (r.results[k] ? '✓' : '✗') + '</span><div><b>' + c.icon + ' ' + esc(c.name) + '</b><br><span class="muted small">' + esc(sc.tip) + '</span></div></li>';
+    }).join('');
+    const rk = Sim.rank(Sim.masteredCount(d.r), Sim.SCENARIOS.length);
+    return '<section class="card hero"><p class="eyebrow">Round complete</p><h2>' + ok + ' of ' + n + ' correct</h2><p class="muted">' + stars + '</p>' +
+      '<div class="stats"><div class="stat"><b>' + ok + '/' + n + '</b><span>Score</span></div><div class="stat"><b>+' + r.xp + '</b><span>XP</span></div><div class="stat"><b>' + r.best + '</b><span>Best streak</span></div></div></section>' +
+      '<section class="card"><h3>This round</h3><ul class="recap">' + rows + '</ul></section>' +
+      '<section class="card">' + iqRankBlock(d) + '</section>' +
+      (p ? '' : '<section class="card"><h3>Save your Game IQ</h3><p class="muted">You are playing as a guest. Create a free player card and this progress comes with you.</p><button class="btn block" data-action="go" data-to="home">Create my card</button></section>') +
+      '<div class="row wrap"><button class="btn grow" data-action="sim-start" data-cat="' + esc(r.cat) + '">Play again</button><button class="btn ghost grow" data-action="sim-menu">Menu</button></div><div style="height:16px"></div>';
   }
 
   function viewLock(p) {
@@ -772,6 +897,7 @@
       '<h4>Hosting</h4><p>The pages are delivered by a web host (currently GitHub Pages). Like any website, the host may record technical details such as an IP address when a page is requested. We do not receive or use those logs, and the app does not send your stats to the host.</p>' +
       '<h4>Sharing</h4><p>Sharing is your choice. A share card (image or link) contains only what is shown on the card: the name or nickname, optional city and state, the stats you picked, and the random Player ID. A card link holds its data inside the link itself, so anyone who has the link can see the card. Share with people you trust, and think twice before posting publicly.</p>' +
       '<h4>Player ID and PIN</h4><p>The Player ID keeps players with the same name apart. A PIN keeps teammates and siblings out of a diary on a shared device. It is a privacy lock, not encryption: someone with technical skill and access to your device can still reach the data stored in the browser. Write down your recovery code, because we cannot reset a PIN for you.</p>' +
+      '<h4>Directory of trainers, coaches and teams</h4><p>The Learn section includes a directory of trainers, coaches, clinics, facilities and travel ball teams. Listings are added by the site owner at the request of the businesses and teams themselves, and contain business contact details only (no player information). We do not run background checks, verify credentials or results, or endorse anyone listed, and we are not part of any agreement between you and a listing. Do your own research, meet in public or with other families, and never let a child arrange anything alone: a parent or guardian should always make the contact. Links go to outside websites that have their own rules and privacy practices.</p>' +
       '<h4>Backups</h4><p>Backup files are saved wherever you choose. They contain everything in the diary, so store them somewhere private.</p>' +
       '<h4>Changes and questions</h4><p>If this notice changes in a meaningful way, the version number above changes and you will be asked to agree again when you add a player. ' + contact + '</p></section>' +
       '<section class="card terms"><h3>Terms of use</h3>' +
@@ -779,6 +905,7 @@
       '<li><b>Families first.</b> Younger players should set up and use the app with a parent or guardian, who is responsible for what is entered and shared.</li>' +
       '<li><b>Your data, your job.</b> Your stats live in your browser. Clearing browser data, switching phones, or private browsing can erase them. Please export backups. We cannot recover lost data.</li>' +
       '<li><b>Be kind and be careful.</b> Enter only information about yourself or your own child. Do not enter other people’s private details. Use a first name or nickname. Do not use the app to harass anyone, break the law, or try to disrupt or copy the site.</li>' +
+      '<li><b>Listings are not endorsements.</b> The directory is a convenience. We do not vet, rank or guarantee the people and teams in it, and you deal with them at your own risk. Listings are for adults to read, and parents or guardians make all contact on behalf of children.</li>' +
       '<li><b>Not official.</b> Stats are self-reported and not official league records. Check with your league for official numbers.</li>' +
       '<li><b>Independent project.</b> Dugout Diary is not affiliated with or endorsed by Little League International, GameChanger, Sports Connect, or any league or team. Their names belong to their owners.</li>' +
       '<li><b>As is.</b> The app is provided as is, without promises that it will always work or be error free. To the extent the law allows, we are not liable for lost data or for decisions made using the stats.</li>' +
@@ -885,24 +1012,30 @@
     if (h.indexOf('card=') === 0) return 'card';
     if (h === 'print') return 'print';
     if (h === 'terms') return 'terms';
+    const base = h.split('/')[0].split('?')[0];
+    if (ext.views[base]) return base;
     if (TABS.indexOf(h) < 0) h = 'home';
-    if (!player() && h !== 'home' && h !== 'about') h = 'home';
+    if (!player() && h !== 'home' && h !== 'about' && h !== 'iq') h = 'home';
     return h;
   }
+  function currentSub() { const h = (location.hash || '').slice(1); const i = h.indexOf('/'); return i < 0 ? [] : h.slice(i + 1).split('?')[0].split('/').map((x) => { try { return decodeURIComponent(x); } catch (e) { return x; } }); }
   function go(name) { if (location.hash === '#' + name) render(); else location.hash = name; }
 
   function render() {
     const tab = currentTab(), p = player();
     let html = '';
     if (ui.flash) { html += '<div class="notice" role="status">' + esc(ui.flash) + '</div>'; ui.flash = ''; }
+    if (ui.undo && p && ui.undo.pid === p.id && Date.now() - ui.undo.t < 60000 && tab !== 'card' && tab !== 'terms') html += '<div class="notice" role="status">Game deleted. <button class="link" data-action="undo-delete">Undo</button></div>';
     if (tab === 'card') {
       let c = null;
       try { c = sanitizeCard(b64d(location.hash.slice(6))); } catch (e) { c = null; }
       html += c ? viewCard(c) : emptyState('🤔', 'That card link looks broken', 'Ask your friend to share it again, or make your own card.', '<button class="btn" data-action="go" data-to="home">Make my own card</button>');
     }
     else if (tab === 'terms') html += viewTerms();
+    else if (ext.views[tab]) html += ext.views[tab](p && isUnlocked(p) ? p : null, currentSub());
     else if (p && !isUnlocked(p)) html += viewLock(p);
     else if (tab === 'print') html += viewPrint(p);
+    else if (tab === 'iq') html += viewIq(p);
     else if (tab === 'home') html += viewHome(p);
     else if (tab === 'log') html += viewLog(p);
     else if (tab === 'career') html += viewCareer(p);
@@ -1002,6 +1135,7 @@
       '<p style="text-align:center">' + bits.map(esc).join('<br>') + '</p>' +
       (after.length ? '<div class="earned">' + after.map((b) => b.icon + ' New badge: ' + esc(b.name)).join('<br>') + '</div>' : '') +
       '<button class="btn block" style="margin-top:16px" data-action="share-game" data-id="' + esc(game.id) + '">📣 Share this game</button>' +
+      '<button class="btn ghost block" style="margin-top:10px" data-action="edit-game" data-id="' + esc(game.id) + '">✏️ Fix a mistake in this game</button>' +
       '<div class="actions"><button class="btn ghost" data-action="after-save" data-id="log">Log another</button><button class="btn" data-action="after-save" data-id="career">See my career</button></div>');
   }
 
@@ -1144,7 +1278,50 @@
       '<div class="actions"><button class="btn ghost" data-action="copy-recovery">Copy</button><button class="btn" data-action="modal-close">I saved it</button></div>');
   }
 
+  // Shared with the Learn and Studio screens (js/learn.js, js/studio.js).
+  function recordQuiz(p, id, score, total) {
+    if (!p) return;
+    const d = iqData(p), old = d.qz[id];
+    if (!old || old[1] !== total || score > old[0]) d.qz[id] = [score, total];
+    d.xp += score * 2;
+    save();
+  }
+  window.DDApp = {
+    ext: ext, Sim: Sim, content: () => CONTENT, preview: () => PREVIEW, contactEmail: CONTACT_EMAIL, esc: esc,
+    player: () => { const p = player(); return p && isUnlocked(p) ? p : null; },
+    iqData: iqData, recordQuiz: recordQuiz, diamondSvg: diamondSvg, scoreboard: scoreboard, render: render, go: go, footer: footer, emptyState: emptyState,
+    flash: (m) => { ui.flash = m; }, openModal: openModal, closeModal: closeModal
+  };
+
   const actions = {
+    'sim-start': (el) => {
+      const cat = Sim.catOf(el.dataset.cat) ? el.dataset.cat : 'mix', d = iqData(player());
+      const ids = Sim.pickRound(d.r, cat, 5);
+      ui.sim.round = { cat: cat, ids: ids, i: 0, picked: -1, orders: ids.map((id) => Sim.shuffle(Sim.byId(id).opts.length)), results: [], xp: 0, streak: 0, best: 0, last: null, done: false };
+      render(); window.scrollTo(0, 0);
+    },
+    'sim-pick': (el) => {
+      const r = ui.sim.round;
+      if (!r || r.done || r.picked >= 0) return;
+      const k = Number(el.dataset.i), sc = Sim.byId(r.ids[r.i]), order = r.orders[r.i];
+      if (!sc || !(k >= 0 && k < order.length)) return;
+      const ok = order[k] === sc.ans, p = player(), d = iqData(p), rec = d.r[sc.id] || [0, 0, 0], first = rec[0] === 0;
+      rec[0] = Math.min(9999, rec[0] + 1); if (ok) rec[1] = Math.min(9999, rec[1] + 1); rec[2] = ok ? 1 : 0; d.r[sc.id] = rec;
+      const xp = ok ? (first ? 10 : 5) : 0;
+      d.xp = Math.min(999999, d.xp + xp);
+      r.streak = ok ? r.streak + 1 : 0; r.best = Math.max(r.best, r.streak); d.best = Math.min(99, Math.max(d.best, r.streak));
+      r.results.push(ok); r.xp += xp; r.picked = k; r.last = { ok: ok, xp: xp };
+      if (p) save();
+      render();
+      setTimeout(() => { const f = $('#sim-feedback'); if (f && f.scrollIntoView) f.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }, 30);
+    },
+    'sim-next': () => {
+      const r = ui.sim.round;
+      if (!r || r.picked < 0) return;
+      if (r.i + 1 >= r.ids.length) r.done = true; else { r.i++; r.picked = -1; r.last = null; }
+      render(); window.scrollTo(0, 0);
+    },
+    'sim-menu': () => { ui.sim.round = null; render(); window.scrollTo(0, 0); },
     'snooze-safe': () => { db.snooze = addDays(7); save(); render(); },
     'lock-now': () => { const p = player(); if (p && p.lock) { setUnlocked(p.id, false); go('home'); } },
     'pin-set': () => openPinModal('set'),
@@ -1211,12 +1388,20 @@
     'edit-game': (el) => {
       const g = player().games.find((x) => x.id === el.dataset.id);
       if (!g) return;
-      ui.draft = draftFromGame(g); ui.logTab = 'bat'; go('log');
+      closeModal();
+      ui.draft = draftFromGame(g); ui.logTab = 'bat'; go('log'); window.scrollTo(0, 0);
     },
-    'delete-game': (el) => confirmModal('Delete this game?', 'This removes it from your career totals. It cannot be undone.', 'Delete game', 'confirm-delete-game', el.dataset.id),
+    'undo-delete': () => {
+      const u = ui.undo, p = player();
+      ui.undo = null;
+      if (!u || !p || u.pid !== p.id || p.games.some((x) => x.id === u.game.id)) { render(); return; }
+      p.games.push(u.game); save(); ui.flash = 'Game restored.'; render();
+    },
+    'delete-game': (el) => confirmModal('Delete this game?', 'This removes it from your career totals. Tap Undo right after if it was a mistake.', 'Delete game', 'confirm-delete-game', el.dataset.id),
     'confirm-delete-game': (el) => {
-      const p = player();
+      const p = player(), gone = p.games.find((g) => g.id === el.dataset.id);
       p.games = p.games.filter((g) => g.id !== el.dataset.id);
+      if (gone) ui.undo = { pid: p.id, game: gone, t: Date.now() };
       save(); closeModal(); render();
     },
     'new-player': () => { closeModal(); openModal('<h3>Add a player</h3>' + playerForm(null)); },
@@ -1274,6 +1459,8 @@
         const np = cleanPlayer(Object.assign({ id: uid('p'), created: Date.now(), innings: 6, games: [], goals: [] }, data));
         const commit = (rec) => {
           if (!termsOk()) db.terms = { v: TERMS_V, at: today() };
+          if (ui.simGuest) { np.iq = cleanIq(ui.simGuest); ui.simGuest = null; }
+          ui.sim.round = null;
           db.players.push(np); db.active = np.id; ui.draft = null; ui.careerSeason = '';
           ui.flash = 'Player card created. Log your first game when you are ready!';
           save(); askPersist(); closeModal(); go('log');
@@ -1350,14 +1537,14 @@
   document.addEventListener('click', (e) => {
     const el = e.target.closest('[data-action]');
     if (!el) return;
-    const fn = actions[el.dataset.action];
+    const fn = actions[el.dataset.action] || ext.actions[el.dataset.action];
     if (fn) fn(el, e);
   });
   document.addEventListener('submit', (e) => {
     const kind = e.target.dataset && e.target.dataset.form;
-    if (!kind || !forms[kind]) return;
+    if (!kind || (!forms[kind] && !ext.forms[kind])) return;
     e.preventDefault();
-    forms[kind](e.target);
+    (forms[kind] || ext.forms[kind])(e.target);
   });
   function onField(e) {
     const t = e.target;
