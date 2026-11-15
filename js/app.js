@@ -220,7 +220,7 @@
   }
 
   let db = load();
-  const ui = { sim: { round: null, pid: '' }, simGuest: null, unlocked: loadUnlocked(), careerTab: 'bat', careerSeason: '', chart: { bat: 'avg', pit: 'era', fld: 'fpct' }, logTab: 'bat', draft: null, flash: '', lastTab: null, restore: null, ackKey: '', print: { fmt: 'game', copies: 2, prefill: true } };
+  const ui = { sim: { round: null, pid: '', lvl: 0 }, simGuest: null, unlocked: loadUnlocked(), careerTab: 'bat', careerSeason: '', chart: { bat: 'avg', pit: 'era', fld: 'fpct' }, logTab: 'bat', draft: null, flash: '', lastTab: null, restore: null, ackKey: '', print: { fmt: 'game', copies: 2, prefill: true } };
 
   function loadUnlocked() {
     const o = {};
@@ -844,12 +844,16 @@
   function viewIqMenu(p, d) {
     if (!Sim.SCENARIOS.length) return emptyState('🧢', 'No situations yet', 'The coaches are still writing the playbook. Check back soon.', '<a class="btn" href="#learn">Back to Learn</a>') + footer();
     const cats = Sim.CATS.map((c) => {
-      const list = Sim.inCat(c.id), m = list.filter((x) => d.r[x.id] && d.r[x.id][2]).length;
+      const list = Sim.inCat(c.id, ui.sim.lvl), m = list.filter((x) => d.r[x.id] && d.r[x.id][2]).length;
       return '<button class="cat" data-action="sim-start" data-cat="' + c.id + '"><span class="cat-ic" aria-hidden="true">' + c.icon + '</span><span class="grow"><b>' + esc(c.name) + '</b><span class="muted small">' + m + ' of ' + list.length + ' mastered</span></span><span class="cat-go" aria-hidden="true">&rsaquo;</span></button>';
     }).join('');
+    const lv = Number(ui.sim.lvl) || 0;
+    const lvlChips = '<div class="chips lvl" role="group" aria-label="League level" style="margin:14px 0 0"><button class="chip' + (lv ? '' : ' on') + '" data-action="sim-lvl" data-v="0" aria-pressed="' + !lv + '">All</button>' +
+      [1, 2, 3].map((n) => { const l = Sim.inCat('mix', n), m = l.filter((x) => d.r[x.id] && d.r[x.id][2]).length; return l.length ? '<button class="chip' + (lv === n ? ' on' : '') + '" data-action="sim-lvl" data-v="' + n + '" aria-pressed="' + (lv === n) + '">' + Sim.LEVELS[n] + ' <span class="small">' + m + '/' + l.length + '</span></button>' : ''; }).join('') + '</div>' +
+      '<p class="hint">' + (lv ? '<b>' + Sim.LEVELS[lv] + '</b>: ' + esc(Sim.LEVEL_INFO[lv]) + '. ' : '') + 'A is the basics, AA is tougher, AAA is big-league smarts.</p>';
     return '<section class="card hero"><p class="eyebrow">Game IQ Simulator</p><h2>Make the call.</h2>' +
       '<p class="muted">Real game situations. Pick the best play, learn why, and come back to the ones you missed until you have mastered them. Great ballplayers win with their heads, not just their arms.</p>' +
-      iqRankBlock(d) + '<button class="btn block" data-action="sim-start" data-cat="mix" style="margin-top:14px">Play a 5-question round &rarr;</button></section>' +
+      iqRankBlock(d) + '<h3 style="margin-top:16px">League level</h3>' + lvlChips + '<button class="btn block" data-action="sim-start" data-cat="mix" style="margin-top:14px">Play a 5-question round &rarr;</button></section>' +
       '<section class="card"><h3>Practice by skill</h3><div class="cats">' + cats + '</div></section>' +
       (p ? '' : '<section class="card"><h3>Keep your progress</h3><p class="muted">Create a free player card to save your Game IQ. No email or birthday needed.</p><button class="btn ghost block" data-action="go" data-to="home">Create my card</button></section>') + footer();
   }
@@ -1313,7 +1317,7 @@
     'theme-set': (el) => { setTheme(el.dataset.v); render(); },
     'sim-start': (el) => {
       const cat = Sim.catOf(el.dataset.cat) ? el.dataset.cat : 'mix', d = iqData(player());
-      const ids = Sim.pickRound(d.r, cat, 5);
+      const ids = Sim.pickRound(d.r, cat, 5, undefined, ui.sim.lvl);
       ui.sim.round = { cat: cat, ids: ids, i: 0, picked: -1, orders: ids.map((id) => Sim.shuffle(Sim.byId(id).opts.length)), results: [], xp: 0, streak: 0, best: 0, last: null, done: false };
       render(); window.scrollTo(0, 0);
     },
@@ -1338,6 +1342,7 @@
       if (r.i + 1 >= r.ids.length) r.done = true; else { r.i++; r.picked = -1; r.last = null; }
       render(); window.scrollTo(0, 0);
     },
+    'sim-lvl': (el) => { ui.sim.lvl = [1, 2, 3].indexOf(Number(el.dataset.v)) >= 0 ? Number(el.dataset.v) : 0; render(); },
     'sim-menu': () => { ui.sim.round = null; render(); window.scrollTo(0, 0); },
     'snooze-safe': () => { db.snooze = addDays(7); save(); render(); },
     'lock-now': () => { const p = player(); if (p && p.lock) { setUnlocked(p.id, false); go('home'); } },

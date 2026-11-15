@@ -1,7 +1,7 @@
 /* Dugout Diary content. Do not edit by hand: use the Content Studio (#studio on the site), download this file, and upload it to the content folder on GitHub. */
 (function (r) { r.DD_CONTENT = {
  "version": 1,
- "updated": "2026-11-13",
+ "updated": "2026-11-15",
  "scenarios": [
   {
    "id": "run1",
@@ -839,12 +839,337 @@
    "ans": 0,
    "why": "Great fielders make the decision before the ball is hit. Knowing the outs and runners means you throw to the right base without hesitating.",
    "tip": "Outs. Runners. Plan."
+  },
+  {
+   "id": "run6",
+   "cat": "run",
+   "lvl": 3,
+   "sit": {
+    "inn": 4,
+    "outs": 0,
+    "b": [
+     0,
+     1,
+     0
+    ],
+    "us": 1,
+    "them": 1,
+    "cnt": "",
+    "you": "2"
+   },
+   "q": "You are on second with nobody out. The batter hits a hard ground ball right at the shortstop. What do you do?",
+   "opts": [
+    "Hold at second until the ball gets past the infield",
+    "Break for third as soon as the bat hits the ball",
+    "Run to third when the shortstop fields it"
+   ],
+   "ans": 0,
+   "why": "A ground ball hit in front of you, toward the left side, is easy for the shortstop to throw you out at third. With no outs you can wait for a better chance, so hold unless it is hit to your right or gets through.",
+   "tip": "Ball in front of you? Hold."
+  },
+  {
+   "id": "run7",
+   "cat": "run",
+   "lvl": 3,
+   "sit": {
+    "inn": 5,
+    "outs": 2,
+    "b": [
+     1,
+     0,
+     0
+    ],
+    "us": 1,
+    "them": 1,
+    "cnt": "3-2",
+    "you": "1"
+   },
+   "q": "Two outs, full count, and you are the runner on first. What is your plan as the pitcher delivers?",
+   "opts": [
+    "Take off with the pitch",
+    "Stay close to first base",
+    "Take a big lead, then wait to see contact"
+   ],
+   "ans": 0,
+   "why": "With two outs and a full count, the play ends on strike three, a walk or a ball in play. Running on the pitch puts you in scoring position and you score from second on most hits.",
+   "tip": "Two outs, 3-2? Run on the pitch."
+  },
+  {
+   "id": "hit6",
+   "cat": "hit",
+   "lvl": 3,
+   "sit": {
+    "inn": 6,
+    "outs": 2,
+    "b": [
+     0,
+     0,
+     1
+    ],
+    "us": 2,
+    "them": 3,
+    "cnt": "0-2",
+    "you": "bat"
+   },
+   "q": "Two outs, runner on third, and you are behind 0-2. What is your approach?",
+   "opts": [
+    "Shorten up and protect the plate: swing at anything close",
+    "Wait for a perfect pitch to drive",
+    "Take the next pitch to see what he throws"
+   ],
+   "ans": 0,
+   "why": "With two strikes the umpire effectively gives the pitcher more of the plate, so you must protect it. A shorter swing and a good look at anything near the zone keeps the at bat alive.",
+   "tip": "Two strikes: protect the plate."
+  },
+  {
+   "id": "hit7",
+   "cat": "hit",
+   "lvl": 3,
+   "sit": {
+    "inn": 6,
+    "outs": 1,
+    "b": [
+     0,
+     0,
+     1
+    ],
+    "us": 2,
+    "them": 3,
+    "cnt": "",
+    "you": "bat"
+   },
+   "q": "Runner on third, one out, and the infield is playing back. What is your best goal at the plate?",
+   "opts": [
+    "Put the ball in play: a ground ball or deep fly can score the run",
+    "Swing for a home run no matter what",
+    "Take pitches until you get a walk"
+   ],
+   "ans": 0,
+   "why": "The infield is giving up the run on a grounder, and a fly ball deep enough scores him too. A strikeout is the only way to waste the chance, so make contact.",
+   "tip": "Runner on third: put it in play."
+  },
+  {
+   "id": "fld6",
+   "cat": "fld",
+   "lvl": 3,
+   "sit": {
+    "inn": 6,
+    "outs": 1,
+    "b": [
+     0,
+     0,
+     1
+    ],
+    "us": 3,
+    "them": 3,
+    "cnt": "",
+    "you": "3B"
+   },
+   "q": "Tie game, runner on third, one out, and your infield is playing in. A ground ball is hit to you at third base. Where do you throw?",
+   "opts": [
+    "Home plate, to cut off the run",
+    "First base for the sure out",
+    "Hold the ball and check the runner"
+   ],
+   "ans": 0,
+   "why": "The infield only plays in when the run matters, which it does in a tie game. Throwing home keeps the go-ahead run from scoring, and the runner must stay put or get tagged.",
+   "tip": "Infield in? Throw home."
+  },
+  {
+   "id": "fld7",
+   "cat": "fld",
+   "lvl": 3,
+   "sit": {
+    "inn": 3,
+    "outs": 1,
+    "b": [
+     0,
+     0,
+     0
+    ],
+    "us": 0,
+    "them": 0,
+    "cnt": "",
+    "you": "LF"
+   },
+   "q": "A fly ball is hit into the left-center gap. You and the center fielder both have a chance. Who has priority?",
+   "opts": [
+    "The center fielder",
+    "The left fielder",
+    "Whoever calls it last"
+   ],
+   "ans": 0,
+   "why": "Outfielders run toward the ball, so the center fielder has priority over the corner outfielders because he sees the whole field and runs forward. Back off and call out to help him.",
+   "tip": "Gap ball? Center has priority."
+  },
+  {
+   "id": "pit6",
+   "cat": "pit",
+   "lvl": 3,
+   "sit": {
+    "inn": 4,
+    "outs": 0,
+    "b": [
+     1,
+     1,
+     0
+    ],
+    "us": 2,
+    "them": 2,
+    "cnt": "",
+    "you": "P"
+   },
+   "q": "Runners on first and second with nobody out. The batter bunts and the ball rolls slowly toward third base. You pick it up. What is your first thought?",
+   "opts": [
+    "Look at third for the lead runner, but take the sure out at first if you cannot get him",
+    "Always throw to first base",
+    "Throw to second base"
+   ],
+   "ans": 0,
+   "why": "The lead runner moving to third is the most dangerous. If you can beat him there you stop the rally, but if not, a sure out at first is better than a wild throw that loads the bases.",
+   "tip": "Lead runner if you can, else the sure out."
+  },
+  {
+   "id": "pit7",
+   "cat": "pit",
+   "lvl": 3,
+   "sit": {
+    "inn": 5,
+    "outs": 1,
+    "b": [
+     0,
+     0,
+     1
+    ],
+    "us": 1,
+    "them": 1,
+    "cnt": "1-2",
+    "you": "C"
+   },
+   "q": "You are catching with a runner on third and one out. A curveball bounces in the dirt in front of you. What do you do?",
+   "opts": [
+    "Drop to your knees and block it so it stays in front of you",
+    "Reach out to snag it with your glove only",
+    "Turn your head and let it go by"
+   ],
+   "ans": 0,
+   "why": "A ball that gets past you lets the runner score on a wild pitch. Blocking with your body keeps it in front of you so the runner has to hold, even if you do not catch it cleanly.",
+   "tip": "Runner on third: block everything."
+  },
+  {
+   "id": "rul6",
+   "cat": "rul",
+   "lvl": 3,
+   "sit": {
+    "inn": 6,
+    "outs": 2,
+    "b": [
+     0,
+     0,
+     1
+    ],
+    "us": 2,
+    "them": 3,
+    "cnt": "",
+    "you": "3"
+   },
+   "q": "Two outs. The batter hits a ground ball and is thrown out at first for the third out. You crossed home plate just before the throw got to first. Does your run count?",
+   "opts": [
+    "No, the third out was a force out, so no run scores",
+    "Yes, you touched home plate first",
+    "Yes, because you were not the one who made the out"
+   ],
+   "ans": 0,
+   "why": "A run cannot score on a play where the third out is a force out, and the batter being thrown out at first is a force out. Timing does not matter in that case, though it does on a tag play.",
+   "tip": "3rd out by force? No run."
+  },
+  {
+   "id": "rul7",
+   "cat": "rul",
+   "lvl": 3,
+   "sit": {
+    "inn": 3,
+    "outs": 1,
+    "b": [
+     1,
+     0,
+     0
+    ],
+    "us": 0,
+    "them": 0,
+    "cnt": "",
+    "you": "1"
+   },
+   "q": "You are the runner on first. A fair ground ball hits you before it gets past an infielder. What happens?",
+   "opts": [
+    "You are out, the ball is dead and the batter is awarded first base",
+    "Nothing, play continues",
+    "You are safe because you did not touch the ball on purpose"
+   ],
+   "ans": 0,
+   "why": "A runner hit by a fair batted ball before it passes an infielder is out, even if it was an accident. The ball is dead, and the batter is awarded first base.",
+   "tip": "Ball hits runner? Runner is out."
+  },
+  {
+   "id": "iq6",
+   "cat": "iq",
+   "lvl": 3,
+   "sit": {
+    "inn": 7,
+    "outs": 1,
+    "b": [
+     0,
+     0,
+     1
+    ],
+    "us": 4,
+    "them": 4,
+    "cnt": "",
+    "you": "P"
+   },
+   "q": "Last inning, tie game, runner on third, one out. First base is open and a great hitter is up, with a weaker hitter behind him. What is a smart option?",
+   "opts": [
+    "Walk him on purpose to set up a force at every base",
+    "Throw him a fat pitch and hope",
+    "Pitch him carefully inside and risk a wild pitch"
+   ],
+   "ans": 0,
+   "why": "With first base open, walking him puts a force on at every base, so a ground ball can be a force at home or a double play. You also get to face the weaker hitter next.",
+   "tip": "First base open? A walk can help."
+  },
+  {
+   "id": "iq7",
+   "cat": "iq",
+   "lvl": 3,
+   "sit": {
+    "inn": 7,
+    "outs": 1,
+    "b": [
+     1,
+     0,
+     0
+    ],
+    "us": 5,
+    "them": 3,
+    "cnt": "",
+    "you": "RF"
+   },
+   "q": "You are the right fielder in the last inning with a two-run lead and a runner on first. Where should you play?",
+   "opts": [
+    "Deeper, so nothing gets over your head",
+    "Shallow, to throw out the runner on a single",
+    "Wherever you like"
+   ],
+   "ans": 0,
+   "why": "With a lead late in the game the biggest danger is a ball over your head that scores runs quickly. Playing deeper keeps everything in front of you and you give up only a single.",
+   "tip": "Late with a lead? Keep it in front."
   }
  ],
  "trivia": [
   {
    "id": "tv1",
    "cat": "Rules",
+   "lvl": 1,
    "q": "How many outs does a team get in each half inning?",
    "opts": [
     "2",
@@ -857,6 +1182,7 @@
   {
    "id": "tv2",
    "cat": "Rules",
+   "lvl": 1,
    "q": "How many balls make a walk?",
    "opts": [
     "3",
@@ -869,6 +1195,7 @@
   {
    "id": "tv3",
    "cat": "Fields",
+   "lvl": 2,
    "q": "In Little League Majors, how far apart are the bases?",
    "opts": [
     "50 feet",
@@ -881,6 +1208,7 @@
   {
    "id": "tv4",
    "cat": "Fields",
+   "lvl": 2,
    "q": "How far apart are the bases in Major League Baseball?",
    "opts": [
     "60 feet",
@@ -894,6 +1222,7 @@
   {
    "id": "tv5",
    "cat": "Fun",
+   "lvl": 2,
    "q": "How many double stitches does a baseball have?",
    "opts": [
     "72",
@@ -906,6 +1235,7 @@
   {
    "id": "tv6",
    "cat": "History",
+   "lvl": 2,
    "q": "Which player broke Major League Baseball’s color barrier in 1947?",
    "opts": [
     "Jackie Robinson",
@@ -919,6 +1249,7 @@
   {
    "id": "tv7",
    "cat": "Records",
+   "lvl": 3,
    "q": "Who holds the Major League record for career home runs?",
    "opts": [
     "Babe Ruth",
@@ -932,6 +1263,7 @@
   {
    "id": "tv8",
    "cat": "Records",
+   "lvl": 3,
    "q": "Which player played 2,632 games in a row, a record that stood for decades?",
    "opts": [
     "Lou Gehrig",
@@ -944,6 +1276,7 @@
   {
    "id": "tv9",
    "cat": "History",
+   "lvl": 2,
    "q": "Which player was nicknamed “The Iron Horse”?",
    "opts": [
     "Lou Gehrig",
@@ -956,6 +1289,7 @@
   {
    "id": "tv10",
    "cat": "Fun",
+   "lvl": 2,
    "q": "Where is the Little League World Series played every August?",
    "opts": [
     "Cooperstown, New York",
@@ -969,6 +1303,7 @@
   {
    "id": "tv11",
    "cat": "Rules",
+   "lvl": 3,
    "q": "What do we call a game in which no opposing batter reaches base at all?",
    "opts": [
     "A shutout",
@@ -981,6 +1316,7 @@
   {
    "id": "tv12",
    "cat": "Positions",
+   "lvl": 1,
    "q": "Which two players make up the “battery”?",
    "opts": [
     "Pitcher and catcher",
@@ -993,6 +1329,7 @@
   {
    "id": "tv13",
    "cat": "Stats",
+   "lvl": 2,
    "q": "What does ERA stand for?",
    "opts": [
     "Earned Run Average",
@@ -1005,6 +1342,7 @@
   {
    "id": "tv14",
    "cat": "Stats",
+   "lvl": 2,
    "q": "In a single game, what is it called when a batter strikes out four times?",
    "opts": [
     "A hat trick",
@@ -1017,6 +1355,7 @@
   {
    "id": "tv15",
    "cat": "Stats",
+   "lvl": 3,
    "q": "To win baseball’s batting Triple Crown, a player must lead the league in batting average, home runs and what?",
    "opts": [
     "Stolen bases",
@@ -1029,6 +1368,7 @@
   {
    "id": "tv16",
    "cat": "Fun",
+   "lvl": 1,
    "q": "Which song is traditionally sung during the seventh-inning stretch?",
    "opts": [
     "Take Me Out to the Ball Game",
@@ -1041,6 +1381,7 @@
   {
    "id": "tv17",
    "cat": "Fields",
+   "lvl": 2,
    "q": "What is the famous left-field wall at Fenway Park called?",
    "opts": [
     "The Green Monster",
@@ -1053,6 +1394,7 @@
   {
    "id": "tv18",
    "cat": "Equipment",
+   "lvl": 2,
    "q": "Which award is given each year to the best defensive player at each position?",
    "opts": [
     "The Gold Glove",
@@ -1065,6 +1407,7 @@
   {
    "id": "tv19",
    "cat": "Rules",
+   "lvl": 2,
    "q": "What happens to the runners when a pitcher commits a balk?",
    "opts": [
     "Each runner moves up one base",
@@ -1077,6 +1420,7 @@
   {
    "id": "tv20",
    "cat": "Positions",
+   "lvl": 1,
    "q": "How many players does a team have on the field on defense?",
    "opts": [
     "8",
@@ -1089,6 +1433,7 @@
   {
    "id": "tv21",
    "cat": "History",
+   "lvl": 1,
    "q": "Which slugger was known as “The Bambino” and “The Sultan of Swat”?",
    "opts": [
     "Babe Ruth",
@@ -1101,6 +1446,7 @@
   {
    "id": "tv22",
    "cat": "Rules",
+   "lvl": 1,
    "q": "When a batter is hit by a pitch and did not swing, what does he get?",
    "opts": [
     "A ball",
@@ -1110,6 +1456,140 @@
    ],
    "ans": 1,
    "fact": "The batter is awarded first base if he tried to avoid the pitch."
+  },
+  {
+   "id": "tv23",
+   "cat": "Rules",
+   "lvl": 1,
+   "q": "How many bases are on a baseball field, counting home plate?",
+   "opts": [
+    "3",
+    "4",
+    "5"
+   ],
+   "ans": 1,
+   "fact": "First, second, third and home make four."
+  },
+  {
+   "id": "tv24",
+   "cat": "Rules",
+   "lvl": 1,
+   "q": "What do we call a hit that lets the batter stand safely on second base?",
+   "opts": [
+    "A single",
+    "A double",
+    "A triple"
+   ],
+   "ans": 1,
+   "fact": "Single is first base, double is second, triple is third and a home run scores everyone."
+  },
+  {
+   "id": "tv25",
+   "cat": "Equipment",
+   "lvl": 1,
+   "q": "What does the catcher wear to protect his face?",
+   "opts": [
+    "A mask",
+    "A visor",
+    "A batting helmet only"
+   ],
+   "ans": 0,
+   "fact": "Catchers also wear a chest protector and shin guards, called the tools of ignorance."
+  },
+  {
+   "id": "tv26",
+   "cat": "Rules",
+   "lvl": 3,
+   "q": "A batter swings and misses strike three, but the catcher drops the ball and the batter reaches first. How is it scored for the pitcher?",
+   "opts": [
+    "A strikeout",
+    "A walk",
+    "A passed ball only"
+   ],
+   "ans": 0,
+   "fact": "The pitcher still gets credit for the strikeout, even though the batter reached base."
+  },
+  {
+   "id": "tv27",
+   "cat": "History",
+   "lvl": 3,
+   "q": "Who was the first player elected unanimously to the Baseball Hall of Fame?",
+   "opts": [
+    "Mariano Rivera",
+    "Derek Jeter",
+    "Ken Griffey Jr.",
+    "Cal Ripken Jr."
+   ],
+   "ans": 0,
+   "fact": "Mariano Rivera received every vote in 2019."
+  },
+  {
+   "id": "tv28",
+   "cat": "History",
+   "lvl": 3,
+   "q": "Who threw the only perfect game in World Series history?",
+   "opts": [
+    "Don Larsen",
+    "Sandy Koufax",
+    "Roy Halladay",
+    "Cy Young"
+   ],
+   "ans": 0,
+   "fact": "Don Larsen did it for the Yankees in Game 5 of the 1956 World Series."
+  },
+  {
+   "id": "tv29",
+   "cat": "Stats",
+   "lvl": 3,
+   "q": "A batter goes 2-for-4 with a double and a single. What is his slugging percentage for the game?",
+   "opts": [
+    ".500",
+    ".750",
+    ".600"
+   ],
+   "ans": 1,
+   "fact": "Total bases are 2 + 1 = 3, and 3 divided by 4 at bats is .750."
+  },
+  {
+   "id": "tv30",
+   "cat": "Stats",
+   "lvl": 3,
+   "q": "Which of these is NOT counted in the denominator of on-base percentage?",
+   "opts": [
+    "Sacrifice bunts",
+    "Sacrifice flies",
+    "Walks",
+    "At bats"
+   ],
+   "ans": 0,
+   "fact": "On-base percentage divides by at bats, walks, hit by pitch and sacrifice flies. Sacrifice bunts are left out."
+  },
+  {
+   "id": "tv31",
+   "cat": "Stats",
+   "lvl": 3,
+   "q": "In a 6-inning game, a pitcher allows 2 earned runs in 3 innings. What is his ERA?",
+   "opts": [
+    "2.00",
+    "4.00",
+    "6.00"
+   ],
+   "ans": 1,
+   "fact": "2 earned runs x 6 innings, divided by 3 innings pitched, is 4.00."
+  },
+  {
+   "id": "tv32",
+   "cat": "Records",
+   "lvl": 3,
+   "q": "Which pitcher holds the Major League record for career strikeouts?",
+   "opts": [
+    "Nolan Ryan",
+    "Randy Johnson",
+    "Roger Clemens",
+    "Walter Johnson"
+   ],
+   "ans": 0,
+   "fact": "Nolan Ryan struck out 5,714 batters over 27 seasons."
   }
  ],
  "quizzes": [

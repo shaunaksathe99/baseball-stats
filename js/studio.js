@@ -12,6 +12,7 @@
   var TYPES = C.TYPES;
   var ICON = { scenarios: '🧢', trivia: '🎲', quizzes: '📝', kb: '📚', glossary: '🔤', directory: '📍' };
   var POS_LABEL = { bat: 'Batter', '1': 'Runner on 1st', '2': 'Runner on 2nd', '3': 'Runner on 3rd', P: 'Pitcher', C: 'Catcher', '1B': 'First baseman', '2B': 'Second baseman', SS: 'Shortstop', '3B': 'Third baseman', LF: 'Left fielder', CF: 'Center fielder', RF: 'Right fielder' };
+  var LEVEL_OPTS = [[1, 'A (the basics)'], [2, 'AA (tougher)'], [3, 'AAA (big-league smarts)']];
   var HELP = {
     scenarios: 'Game situations for the Game IQ Simulator. Each has a diagram, a question, and the best play.',
     trivia: 'Quick multiple-choice questions, shown five at a time.',
@@ -83,7 +84,7 @@
   /* ---------- item forms ---------- */
   function blankRaw(type) {
     if (type === 'scenarios') return { cat: 'run', lvl: 1, sit: { inn: 3, outs: 1, b: [0, 0, 0], us: 0, them: 0, cnt: '', you: 'bat' }, q: '', opts: ['', '', '', ''], ans: 0, why: '', tip: '' };
-    if (type === 'trivia') return { cat: '', q: '', opts: ['', '', '', ''], ans: 0, fact: '' };
+    if (type === 'trivia') return { cat: '', lvl: 1, q: '', opts: ['', '', '', ''], ans: 0, fact: '' };
     if (type === 'quizzes') return { title: '', desc: '', questions: [blankQ(), blankQ(), blankQ()] };
     if (type === 'kb') return { cat: '', title: '', summary: '', body: '' };
     if (type === 'glossary') return { term: '', def: '' };
@@ -95,7 +96,7 @@
   function formHtml(type, r) {
     var h = '';
     if (type === 'trivia') {
-      h = fld('q', 'Question', r.q, { max: 200 }) + answers('', r.opts, r.ans) + fld('cat', 'Category', r.cat, { max: 30, list: 'sd-cats', ph: 'Rules, History, Fun...' }) +
+      h = fld('q', 'Question', r.q, { max: 200 }) + answers('', r.opts, r.ans) + fld('cat', 'Category', r.cat, { max: 30, list: 'sd-cats', ph: 'Rules, History, Fun...' }) + sel('lvl', 'League level', LEVEL_OPTS, r.lvl || 1) +
         fld('fact', 'Fun fact shown after answering (optional)', r.fact, { rows: 3, max: 300 }) + datalist('sd-cats', list('trivia'));
     } else if (type === 'glossary') {
       h = fld('term', 'Word or phrase', r.term, { max: 40 }) + fld('def', 'Definition', r.def, { rows: 4, max: 400, hint: 'One or two plain sentences that a 9-year-old could follow.' });
@@ -119,7 +120,7 @@
     } else {
       var cats = Sim.CATS.map(function (c) { return [c.id, c.icon + ' ' + c.name]; });
       var s = r.sit || {}, b = s.b || [0, 0, 0];
-      h = sel('cat', 'Skill area', cats, r.cat) + sel('lvl', 'Difficulty', [[1, 'Rookie'], [2, 'All-Star']], r.lvl) +
+      h = sel('cat', 'Skill area', cats, r.cat) + sel('lvl', 'Difficulty', LEVEL_OPTS, r.lvl) +
         '<fieldset class="ansset"><legend>The situation</legend>' +
         '<div class="grid2">' + sel('inn', 'Inning', [1, 2, 3, 4, 5, 6, 7].map(function (n) { return [n, String(n)]; }), s.inn) + sel('outs', 'Outs', [[0, '0'], [1, '1'], [2, '2']], s.outs) + '</div>' +
         '<div class="row wrap" style="margin:6px 0 10px"><span class="small muted">Runners on:</span>' + ['1st', '2nd', '3rd'].map(function (n, i) { return '<label class="check inline"><input type="checkbox" name="b' + i + '"' + (b[i] ? ' checked' : '') + '> <span>' + n + '</span></label>'; }).join('') + '</div>' +
@@ -136,7 +137,7 @@
     var el = form.elements, v = function (n) { return el[n] ? el[n].value : ''; }, chk = function (n) { return !!(el[n] && el[n].checked); };
     function opts(prefix) { var o = []; for (var i = 0; i < 4; i++) o.push(v(prefix + 'o' + i)); return o; }
     var raw = { id: v('_id'), hidden: chk('hidden') };
-    if (type === 'trivia') { raw.q = v('q'); raw.opts = opts(''); raw.ans = Number(v('ans') || 0); raw.cat = v('cat'); raw.fact = v('fact'); }
+    if (type === 'trivia') { raw.q = v('q'); raw.opts = opts(''); raw.ans = Number(v('ans') || 0); raw.cat = v('cat'); raw.lvl = Number(v('lvl')) || 1; raw.fact = v('fact'); }
     else if (type === 'glossary') { raw.term = v('term'); raw.def = v('def'); }
     else if (type === 'kb') { raw.title = v('title'); raw.cat = v('cat'); raw.summary = v('summary'); raw.body = v('body'); }
     else if (type === 'directory') { ['type', 'name', 'tagline', 'services', 'ages', 'city', 'state', 'website', 'email', 'phone', 'notes', 'added'].forEach(function (k) { raw[k] = v(k); }); }

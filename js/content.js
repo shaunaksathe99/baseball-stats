@@ -73,11 +73,20 @@
     if (!tip) errs.push('Add a short "Remember" tip (60 characters or less).');
     var id = typeof r.id === 'string' && /^[a-z]{2,4}\d{1,3}$/.test(r.id) && !taken[r.id] ? r.id : '';
     if (!id && cat) { var n = 1; while (taken[cat + n]) n++; id = cat + n; }
-    var item = { id: id, cat: cat, lvl: Number(r.lvl) === 2 ? 2 : 1, sit: { inn: int(sit.inn, 1, 7), outs: int(sit.outs, 0, 2), b: b, us: int(sit.us, 0, 30), them: int(sit.them, 0, 30), cnt: cnt, you: you }, q: q, opts: a.opts, ans: a.ans, why: why, tip: tip };
+    var item = { id: id, cat: cat, lvl: levelOf(r.lvl), sit: { inn: int(sit.inn, 1, 7), outs: int(sit.outs, 0, 2), b: b, us: int(sit.us, 0, 30), them: int(sit.them, 0, 30), cnt: cnt, you: you }, q: q, opts: a.opts, ans: a.ans, why: why, tip: tip };
     if (truthy(r.hidden)) item.hidden = true;
     if (!errs.length && Sim) { var probs = Sim.validate([item]); if (probs.length) errs.push('Something is off with this situation: ' + probs[0].replace(/^[a-z0-9]+: /, '') + '.'); }
     return { item: item, errors: errs };
   }
+
+  // League level: A = 1, AA = 2, AAA = 3. Accepts 'A', 'aa', 'AAA', 1, 2, 3. Anything else becomes A.
+  function levelOf(v) {
+    var s = String(v == null ? '' : v).trim().toUpperCase();
+    if (s === 'AAA' || s === '3') return 3;
+    if (s === 'AA' || s === '2') return 2;
+    return 1;
+  }
+  var LEVELS = { 1: 'A', 2: 'AA', 3: 'AAA' };
 
   function cleanTrivia(raw, taken) {
     var errs = [], r = raw || {};
@@ -85,7 +94,7 @@
     if (!q) errs.push('Type the question.');
     var a = cleanAnswers(r, errs, 2);
     var id = validId(r.id) && !taken[r.id] ? r.id : newId('tv', taken, 'num');
-    var item = { id: id, cat: line(r.cat, 30) || 'General', q: q, opts: a.opts, ans: a.ans, fact: str(r.fact, 300) };
+    var item = { id: id, cat: line(r.cat, 30) || 'General', lvl: levelOf(r.lvl), q: q, opts: a.opts, ans: a.ans, fact: str(r.fact, 300) };
     if (truthy(r.hidden)) item.hidden = true;
     return { item: item, errors: errs };
   }
@@ -218,7 +227,7 @@
   function norm(h) { return String(h || '').toLowerCase().replace(/[^a-z0-9]/g, ''); }
 
   var COLS = {
-    trivia: ['ID', 'Category', 'Question', 'Answer A', 'Answer B', 'Answer C', 'Answer D', 'Correct answer (A-D)', 'Fun fact', 'Hide (yes/no)'],
+    trivia: ['ID', 'Category', 'Level (A/AA/AAA)', 'Question', 'Answer A', 'Answer B', 'Answer C', 'Answer D', 'Correct answer (A-D)', 'Fun fact', 'Hide (yes/no)'],
     glossary: ['Term', 'Definition', 'Hide (yes/no)'],
     kb: ['ID', 'Category', 'Title', 'Summary', 'Article text', 'Hide (yes/no)'],
     directory: ['ID', 'Type (trainer/coach/team/facility)', 'Name', 'Tagline', 'Services (separate with ;)', 'Ages', 'City', 'State', 'Website', 'Email', 'Phone', 'Notes', 'Hide (yes/no)'],
@@ -231,7 +240,7 @@
     var rows = [COLS[type]];
     (items || []).forEach(function (x) {
       var h = x.hidden ? 'yes' : '';
-      if (type === 'trivia') rows.push([x.id, x.cat, x.q, x.opts[0] || '', x.opts[1] || '', x.opts[2] || '', x.opts[3] || '', letter(x.ans), x.fact, h]);
+      if (type === 'trivia') rows.push([x.id, x.cat, LEVELS[x.lvl] || 'A', x.q, x.opts[0] || '', x.opts[1] || '', x.opts[2] || '', x.opts[3] || '', letter(x.ans), x.fact, h]);
       else if (type === 'glossary') rows.push([x.term, x.def, h]);
       else if (type === 'kb') rows.push([x.id, x.cat, x.title, x.summary, x.body, h]);
       else if (type === 'directory') rows.push([x.id, x.type, x.name, x.tagline, x.services.join('; '), x.ages, x.city, x.state, x.website, x.email, x.phone, x.notes, h]);
@@ -241,7 +250,7 @@
   }
   function templateCsv(type) {
     var sample = {
-      trivia: [['', 'History', 'Who was nicknamed the Iron Horse?', 'Lou Gehrig', 'Babe Ruth', 'Ty Cobb', '', 'A', 'He played 2,130 straight games.', '']],
+      trivia: [['', 'History', 'AA', 'Who was nicknamed the Iron Horse?', 'Lou Gehrig', 'Babe Ruth', 'Ty Cobb', '', 'A', 'He played 2,130 straight games.', '']],
       glossary: [['Walk-off', 'A hit or run that ends the game in the home team\'s last turn at bat.', '']],
       kb: [['', 'Rules', 'What is a balk?', 'An illegal move by the pitcher.', 'A balk happens when the pitcher makes an illegal motion with runners on base.\n\nEvery runner moves up one base.', '']],
       directory: [['', 'trainer', 'Pro Swing Academy', 'Hitting lessons for ages 7 to 14', 'Private hitting lessons; Small group clinics', '7-14', 'Austin', 'TX', 'https://example.com', 'info@example.com', '', '', '']],
@@ -252,7 +261,7 @@
   }
 
   var KEYMAP = {
-    trivia: { id: 'id', category: 'cat', question: 'q', answera: 'a0', answerb: 'a1', answerc: 'a2', answerd: 'a3', correctanswerad: 'correct', correct: 'correct', funfact: 'fact', hideyesno: 'hidden', hide: 'hidden' },
+    trivia: { id: 'id', category: 'cat', levelaaaaaa: 'lvl', level: 'lvl', question: 'q', answera: 'a0', answerb: 'a1', answerc: 'a2', answerd: 'a3', correctanswerad: 'correct', correct: 'correct', funfact: 'fact', hideyesno: 'hidden', hide: 'hidden' },
     glossary: { term: 'term', definition: 'def', hideyesno: 'hidden', hide: 'hidden' },
     kb: { id: 'id', category: 'cat', title: 'title', summary: 'summary', articletext: 'body', text: 'body', body: 'body', hideyesno: 'hidden', hide: 'hidden' },
     directory: { id: 'id', typetrainercoachteamfacility: 'type', type: 'type', name: 'name', tagline: 'tagline', servicesseparatewith: 'services', services: 'services', ages: 'ages', city: 'city', state: 'state', website: 'website', email: 'email', phone: 'phone', notes: 'notes', hideyesno: 'hidden', hide: 'hidden' },
@@ -361,7 +370,7 @@
   }
 
   return {
-    TYPES: TYPES, DIR_TYPES: DIR_TYPES, LIMITS: LIMITS, DRAFT_KEY: DRAFT_KEY, PREVIEW_KEY: PREVIEW_KEY,
+    TYPES: TYPES, LEVELS: LEVELS, levelOf: levelOf, DIR_TYPES: DIR_TYPES, LIMITS: LIMITS, DRAFT_KEY: DRAFT_KEY, PREVIEW_KEY: PREVIEW_KEY,
     clean: clean, normalize: normalize, visible: visible, emptyContent: emptyContent, toFile: toFile, dirType: dirType,
     parseCsv: parseCsv, stringifyCsv: stringifyCsv, csvTypes: csvTypes, toCsv: toCsv, fromCsv: fromCsv, templateCsv: templateCsv,
     buildRequest: buildRequest, parseRequest: parseRequest, md: md, esc: esc, slug: slug, readDraft: readDraft, previewOn: previewOn, active: active

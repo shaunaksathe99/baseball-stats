@@ -7,7 +7,7 @@
   var esc = A.esc, content = A.content();
   function list(k) { return C.visible(content[k] || []); }
 
-  var st = { run: null, kbq: '', kbcat: '', gq: '', dtype: '', dstate: '', dq: '', req: null };
+  var st = { run: null, tlvl: 0, kbq: '', kbcat: '', gq: '', dtype: '', dstate: '', dq: '', req: null };
 
   function back(label, to) { return '<a class="link small" href="#' + to + '">&larr; ' + esc(label) + '</a>'; }
   function head(eyebrow, title, text) { return '<section class="card hero"><p class="eyebrow">' + esc(eyebrow) + '</p><h2>' + esc(title) + '</h2>' + (text ? '<p class="muted">' + esc(text) + '</p>' : '') + '</section>'; }
@@ -20,9 +20,10 @@
     st.run = { kind: kind, id: id, title: title, items: items, i: 0, order: Sim.shuffle(items[0].opts.length), picked: -1, results: [], done: false, saved: false };
     return st.run;
   }
+  function triviaPool() { var all = list('trivia'), f = all.filter(function (t) { return !st.tlvl || t.lvl === st.tlvl; }); return f.length ? f : all; }
   function triviaItems(n) {
-    var all = list('trivia'), order = Sim.shuffle(all.length);
-    return order.slice(0, n).map(function (k) { var t = all[k]; return { q: t.q, opts: t.opts, ans: t.ans, expl: t.fact, cat: t.cat }; });
+    var all = triviaPool(), order = Sim.shuffle(all.length);
+    return order.slice(0, n).map(function (k) { var t = all[k]; return { q: t.q, opts: t.opts, ans: t.ans, expl: t.fact, cat: t.cat, lvl: t.lvl }; });
   }
   function dayIndex(n) { return n ? Math.floor(Date.now() / 864e5) % n : 0; }
 
@@ -42,7 +43,7 @@
     }
     return '<div class="row between" style="margin-bottom:8px"><button class="link small" data-action="l-end">&larr; Quit</button><span class="muted small">Question ' + (run.i + 1) + ' of ' + run.items.length + '</span></div>' +
       '<div class="dots" aria-hidden="true">' + dots + '</div>' +
-      '<section class="card">' + (it.cat ? '<div class="chips"><span class="chip">' + esc(it.cat) + '</span></div>' : '') + '<h3 class="sim-q">' + esc(it.q) + '</h3>' +
+      '<section class="card">' + (it.cat ? '<div class="chips"><span class="chip">' + esc(it.cat) + '</span>' + (it.lvl ? '<span class="chip">' + esc(C.LEVELS[it.lvl]) + '</span>' : '') + '</div>' : '') + '<h3 class="sim-q">' + esc(it.q) + '</h3>' +
       '<div class="opts" role="group" aria-label="Answer choices">' + opts + '</div>' + fb + '</section>';
   }
   function viewSummary(run, p) {
@@ -75,8 +76,10 @@
     if (st.run && st.run.kind === 'trivia') return st.run.done ? viewSummary(st.run, p) : viewRun(st.run, p);
     var all = list('trivia');
     if (!all.length) return none('🎲', 'No trivia yet', 'New questions are on the way.');
+    var chips = '<div class="chips lvl" role="group" aria-label="League level" style="margin:0 0 6px"><button class="chip' + (st.tlvl ? '' : ' on') + '" data-action="l-tlvl" data-v="0" aria-pressed="' + !st.tlvl + '">All</button>' +
+      [1, 2, 3].map(function (n) { var c = all.filter(function (t) { return t.lvl === n; }).length; return c ? '<button class="chip' + (st.tlvl === n ? ' on' : '') + '" data-action="l-tlvl" data-v="' + n + '" aria-pressed="' + (st.tlvl === n) + '">' + C.LEVELS[n] + ' <span class="small">' + c + '</span></button>' : ''; }).join('') + '</div>';
     return back('Learn', 'learn') + head('Trivia', 'Baseball trivia', all.length + ' questions in the bank. Each round is five random ones.') +
-      '<section class="card"><button class="btn block" data-action="l-trivia">Play a 5-question round &rarr;</button></section>' + A.footer();
+      '<section class="card"><h3>League level</h3>' + chips + '<p class="hint">' + (st.tlvl ? '<b>' + C.LEVELS[st.tlvl] + '</b>: ' + esc(Sim.LEVEL_INFO[st.tlvl]) + '. ' : '') + 'A is the basics, AA is tougher, AAA is big-league smarts.</p><button class="btn block" data-action="l-trivia" style="margin-top:8px">Play a 5-question round &rarr;</button></section>' + A.footer();
   }
   function viewQuizzes(p) {
     if (st.run && st.run.kind === 'quiz') return st.run.done ? viewSummary(st.run, p) : viewRun(st.run, p);
@@ -207,6 +210,7 @@
   A.ext.views['find-list'] = function () { return viewFind(); };
 
   var X = A.ext.actions;
+  X['l-tlvl'] = function (el) { var v = Number(el.dataset.v); st.tlvl = v === 1 || v === 2 || v === 3 ? v : 0; A.render(); };
   X['l-trivia'] = function () { startRun('trivia', 'trivia', 'Trivia', triviaItems(5)); A.render(); };
   X['l-daily'] = function () { var all = list('trivia'); if (!all.length) return; var t = all[dayIndex(all.length)]; startRun('trivia', 'daily', 'Trivia of the day', [{ q: t.q, opts: t.opts, ans: t.ans, expl: t.fact, cat: t.cat }]); A.go('learn/trivia'); };
   X['l-quiz'] = function (el) {

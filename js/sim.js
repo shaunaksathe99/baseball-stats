@@ -13,7 +13,9 @@
     { id: 'rul', name: 'Rules', icon: '📋' },
     { id: 'iq', name: 'Smart Play', icon: '🧠' }
   ];
-  var LEVELS = { 1: 'Rookie', 2: 'All-Star' };
+  // League levels, like the minors: A is the basics, AA is tougher, AAA is big-league smarts.
+  var LEVELS = { 1: 'A', 2: 'AA', 3: 'AAA' };
+  var LEVEL_INFO = { 1: 'The basics', 2: 'Getting tougher', 3: 'Big-league smarts' };
   var POSITIONS = ['bat', '1', '2', '3', 'P', 'C', '1B', '2B', 'SS', '3B', 'LF', 'CF', 'RF'];
 
   // sit: inn (1-7), outs (0-2), b = [first, second, third] runners, us/them = runs, cnt = "balls-strikes" or '', you = where the player is.
@@ -36,7 +38,10 @@
   function byId(id) { return Object.prototype.hasOwnProperty.call(BY_ID, id) ? BY_ID[id] : null; }
   function ids() { return SCENARIOS.map(function (s) { return s.id; }); }
   function catOf(id) { for (var i = 0; i < CATS.length; i++) if (CATS[i].id === id) return CATS[i]; return null; }
-  function inCat(cat) { return catOf(cat) ? SCENARIOS.filter(function (s) { return s.cat === cat; }) : SCENARIOS.slice(); }
+  function inCat(cat, lvl) {
+    var l = Number(lvl) || 0;
+    return SCENARIOS.filter(function (s) { return (!catOf(cat) || s.cat === cat) && (!l || s.lvl === l); });
+  }
 
   // Structural checks, used by tests and by anyone adding scenarios later. Returns a list of problems.
   function validate(list) {
@@ -68,10 +73,10 @@
   }
 
   // prog: { id: [attempts, correct, lastWasCorrect] }. Missed ones come first, then new ones, then mastered ones.
-  function pickRound(prog, cat, n, rng) {
+  function pickRound(prog, cat, n, rng, lvl) {
     rng = rng || Math.random;
     prog = prog || {};
-    var pool = inCat(cat).map(function (s) {
+    var pool = (inCat(cat, lvl).length ? inCat(cat, lvl) : inCat(cat)).map(function (s) {
       var r = Object.prototype.hasOwnProperty.call(prog, s.id) ? prog[s.id] : null;
       var base = !r ? 0.5 : (r[2] ? 2 : 0);
       return { id: s.id, k: base + rng() * 0.9 };
@@ -110,5 +115,5 @@
     return n;
   }
 
-  return { CATS: CATS, LEVELS: LEVELS, POSITIONS: POSITIONS, SCENARIOS: SCENARIOS, setScenarios: setScenarios, byId: byId, ids: ids, catOf: catOf, inCat: inCat, validate: validate, pickRound: pickRound, shuffle: shuffle, rank: rank, masteredCount: masteredCount, RANKS: RANKS };
+  return { CATS: CATS, LEVELS: LEVELS, LEVEL_INFO: LEVEL_INFO, POSITIONS: POSITIONS, SCENARIOS: SCENARIOS, setScenarios: setScenarios, byId: byId, ids: ids, catOf: catOf, inCat: inCat, validate: validate, pickRound: pickRound, shuffle: shuffle, rank: rank, masteredCount: masteredCount, RANKS: RANKS };
 });
