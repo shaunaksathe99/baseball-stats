@@ -1,5 +1,5 @@
 /* Network-first so updates ship immediately; cache is only the offline fallback. */
-var CACHE = 'dugout-diary-v11';
+var CACHE = 'dugout-diary-v12';
 var FILES = ['./', 'index.html', 'css/style.css', 'js/stats.js', 'js/sim.js', 'content/content.js', 'js/content.js', 'js/app.js', 'js/learn.js', 'js/brand.js', 'brand/plate450-mark.svg', 'brand/plate450-mark-dark.svg', 'favicon-32.png', 'js/studio.js', 'js/review.js', 'js/plan.js', 'js/cloud-config.js', 'js/cloud.js', 'icon.svg', 'manifest.webmanifest'];
 self.addEventListener('install', function (e) {
   self.skipWaiting();

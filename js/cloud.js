@@ -50,7 +50,8 @@
 
     function req(method, path, body, headers) {
       var h = { apikey: key, 'Content-Type': 'application/json' };
-      if (st.s && !(headers && headers.noAuth)) h.Authorization = 'Bearer ' + st.s.a; else h.Authorization = 'Bearer ' + key;
+      // New-style publishable keys are not JWTs, so they go only in the apikey header. Signed-in calls add the user's token.
+      if (st.s && !(headers && headers.noAuth)) h.Authorization = 'Bearer ' + st.s.a;
       if (headers) Object.keys(headers).forEach(function (k) { if (k !== 'noAuth') h[k] = headers[k]; });
       return fetch(url + path, { method: method, headers: h, body: body === undefined ? undefined : JSON.stringify(body) }).then(function (r) {
         return r.text().then(function (t) { var j = null; try { j = t ? JSON.parse(t) : null; } catch (e) { j = null; } return { ok: r.ok, status: r.status, json: j }; });
