@@ -73,7 +73,17 @@
     }
 
     function setStatus(s, m) { ui.status = s; ui.msg = m || ''; refresh(); }
+    /* The header button: "Sign in" when signed out, "Account" with a status dot when signed in. */
+    function paintAcct() {
+      var b = document.getElementById('acct'); if (!b) return;
+      b.hidden = !on; if (!on) return;
+      var inn = signedIn(), bad = inn && (ui.status === 'error' || ui.status === 'offline');
+      b.setAttribute('data-state', !inn ? 'out' : bad ? 'warn' : 'in');
+      b.querySelector('.lbl').textContent = inn ? 'Account' : 'Sign in';
+      b.setAttribute('aria-label', inn ? 'Online account, signed in as ' + st.s.e : 'Parent or guardian sign-in');
+    }
     function refresh() {
+      paintAcct();
       var h = (location.hash || '#home');
       if (h === '#about' || h === '#home' || h === '' ) A.render();
     }
@@ -111,6 +121,7 @@
     }
     function schedule(ms) { if (!on || !signedIn()) return; clearTimeout(ui.timer); ui.timer = setTimeout(sync, ms === undefined ? 2500 : ms); }
     A.ext.onSave = function () { if (!signedIn()) return; st.dirty = true; persist(); schedule(); };
+    paintAcct();
     if (on) {
       document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible' && signedIn() && Date.now() - st.at > 30000) sync(); });
       window.addEventListener('online', function () { if (signedIn()) schedule(500); });
@@ -174,11 +185,18 @@
         err(f, r.status === 0 ? 'Could not reach the sign-in service. Check your connection.' : 'That code did not work. It may have expired. Go back to get a new one.');
       });
     };
-    A.ext.actions['cloud-sync'] = function () { sync(); };
+    A.ext.actions['acct'] = function () {
+      if (!signedIn()) { ui.email = ''; stepAge(); return; }
+      var line = ui.status === 'syncing' ? 'Syncing…' : ui.status === 'error' || ui.status === 'offline' ? esc(ui.msg) : st.dirty ? 'Changes waiting to sync' : 'Saved online · last synced ' + ago(st.at);
+      A.openModal('<h3>Online account</h3><p>Signed in as <b>' + esc(st.s.e) + '</b></p><p class="muted" role="status">' + line + '</p>' +
+        '<div class="actions" style="flex-direction:column;align-items:stretch"><button class="btn" data-action="cloud-sync">Sync now</button><button class="btn ghost" data-action="cloud-out">Sign out</button><button class="btn ghost" data-action="acct-more">More account options</button><button class="btn ghost" data-action="modal-close">Close</button></div>');
+    };
+    A.ext.actions['acct-more'] = function () { A.closeModal(); A.go('about'); };
+    A.ext.actions['cloud-sync'] = function () { sync(); A.closeModal(); };
     A.ext.actions['cloud-out'] = function () {
       var s = st.s; st = { s: null, last: '', dirty: false, at: 0 }; persist(); ui.status = 'idle'; ui.msg = '';
       if (s) req('POST', '/auth/v1/logout', {}, { Authorization: 'Bearer ' + s.a, noAuth: true });
-      A.flash('Signed out. Your diary stays on this device.'); A.render();
+      A.flash('Signed out. Your diary stays on this device.'); A.closeModal(); paintAcct(); A.render();
     };
     A.ext.actions['cloud-del'] = function () {
       A.openModal('<h3>Delete your online account?</h3><p>This permanently deletes your online copy and your account (the email address). The diary on this device is <b>not</b> deleted. Download a backup first if you want extra safety.</p>' +
