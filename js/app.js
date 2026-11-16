@@ -1,4 +1,4 @@
-/* Dugout Diary - single-page app. All data lives in this browser's localStorage. */
+/* Plate 450 Diary - single-page app. All data lives in this browser's localStorage. */
 (function () {
   'use strict';
 
@@ -50,7 +50,7 @@
   function str(v, max) { return String(v == null ? '' : v).replace(/[\u0000-\u001f\u007f<>]/g, '').trim().slice(0, max); }
   function cleanId(v) { v = String(v || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 32); return v || uid('x'); }
   const B32 = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
-  const TERMS_V = 3;
+  const TERMS_V = 4;
   const CONTACT_EMAIL = 'Contact.Plate450@gmail.com';   // shown as "Contact Us" in the footer and on the Terms & Privacy page
   const hasCrypto = !!(window.crypto && window.crypto.subtle && window.crypto.getRandomValues);
   function randBytes(n) { const a = new Uint8Array(n); if (window.crypto && window.crypto.getRandomValues) window.crypto.getRandomValues(a); else for (let i = 0; i < n; i++) a[i] = Math.floor(Math.random() * 256); return a; }
@@ -288,7 +288,7 @@
     const why = due ? (db.bk ? 'Your last backup was ' + backupAgo() + (totalGames() - db.bkN >= 1 ? ', and you have logged ' + plural(totalGames() - db.bkN, 'game') + ' since.' : '.') : 'You have not saved a backup yet.') : 'Your diary lives in this browser.';
     return '<section class="card safe"><h3>Keep your stats safe</h3><p class="muted">' + why + ' Clearing browser data or switching phones would erase it, so save a copy now. It takes two taps.</p>' +
       '<div class="row wrap"><button class="btn grow" data-action="export">Export backup</button><button class="btn ghost grow" data-action="snooze-safe">Not now</button></div>' +
-      (tip ? '<details class="pin-opt"><summary>Add Dugout Diary to your Home Screen</summary><p class="hint">iPhone: tap Share, then Add to Home Screen. Android: open the browser menu, then Install app or Add to Home screen. It opens like an app, works offline, and your browser is far less likely to clear it.</p></details>' : '') + '</section>';
+      (tip ? '<details class="pin-opt"><summary>Add Plate 450 Diary to your Home Screen</summary><p class="hint">iPhone: tap Share, then Add to Home Screen. Android: open the browser menu, then Install app or Add to Home screen. It opens like an app, works offline, and your browser is far less likely to clear it.</p></details>' : '') + '</section>';
   }
   function player() { return db.players.find((p) => p.id === db.active) || null; }
 
@@ -476,10 +476,10 @@
       x.fillStyle = '#EF9F27'; rrect(x, 190, 1150, W - 380, 96, 48); x.fill();
       x.fillStyle = '#412402'; x.font = '800 42px ' + sans; x.fillText('Build your own card — free', W / 2, 1214);
       if (window.Brand) {
-        window.Brand.crest(x, W / 2 - 205, 1296, 64);
-        x.textAlign = 'left'; x.fillStyle = '#F5EFE0'; x.font = '700 34px ' + sans; x.fillText('Dugout Diary', W / 2 - 160, 1294);
-        x.fillStyle = '#ADA99E'; x.font = '600 24px ' + sans; x.fillText('by Plate 450', W / 2 - 160, 1324); x.textAlign = 'center';
-      } else { x.fillStyle = '#ADA99E'; x.font = '600 32px ' + sans; x.fillText('Dugout Diary', W / 2, 1296); }
+        window.Brand.mark(x, W / 2 - 205, 1296, 64);
+        x.textAlign = 'left'; x.fillStyle = '#F5EFE0'; x.font = '700 34px ' + sans; x.fillText('Plate 450 Diary', W / 2 - 160, 1294);
+        x.fillStyle = '#ADA99E'; x.font = '600 24px ' + sans; x.fillText('diary.plate450.com', W / 2 - 160, 1324); x.textAlign = 'center';
+      } else { x.fillStyle = '#ADA99E'; x.font = '600 32px ' + sans; x.fillText('Plate 450 Diary', W / 2, 1296); }
     };
     paint();
   }
@@ -545,7 +545,7 @@
       '<button class="btn block" type="submit">' + (p ? 'Save player card' : 'Create player card') + '</button>' +
       '<p class="hint">We never ask for birthdays, emails, phone numbers, or photos.</p></form>';
   }
-  function footer() { return '<p class="footer">&copy; 2026 Plate 450 &middot; Dugout Diary v' + VERSION + ' &middot; Free for every ballplayer &middot; <a href="#terms">Terms &amp; Privacy</a>' + (CONTACT_EMAIL ? ' &middot; <a href="mailto:' + esc(CONTACT_EMAIL) + '">Contact Us</a>' : '') + '</p>'; }
+  function footer() { return '<p class="footer">&copy; 2026 Plate 450 Diary v' + VERSION + ' &middot; Free for every ballplayer &middot; <a href="#terms">Terms &amp; Privacy</a>' + (CONTACT_EMAIL ? ' &middot; <a href="mailto:' + esc(CONTACT_EMAIL) + '">Contact Us</a>' : '') + '</p>'; }
   function emptyState(icon, title, text, btn) {
     return '<div class="card empty"><div class="big" aria-hidden="true">' + icon + '</div><h3>' + esc(title) + '</h3><p>' + esc(text) + '</p>' + (btn || '') + '</div>';
   }
@@ -827,8 +827,8 @@
       '<input type="file" id="import-file" accept="application/json,.json" hidden></section>';
     const danger = (p ? '<button class="btn danger block" data-action="reset-player" style="margin-bottom:10px">Delete ' + esc(p.name) + '’s data</button>' : '') +
       (db.players.length ? '<button class="btn danger block" data-action="reset-all">Erase everything on this device</button>' : '');
-    return '<section class="card hero"><p class="eyebrow">About</p><h2>A free diary for young ballplayers</h2>' +
-      '<p class="muted">Dugout Diary helps players and parents keep a lasting record of batting, pitching and fielding across every season, from the first tee ball swing and beyond. It is free, with no paywall and no ads.</p></section>' +
+    return '<section class="card hero"><p class="eyebrow">About</p><h2>A free diary for every ballplayer</h2>' +
+      '<p class="muted">Plate 450 Diary helps players and parents keep a lasting record of batting, pitching and fielding across every season, from the first tee ball swing and beyond. It is free, with no paywall and no ads.</p></section>' +
       '<section class="card"><h3>Your privacy</h3><p><b>What is stored:</b> a name or nickname, a city and state or ZIP code, the stats you enter, a random Player ID, and (if you choose) a PIN. All of it stays on your device. By default nothing leaves your device. If a parent or guardian chooses to sign in, the diary is also saved online under their email so it can follow them across devices.</p>' +
       '<p><b>What we never ask for:</b> birthdates, phone numbers, photos, passwords, or payment info. An email address is asked for only if a parent or guardian turns on online saving.</p>' +
       '<p class="muted small">Clearing your browser data erases it, so keep a backup. Read the full <a href="#terms">Terms &amp; Privacy Notice</a>.</p></section>' +
@@ -836,7 +836,7 @@
       '<section class="card"><h3>Appearance</h3><div class="seg" role="group" aria-label="Theme">' + [['auto', 'Auto'], ['light', 'Light'], ['dark', 'Dark']].map((o) => '<button data-action="theme-set" data-v="' + o[0] + '" aria-pressed="' + (themePref() === o[0]) + '">' + o[1] + '</button>').join('') + '</div><p class="hint">Auto follows your phone. Saved on this device only.</p></section>' +
       '<section class="card"><h3>Print sheets</h3><p class="muted">Take a paper game sheet or season grid to the field, then enter the numbers later.</p><a class="btn block" href="#print">Open printable sheets</a></section>' +
       edit + sec + (ext.aboutCard ? ext.aboutCard(p) : '') + backup + (danger ? '<section class="card"><h3>Reset</h3>' + danger + '</section>' : '') +
-      '<section class="card"><h3>The fine print</h3><p class="muted small">Dugout Diary is a product of Plate 450, an independent project. It is not affiliated with or endorsed by Little League International, GameChanger, Sports Connect, or any league. Stats are self-reported by families and are not official records. Accessibility: large tap targets, keyboard navigation, and screen reader labels are built in; tell us if something is hard to use.</p></section>' + footer();
+      '<section class="card"><h3>The fine print</h3><p class="muted small">Plate 450 Diary is made by Plate 450, an independent project. It is not affiliated with or endorsed by Little League International, GameChanger, Sports Connect, or any league. Stats are self-reported by families and are not official records. Accessibility: large tap targets, keyboard navigation, and screen reader labels are built in; tell us if something is hard to use.</p></section>' + footer();
   }
 
   function viewCard(c) {
@@ -961,30 +961,66 @@
   }
 
   function viewTerms() {
-    const contact = CONTACT_EMAIL ? '<a href="mailto:' + esc(CONTACT_EMAIL) + '">Contact Us</a> with any questions.' : 'Contact details are listed on the site where you found this app.';
+    const mail = CONTACT_EMAIL ? '<a href="mailto:' + esc(CONTACT_EMAIL) + '">Contact Us</a>' : 'the contact details on the site where you found this app';
+    const row = (a, b, c) => '<tr><td>' + a + '</td><td>' + b + '</td><td>' + c + '</td></tr>';
     return '<section class="card hero"><p class="eyebrow">Version ' + TERMS_V + ' &middot; In plain English</p><h2>Terms &amp; Privacy</h2>' +
-      '<p class="muted">Dugout Diary is a free stat diary for baseball and softball players of all ages, with their families and coaches. There are no ads, no purchases, no chat, no public profiles, and no tracking. It is built to be suitable for everyone, including our youngest ballplayers.</p></section>' +
+      '<p class="muted">Plate 450 Diary is a free stat diary from Plate 450 for baseball and softball players of all ages, with their families and coaches. There are no ads, no purchases, no chat, no public profiles, and no tracking. It is built to be suitable for everyone, including our youngest ballplayers.</p></section>' +
+
       '<section class="card terms"><h3>Privacy notice</h3>' +
-      '<p><b>The short version:</b> by default, everything you enter stays in your own browser and we cannot see it. A parent or guardian can optionally sign in with an email address to save the diary online. Only then is it stored on a server.</p>' +
-      '<h4>Stored only on your device</h4><ul><li>A name or nickname, and a city and state or ZIP code</li><li>The games and stats you enter, and your goals</li><li>A random Player ID made on your device</li><li>If you choose one, a scrambled (hashed) PIN and recovery code</li></ul>' +
-      '<h4>Never collected</h4><ul><li>Birthdates or ages</li><li>Phone numbers or home addresses, and any email address unless a parent or guardian signs in (see Online accounts)</li><li>Photos, videos, or microphone and camera access</li><li>Precise location (GPS)</li><li>Payment information</li><li>Advertising, analytics, cookies, or third-party trackers, fonts, or scripts</li></ul>' +
-      '<h4>Children</h4><p>By default personal information stays on the device and nothing is sent to us. Online accounts are for parents and guardians (18 or older) only: a player under 13 must never create an account or enter their own email. The only account information stored is the parent or guardian\u2019s email address. There is no messaging, and no way for strangers to contact a player. A parent or guardian can erase everything at any time from About &rarr; Erase everything on this device. We encourage younger players to use a first name or nickname and to set the app up with a parent or guardian.</p>' +
-      '<h4>Hosting</h4><p>The pages are delivered by a web host (currently GitHub Pages). Like any website, the host may record technical details such as an IP address when a page is requested. We do not receive or use those logs, and the app does not send your stats to the host.</p>' +
-      '<h4>Sharing</h4><p>Sharing is your choice. A share card (image or link) contains only what is shown on the card: the name or nickname, optional city and state, and the stats you picked. It never includes your Player ID. A card link holds its data inside the link itself, so anyone who has the link can see the card. Share with people you trust, and think twice before posting publicly.</p>' +
-      '<h4>Player ID and PIN</h4><p>The Player ID keeps players with the same name apart. A PIN keeps teammates and siblings out of a diary on a shared device. It is a privacy lock, not encryption: someone with technical skill and access to your device can still reach the data stored in the browser. Write down your recovery code, because we cannot reset a PIN for you.</p>' +
-      '<h4>Directory of trainers, coaches and teams</h4><p>The Learn section includes a directory of trainers, coaches, clinics, facilities and travel ball teams. Listings are added by the site owner at the request of the businesses and teams themselves, and contain business contact details only (no player information). We do not run background checks, verify credentials or results, or endorse anyone listed, and we are not part of any agreement between you and a listing. Do your own research, meet in public or with other families, and never let a child arrange anything alone: a parent or guardian should always make the contact. Links go to outside websites that have their own rules and privacy practices.</p>' +
-      '<h4>Online accounts (optional)</h4><p>If a parent or guardian signs in, we store their email address and a copy of the diary (names or nicknames, optional city and state or ZIP code, stats, goals, game reviews, the random Player ID and any PIN hash) so it can sync between devices. It is stored with Supabase, a hosting provider, and is readable only by that account. We do not sell it, show ads with it, or share it with anyone else. To start, the person is asked to confirm they are a parent or guardian aged 18 or older, and a one-time approval code is emailed to that address. We keep a record of the date and version of the Terms they agreed to. We cannot confirm who owns an email address, so please use your own and never give the code to a child unless you have approved the account. If we learn that an account was made without a parent or guardian\u2019s permission, we will delete it. One account holds every player in the family. A parent or guardian can delete the online copy and account at any time from About &rarr; Delete my online account, and can contact us to ask what is stored or to have it removed. Signing in is never required to use the app.</p><h4>Backups</h4><p>Backup files are saved wherever you choose. They contain everything in the diary, so store them somewhere private.</p>' +
-      '<h4>Changes and questions</h4><p>If this notice changes in a meaningful way, the version number above changes and you will be asked to agree again when you add a player. ' + contact + '</p></section>' +
+      '<p><b>The short version:</b> every feature works with no account, and by default everything you enter stays in your own browser, where we cannot see it. If a parent or guardian chooses to sign in with their email, the diary is also saved on our online service so it can follow the family across devices. We do not sell your information, show ads, or use trackers.</p>' +
+      '<p class="muted small">This summary is for orientation. The sections below are the operative terms.</p>' +
+
+      '<h4>1. Who we are and where this applies</h4><p>Plate 450 Diary is made by Plate 450 (&ldquo;we&rdquo;, &ldquo;us&rdquo;), the business responsible for the information described here. It is offered to families in the United States and is not written as a privacy notice under the laws of any other country. You can reach a person about anything on this page through ' + mail + '.</p>' +
+
+      '<h4>2. What we collect</h4>' +
+      '<p><b>On your device only (the default).</b></p><ul><li>A name or nickname, and an optional city and state or ZIP code</li><li>The games and stats you enter, your goals, Game IQ progress, and the review notes you write about each game</li><li>A random Player ID made on your device</li><li>If you choose one, a scrambled (hashed) PIN and recovery code</li></ul>' +
+      '<p><b>Only if a parent or guardian signs in.</b> Their email address, the date and version of the Terms they agreed to, and an online copy of the diary described above (including any PIN hash). Sign-in uses a one-time code sent to that email, so there is no password.</p>' +
+      '<p><b>Technical data.</b> Like any website, the services that deliver the pages and run the online account (see section 5) may record technical details such as an IP address when a request is made. We do not use those logs to identify or follow anyone.</p>' +
+      '<p><b>Never collected:</b> birthdates or ages; phone numbers or home addresses; photos, video, microphone or camera access; precise location (GPS); payment information; advertising or analytics data, cookies, or third-party trackers, fonts or scripts. We do not ask for health or injury details, so please do not type them into notes.</p>' +
+
+      '<h4>3. What we do not do</h4><ul><li>We do not sell or rent personal information, or share it for advertising.</li><li>We do not show ads or send data to ad networks.</li><li>We do not track you across other sites or apps.</li><li>We do not use diary content to train machine-learning models.</li><li>We do not use information in ways materially different from the purposes below without telling you first and, where the law requires it, getting consent.</li></ul>' +
+
+      '<h4>4. How we use information</h4><ul><li>To run the diary, draw your trends and plans, and let you print or share what you choose.</li><li>To save and restore a diary across devices, if a parent or guardian signs in.</li><li>To answer messages sent to us, keep the service secure, fix faults and prevent abuse.</li><li>To meet legal obligations.</li></ul>' +
+
+      '<h4>5. Who else handles information</h4><p>Only service providers that run the site for us, and only for that purpose:</p>' +
+      '<table class="ptable"><thead><tr><th>Who</th><th>Why</th><th>What they receive</th></tr></thead><tbody>' +
+      row('GitHub Pages', 'Delivers the web pages', 'Ordinary request details (such as IP address). It does not receive your diary.') +
+      row('Supabase', 'Online accounts and storage (only if a parent signs in)', 'The parent’s email and the online copy of the diary.') +
+      row('Email delivery service', 'Sends the one-time approval code', 'The parent’s email address and the code message.') +
+      row('Our email provider', 'Replying to messages sent to Contact Us', 'Your email address and what you write.') +
+      row('Domain registrar', 'Holds the plate450.com name', 'No diary or account information.') + '</tbody></table>' +
+      '<p>We may also disclose information if the law requires it, to protect the safety of users, or in a merger or sale of the business, in which case we will give notice before it becomes subject to a different policy.</p>' +
+
+      '<h4>6. How long we keep it</h4><ul><li><b>On your device:</b> until you erase it or clear your browser data. That is in your hands.</li><li><b>Online copy and account:</b> until a parent or guardian deletes the account. Residual copies may remain in provider backups for a short time afterward.</li><li><b>Messages to us:</b> only as long as needed to help, then deleted.</li><li><b>Provider server logs:</b> kept briefly by those providers under their own policies.</li></ul>' +
+
+      '<h4>7. Your choices and rights</h4><p>Wherever you live in the United States, you (or, for a child, the parent or guardian) can:</p><ul><li>Use the app with no account at all. This is the most private option and no feature is withheld for choosing it.</li><li>See, correct or delete any game or goal directly in the app, and export or back up everything from About.</li><li>Delete the online account and copy from About &rarr; Delete my online account. This is immediate and cannot be undone. The diary on the device stays unless you also erase it.</li><li>Ask us, through ' + mail + ', what we hold about you, for a correction or deletion, or for a copy in a portable format. We confirm the request comes from the account email, respond within 45 days, and never charge for it. If we decline, you can appeal by replying, and you can contact your state Attorney General.</li></ul>' +
+      '<p>Several states, including California, Virginia, Colorado, Connecticut, Utah, Texas, Oregon and Montana, give residents extra privacy rights. We offer the rights above to every US resident. Because we do not sell or share information for advertising, there is nothing to opt out of.</p>' +
+
+      '<h4>8. Children</h4>' +
+      '<p><b>The short version:</b> a child can use Plate 450 Diary fully with no account, and then we receive nothing. An online account has to be held by a parent or guardian.</p>' +
+      '<ul><li><b>No account, no collection.</b> Used without signing in, everything a child enters stays in their own browser and is never sent to us.</li><li><b>Accounts are for parents and guardians (18 or older).</b> A player under 13 must never create an account or enter their own email. The app asks who is setting it up before offering sign-in, and an approval code goes to the parent or guardian’s email. The only account information stored is that email address. We cannot confirm who owns an inbox, so please use your own email and do not give the code to a child unless you have approved the account.</li><li><b>One account, every player.</b> A parent or guardian’s account holds all of the family’s players. They can review, correct, export or delete everything at any time.</li><li><b>No contact with strangers.</b> There is no chat, comments, public profiles or messaging.</li><li><b>If a child signed up without permission,</b> we will delete the account and its data. If you think this happened, ' + mail + ' and we will act promptly.</li><li><b>Other people in a diary.</b> Opponent and team names are free text. Please use first names or initials only and never add other people’s contact details or personal information.</li><li><b>Sharing is the family’s choice.</b> A share card or link contains only what is shown on the card (never the Player ID), and anyone with the link can see it. Please think before posting publicly.</li></ul>' +
+
+      '<h4>9. Security</h4><p>Traffic between the app and the online service uses HTTPS, and each online diary can be read only by its own account. We are straight about the limits: the online copy is not end-to-end encrypted and we can technically access it, a PIN is a privacy lock and not encryption, and no system is perfectly secure. The most protective choice is using the app without an account. Write down your recovery code, because we cannot reset a PIN for you.</p>' +
+
+      '<h4>10. Directory of trainers, coaches and teams</h4><p>The Learn section includes a directory of trainers, coaches, clinics, facilities and travel ball teams. Listings are added by hand at the request of the businesses and teams themselves and contain business contact details only, never player information. We do not run background checks, verify credentials or results, or endorse anyone listed, and we are not part of any agreement between you and a listing. Do your own research, meet in public or with other families, and never let a child arrange anything alone: a parent or guardian should always make the contact. Links go to outside websites with their own rules and privacy practices.</p>' +
+
+      '<h4>11. Changes and contact</h4><p>If this notice changes in a meaningful way, the version number above changes, and you will be asked to agree again. For a change that affects information already collected from a child, we will ask the parent or guardian first. Questions, requests and everything else: ' + mail + '.</p></section>' +
+
       '<section class="card terms"><h3>Terms of use</h3>' +
-      '<ol><li><b>What this is.</b> Dugout Diary is a free tool provided by Plate 450 for keeping your own baseball or softball stats. By using it you agree to these terms.</li>' +
-      '<li><b>Families first.</b> Younger players should set up and use the app with a parent or guardian, who is responsible for what is entered and shared.</li>' +
-      '<li><b>Your data, your job.</b> Unless a parent or guardian signs in to save online, your stats live in your browser. Clearing browser data, switching phones, or private browsing can erase them. Please export backups. We cannot recover lost data.</li>' +
-      '<li><b>Be kind and be careful.</b> Enter only information about yourself or your own child. Do not enter other people’s private details. Use a first name or nickname. Do not use the app to harass anyone, break the law, or try to disrupt or copy the site.</li>' +
+      '<ol><li><b>What this is.</b> Plate 450 Diary is a free tool provided by Plate 450 for keeping your own baseball or softball stats. By using it you agree to these terms and to the privacy notice above. If you do not agree, please do not use it.</li>' +
+      '<li><b>Where it is offered.</b> The service is offered to families in the United States. We make no promise that it is suitable or available elsewhere.</li>' +
+      '<li><b>Families first.</b> The app has no age limit, but younger players should set it up and use it with a parent or guardian, who is responsible for what is entered and shared. An online account may be created only by a parent or guardian aged 18 or older. By creating one, that adult accepts these terms for the family and takes responsibility for the account.</li>' +
+      '<li><b>Your content.</b> You own everything you enter. We claim no ownership. If you sign in, you give us a limited permission to store, copy and display it only to run the service for you, and that permission ends when you delete it or your account. You are responsible for having the right to what you add.</li>' +
+      '<li><b>Your data, your job.</b> Unless a parent or guardian signs in to save online, your stats live in your browser. Clearing browser data, switching phones, or private browsing can erase them. Please export backups. Online saving is a convenience, not a guaranteed archive, and we cannot promise to recover lost data.</li>' +
+      '<li><b>Be kind and be careful.</b> Enter only information about yourself or your own child. Do not enter other people’s private details. Use a first name or nickname. Do not use the app to harass anyone, break the law, try to reach someone else’s account, scrape the site, or disrupt or copy it.</li>' +
+      '<li><b>Not medical, training or coaching advice.</b> Plate 450 Diary is an informational diary and learning tool. Game IQ, trivia, the Learn section and the improvement plan are general educational material, not advice for any one person, and they do not replace a coach, trainer, doctor or physical therapist. If you feel pain, stop and talk to a qualified professional. You take responsibility for decisions you make using the app, and for the risks of playing sports.</li>' +
       '<li><b>Listings are not endorsements.</b> The directory is a convenience. We do not vet, rank or guarantee the people and teams in it, and you deal with them at your own risk. Listings are for adults to read, and parents or guardians make all contact on behalf of children.</li>' +
+      '<li><b>Sponsors.</b> Plate 450 may sponsor teams or events. Sponsoring does not mean a team, league or coach endorses, or is part of, Plate 450 or Plate 450 Diary.</li>' +
       '<li><b>Not official.</b> Stats are self-reported and not official league records. Check with your league for official numbers.</li>' +
-      '<li><b>Independent project.</b> Dugout Diary is not affiliated with or endorsed by Little League International, GameChanger, Sports Connect, or any league or team. Their names belong to their owners.</li>' +
-      '<li><b>As is.</b> The app is provided as is, without promises that it will always work or be error free. To the extent the law allows, we are not liable for lost data or for decisions made using the stats.</li>' +
-      '<li><b>Changes.</b> We may update the app or these terms. Continuing to use the app after a change means you accept it.</li></ol></section>' +
+      '<li><b>Independent project.</b> Plate 450 Diary is not affiliated with or endorsed by Major League Baseball, USA Baseball, USA Softball, the NCAA, GameChanger, or any other league, governing body, team or app. Their names belong to their owners and appear only for identification.</li>' +
+      '<li><b>Ending things.</b> You can stop using the service at any time and delete your account from About. We may suspend or end access if these terms are seriously broken or the law requires it. We may change or stop parts of the service; for a meaningful change we will tell you.</li>' +
+      '<li><b>As is.</b> The service is provided &ldquo;as is&rdquo; and &ldquo;as available,&rdquo; without promises that it will always work, be error free, or that stats and guidance are accurate. To the fullest extent the law allows, we are not liable for indirect or consequential damages, lost data, or injury arising from using it, and our total responsibility is limited to the amount you paid us, which for a free service is nothing. Nothing here limits liability that the law does not allow to be limited, or takes away rights you have under your state’s consumer-protection laws.</li>' +
+      '<li><b>Changes.</b> We may update these terms. For meaningful changes the version number changes and you will be asked to agree again. Continuing to use the service afterward means you accept the update.</li></ol></section>' +
       '<button class="btn ghost block" data-action="go" data-to="' + (player() ? 'about' : 'home') + '">Back</button>' + footer();
   }
 
@@ -1002,9 +1038,9 @@
   function psBoxes(list, cls) {
     return '<div class="ps-boxes ' + (cls || '') + '">' + list.map((c) => '<div class="ps-bw"><div class="ps-box"></div><div class="ps-lab"><b>' + c[0] + '</b><span>' + c[1] + '</span></div></div>').join('') + '</div>';
   }
-  function psSite() { return (location.host + location.pathname).replace(/index\.html$/, '').replace(/\/$/, '') || 'Dugout Diary'; }
+  function psSite() { return (location.host + location.pathname).replace(/index\.html$/, '').replace(/\/$/, '') || 'Plate 450 Diary'; }
   function psHead(title, v) {
-    return '<header class="ps-head"><div class="ps-title">DUGOUT DIARY<small>' + title + '</small></div>' + psField('Player', v.name, 'ps-grow') + '</header>';
+    return '<header class="ps-head"><div class="ps-title">PLATE 450 DIARY<small>' + title + '</small></div>' + psField('Player', v.name, 'ps-grow') + '</header>';
   }
 
   function psFieldByInning() {
@@ -1031,7 +1067,7 @@
       (byInning ? psFieldByInning() :
         '<div class="ps-row"><div class="ps-f ps-grow"><span>Position (circle)</span><div class="ps-line">' + psOpts(['P', 'C', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF']) + '</div></div>' + psBoxes(PS_FLD.concat(PS_CATCH), 'ps-narrow') + '</div><p class="ps-note">CS and CI are for catchers only. Catcher\u2019s interference also counts as an error (E).</p>') +
       '<h3 class="ps-h">NOTES <small>Best moment? One thing to work on?</small></h3><div class="ps-lines">' + (byInning ? '<div></div><div></div>' : '<div></div><div></div><div></div>') + '</div>' +
-      '<footer class="ps-foot">Dugout Diary by Plate 450 &middot; enter these later at ' + esc(psSite()) + ' &rarr; Log tab. The boxes are in the same order as the Log screen.</footer></section>';
+      '<footer class="ps-foot">Plate 450 Diary &middot; enter these later at ' + esc(psSite()) + ' &rarr; Log tab. The boxes are in the same order as the Log screen.</footer></section>';
   }
 
   function psGrid(kind, v) {
@@ -1047,7 +1083,7 @@
       '<div class="ps-info four">' + psField('Season', v.season) + psField('Team', v.team) + psField('Level', v.level) + psField('League / notes', '') + '</div>' +
       '<table class="ps-grid"><thead><tr><th>#</th><th class="wd">Date</th><th class="wd">Opponent</th>' + cols.map((c) => '<th>' + c + '</th>').join('') + '</tr></thead><tbody>' + rows + '</tbody></table>' +
       '<p class="ps-note">' + legend + '</p>' +
-      '<footer class="ps-foot">Dugout Diary by Plate 450 &middot; enter each row later at ' + esc(psSite()) + ' &rarr; Log tab, in the same order as the columns.</footer></section>';
+      '<footer class="ps-foot">Plate 450 Diary &middot; enter each row later at ' + esc(psSite()) + ' &rarr; Log tab, in the same order as the columns.</footer></section>';
   }
 
   function viewPrint(p) {
@@ -1239,16 +1275,16 @@
     if (f.g) lines.push('Fielding: ' + S.fmtRate(f.fpct) + ' FPCT | ' + f.po + ' PO, ' + f.a + ' A, ' + f.e + ' E');
     const bs = S.badges(p.games).filter((x) => x.earned);
     if (bs.length) lines.push('Badges: ' + bs.map((x) => x.name).join(', '));
-    lines.push('Tracked with Dugout Diary');
+    lines.push('Tracked with Plate 450 Diary');
     return lines.join('\n');
   }
 
   function exportBackup() {
-    const json = JSON.stringify(Object.assign({ app: 'dugout-diary', exported: new Date().toISOString() }, db), null, 2);
+    const json = JSON.stringify(Object.assign({ app: 'plate450-diary', exported: new Date().toISOString() }, db), null, 2);
     try {
       const url = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
       const a = document.createElement('a');
-      a.href = url; a.download = 'dugout-diary-backup-' + today() + '.json';
+      a.href = url; a.download = 'plate450-diary-backup-' + today() + '.json';
       document.body.appendChild(a); a.click(); a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 2000);
       db.bk = today(); db.bkN = totalGames(); db.snooze = ''; save();
@@ -1261,13 +1297,13 @@
 
   function importBackup(file) {
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) { openModal('<h3>File too large</h3><p>That does not look like a Dugout Diary backup.</p><div class="actions"><button class="btn" data-action="modal-close">OK</button></div>'); return; }
+    if (file.size > 5 * 1024 * 1024) { openModal('<h3>File too large</h3><p>That does not look like a Plate 450 Diary backup.</p><div class="actions"><button class="btn" data-action="modal-close">OK</button></div>'); return; }
     const reader = new FileReader();
     reader.onload = () => {
       let incoming;
       try { incoming = sanitizeDb(JSON.parse(String(reader.result))); } catch (e) { incoming = null; }
       if (!incoming || !incoming.players.length) {
-        openModal('<h3>Could not import</h3><p>That file does not contain any Dugout Diary players.</p><div class="actions"><button class="btn" data-action="modal-close">OK</button></div>');
+        openModal('<h3>Could not import</h3><p>That file does not contain any Plate 450 Diary players.</p><div class="actions"><button class="btn" data-action="modal-close">OK</button></div>');
         return;
       }
       let added = 0, skipped = 0;
@@ -1328,8 +1364,8 @@
     if (!cv || !c) return;
     cv.toBlob((blob) => {
       if (!blob) return;
-      const file = new File([blob], 'dugout-diary-' + (c.n.replace(/[^a-z0-9]+/gi, '-').toLowerCase() || 'card') + '.png', { type: 'image/png' });
-      const text = c.n + ' on Dugout Diary – build your own card free: ' + shareBase();
+      const file = new File([blob], 'plate450-diary-' + (c.n.replace(/[^a-z0-9]+/gi, '-').toLowerCase() || 'card') + '.png', { type: 'image/png' });
+      const text = c.n + ' on Plate 450 Diary – build your own card free: ' + shareBase();
       if (navigator.canShare && navigator.canShare({ files: [file] })) { navigator.share({ files: [file], text: text }).catch(() => {}); return; }
       try {
         const url = URL.createObjectURL(blob), a = document.createElement('a');
@@ -1431,7 +1467,7 @@
     'share-link': (el) => {
       const c = ui.share && ui.share.card;
       if (!c) return;
-      if (navigator.share) navigator.share({ title: 'Dugout Diary', text: c.n + '’s player card', url: $('#share-url').value }).catch(() => {});
+      if (navigator.share) navigator.share({ title: 'Plate 450 Diary', text: c.n + '’s player card', url: $('#share-url').value }).catch(() => {});
       else copyFromInput(el, 'Link copied ✓');
     },
     'modal-close': () => closeModal(),

@@ -1,6 +1,6 @@
 # Turning on online accounts (about 20 minutes, free)
 
-Dugout Diary works fully offline. Online accounts are switched on only when you fill in two values in `js/cloud-config.js`.
+Plate 450 Diary works fully offline. Online accounts are switched on only when you fill in two values in `js/cloud-config.js`.
 
 **How it works:** a parent or guardian signs in with their email, gets a one-time code, and the diary is saved to a private row that only they can read. Edits sync on their own, and a new phone gets everything after signing in.
 
@@ -11,11 +11,11 @@ Dugout Diary works fully offline. Online accounts are switched on only when you 
 ## 2. Make the email show a code (important)
 Supabase's default email only has a link; the app needs a code.
 1. **Authentication → Emails → Templates → Magic Link** (also edit **Confirm signup**).
-2. Subject: `Your Dugout Diary code`
+2. Subject: `Your Plate 450 Diary code`
 3. Body, for example:
    ```
-   <h2>Approve a Dugout Diary account</h2>
-   <p>Someone asked to save a Dugout Diary online with this email address as the parent or guardian.</p>
+   <h2>Approve a Plate 450 Diary account</h2>
+   <p>Someone asked to save a Plate 450 Diary online with this email address as the parent or guardian.</p>
    <p>If that was you, or you approved it for your child, the approval code is: <b>{{ .Token }}</b></p>
    <p>If you did not expect this, do not share the code. Just ignore this email and nothing will be created. Players under 13 should not make accounts on their own.</p>
    ```
@@ -27,7 +27,7 @@ Supabase's built-in sender is limited to a few emails per hour and is for testin
 2. **Authentication → Emails → SMTP Settings**: enable custom SMTP and paste the service's details. Sender: `no-reply@plate450.com`.
 
 ## 4. Allow your site
-**Authentication → URL Configuration**: set Site URL to `https://dugoutdiary.plate450.com` and add the same under Redirect URLs.
+**Authentication → URL Configuration**: set Site URL to `https://diary.plate450.com` and add the same under Redirect URLs.
 
 ## 5. Plug it into the app
 **Project Settings → API**: copy the **Project URL** and the **anon public** key into `js/cloud-config.js`:

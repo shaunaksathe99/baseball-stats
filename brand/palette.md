@@ -1,4 +1,4 @@
-# Plate 450 palette for Dugout Diary
+# Plate 450 palette (used by Plate 450 Diary)
 
 Derived from the Plate 450 crest. Every pairing below was checked against
 WCAG 2.1; ratios are computed, not estimated. Normal text needs 4.5:1,

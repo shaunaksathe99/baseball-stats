@@ -1,4 +1,4 @@
-/* Dugout Diary - optional online account (parent/guardian email sign-in) and cross-device sync.
+/* Plate 450 Diary - optional online account (parent/guardian email sign-in) and cross-device sync.
    Talks to Supabase over plain HTTPS (no SDK). Everything is opt-in: with no config the app stays fully offline.
    The pure merge logic is testable in Node; the rest registers with the app through window.DDApp. */
 (function (root, factory) {

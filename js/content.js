@@ -1,4 +1,4 @@
-/* Dugout Diary - editable content: schema, cleaning, spreadsheet import/export, safe text formatting.
+/* Plate 450 Diary - editable content: schema, cleaning, spreadsheet import/export, safe text formatting.
    No DOM access, so it is unit tested in Node. The Content Studio (#studio) is the friendly editor for all of this. */
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) module.exports = factory(require('./sim.js'));
@@ -199,7 +199,7 @@
   /* ---------- the file that gets uploaded to GitHub ---------- */
   function toFile(content) {
     var c = normalize(content).content;
-    return '/* Dugout Diary content. Do not edit by hand: use the Content Studio (#studio on the site), download this file, and upload it to the content folder on GitHub. */\n' +
+    return '/* Plate 450 Diary content. Do not edit by hand: use the Content Studio (#studio on the site), download this file, and upload it to the content folder on GitHub. */\n' +
       '(function (r) { r.DD_CONTENT = ' + JSON.stringify(c, null, 1).replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029') + '; })(typeof window !== "undefined" ? window : (typeof module === "object" && module.exports ? module.exports : this));\n';
   }
 
@@ -317,12 +317,12 @@
   /* ---------- listing request (what a trainer emails us) ---------- */
   function buildRequest(l) {
     var t = dirType(l.type);
-    return ['DUGOUT DIARY LISTING REQUEST',
+    return ['PLATE 450 DIARY LISTING REQUEST',
       'Type: ' + (t ? t.id : l.type || ''), 'Name: ' + (l.name || ''), 'Tagline: ' + (l.tagline || ''),
       'Services:'].concat((l.services || []).map(function (s) { return '- ' + s; })).concat([
       'Ages: ' + (l.ages || ''), 'City: ' + (l.city || ''), 'State: ' + (l.state || ''), 'Website: ' + (l.website || ''),
       'Email: ' + (l.email || ''), 'Phone: ' + (l.phone || ''), 'Notes: ' + (l.notes || ''), '',
-      'I confirm that I am 18 or older, that this is my own business, team or program, and that this information may be published on Dugout Diary.']).join('\n');
+      'I confirm that I am 18 or older, that this is my own business, team or program, and that this information may be published on Plate 450 Diary.']).join('\n');
   }
   function parseRequest(text) {
     var o = { services: [] }, inSvc = false;

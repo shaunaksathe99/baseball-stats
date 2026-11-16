@@ -1,4 +1,4 @@
-/* Dugout Diary - Learn section: trivia, quizzes, knowledge base, glossary and the trainers / coaches / travel teams directory.
+/* Plate 450 Diary - Learn section: trivia, quizzes, knowledge base, glossary and the trainers / coaches / travel teams directory.
    All content comes from content/content.js (edited in the Content Studio). Registers itself with the app through window.DDApp. */
 (function () {
   'use strict';
@@ -158,7 +158,7 @@
       C.DIR_TYPES.map(function (t) { return '<button class="chip' + (st.dtype === t.id ? ' on' : '') + '" data-action="l-dtype" data-t="' + t.id + '">' + esc(t.name) + '</button>'; }).join('') + '</div>';
     var stSel = Object.keys(states).length > 1 ? '<div class="field"><label for="l-dstate">State</label><select id="l-dstate" data-lsel="dstate"><option value="">All states</option>' + Object.keys(states).sort().map(function (s) { return '<option' + (st.dstate === s ? ' selected' : '') + '>' + esc(s) + '</option>'; }).join('') + '</select></div>' : '';
     return back('Learn', 'learn') + head('Directory', 'Trainers, coaches & travel teams', 'Find help to get better, or a team to join.') +
-      '<div class="notice" role="note"><b>For parents and guardians.</b> Listings are provided by the businesses and teams themselves. Dugout Diary does not vet, endorse or guarantee anyone listed. Do your own research, and always make contact yourself on your child’s behalf. See the <a href="#terms">Terms</a>.</div>' +
+      '<div class="notice" role="note"><b>For parents and guardians.</b> Listings are provided by the businesses and teams themselves. Plate 450 Diary does not vet, endorse or guarantee anyone listed. Do your own research, and always make contact yourself on your child’s behalf. See the <a href="#terms">Terms</a>.</div>' +
       (all.length ? '<section class="card"><div class="field"><label for="l-dq">Search</label><input id="l-dq" type="search" data-lin="dir" autocomplete="off" placeholder="Name, city or skill" value="' + esc(st.dq) + '"></div>' + stSel + chips + '</section>' : '') +
       '<div id="l-list">' + dirList() + '</div>' +
       (all.length ? '<section class="card"><h3>Not listed?</h3><p class="muted">Trainers, coaches and teams can ask to be added for free.</p><a class="btn ghost block" href="#find-list">Get listed</a></section>' : '') + A.footer();
@@ -168,7 +168,7 @@
   function viewFind() {
     var r = st.req;
     if (r) {
-      var mail = A.contactEmail ? 'mailto:' + A.contactEmail + '?subject=' + encodeURIComponent('Dugout Diary listing request') + '&body=' + encodeURIComponent(r.text) : '';
+      var mail = A.contactEmail ? 'mailto:' + A.contactEmail + '?subject=' + encodeURIComponent('Plate 450 Diary listing request') + '&body=' + encodeURIComponent(r.text) : '';
       return back('Directory', 'learn/directory') + head('Your request is ready', 'One more step', A.contactEmail ? 'Send this to us and we will review it. Listings are added by hand, usually within a few days.' : 'Copy this and send it to the person who runs this site. Listings are added by hand.') +
         '<section class="card"><label for="l-reqtxt" class="small muted">Your request</label><textarea id="l-reqtxt" rows="12" readonly>' + esc(r.text) + '</textarea>' +
         '<div class="row wrap" style="margin-top:10px">' + (mail ? '<a class="btn grow" href="' + esc(mail) + '">Email it</a>' : '') + '<button class="btn ' + (mail ? 'ghost ' : '') + 'grow" data-action="l-copy">Copy text</button></div>' +
@@ -184,7 +184,7 @@
       inp('ages', 'Ages or levels', '8-14', ' maxlength="30"') + '<div class="grid2">' + inp('city', 'City', '', ' maxlength="40"') + inp('state', 'State', 'CA', ' maxlength="30"') + '</div>' +
       inp('website', 'Website', 'https://example.com', ' maxlength="200" inputmode="url"') + inp('email', 'Business email', '', ' maxlength="100" inputmode="email"') + inp('phone', 'Business phone', '', ' maxlength="25" inputmode="tel"') +
       '<div class="field"><label for="lf-notes">Anything else (optional)</label><textarea id="lf-notes" name="notes" rows="3" maxlength="300"></textarea></div>' +
-      '<label class="check agree"><input type="checkbox" name="confirm"> <span>I am 18 or older, this is my own business, program or team, and this information may be published on Dugout Diary. I understand Dugout Diary does not endorse listings.</span></label>' +
+      '<label class="check agree"><input type="checkbox" name="confirm"> <span>I am 18 or older, this is my own business, program or team, and this information may be published on Plate 450 Diary. I understand this site does not endorse listings.</span></label>' +
       '<button class="btn block" type="submit">Prepare my request</button><p class="hint">Nothing is sent until you email it yourself.</p></form></section>' + A.footer();
   }
 

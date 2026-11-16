@@ -1,4 +1,4 @@
-/* Dugout Diary - Game IQ simulator: scenario bank and round logic. No DOM access, so it can be unit tested in Node. */
+/* Plate 450 Diary - Game IQ simulator: scenario bank and round logic. No DOM access, so it can be unit tested in Node. */
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) module.exports = factory();
   else root.Sim = factory();

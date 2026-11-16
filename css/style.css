@@ -513,3 +513,7 @@ svg .dot.rv-work { fill: var(--bad); } svg .dot.rv-well { fill: var(--good); }
 /* Online account sign-in */
 label.check { display: flex; gap: 10px; align-items: flex-start; margin: 12px 0; font-size: 0.9rem; line-height: 1.4; }
 label.check input { width: 22px; height: 22px; flex: none; margin-top: 2px; }
+
+table.ptable { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin: 8px 0; }
+table.ptable th, table.ptable td { text-align: left; vertical-align: top; padding: 8px 6px; border-bottom: 1px solid var(--line); }
+table.ptable th { color: var(--muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; }

@@ -1,4 +1,4 @@
-/* Dugout Diary - game reviews and the improvement plan.
+/* Plate 450 Diary - game reviews and the improvement plan.
    Pure logic (no page code) so it can be tested in Node. A review is a list of notes for one game, each for the whole game
    (i = 0) or one inning, with topics the player did well and topics to work on, plus a short note for each. */
 (function (root, factory) {
@@ -141,7 +141,7 @@
   function planText(name, games, focus) {
     var a = analyze(games, 10), L = [];
     L.push('IMPROVEMENT PLAN: ' + (name || 'Player'));
-    L.push('From Dugout Diary by Plate 450 · based on ' + a.reviewed + (a.reviewed === 1 ? ' game review' : ' game reviews') + ' out of ' + a.total + (a.total === 1 ? ' game' : ' games'));
+    L.push('From Plate 450 Diary · based on ' + a.reviewed + (a.reviewed === 1 ? ' game review' : ' game reviews') + ' out of ' + a.total + (a.total === 1 ? ' game' : ' games'));
     L.push('');
     function section(title, state, fmt) {
       var rows = a.rows.filter(function (r) { return r.state === state; });

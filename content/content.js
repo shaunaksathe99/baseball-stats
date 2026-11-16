@@ -1,4 +1,4 @@
-/* Dugout Diary content. Do not edit by hand: use the Content Studio (#studio on the site), download this file, and upload it to the content folder on GitHub. */
+/* Plate 450 Diary content. Do not edit by hand: use the Content Studio (#studio on the site), download this file, and upload it to the content folder on GitHub. */
 (function (r) { r.DD_CONTENT = {
  "version": 1,
  "updated": "2026-11-15",
@@ -1871,7 +1871,7 @@
    "cat": "For parents",
    "title": "How parents can help (without the pressure)",
    "summary": "Simple ways to support your ballplayer.",
-   "body": "Kids play their best when baseball is fun.\n\n- Cheer effort and teamwork, not just results\n- Let the coach coach. Save advice for the car ride home, and keep it short\n- Ask “What was your favorite part?” before asking about stats\n- Help your player track their own stats, and celebrate small improvements\n- Make sure they eat, sleep and rest their arm\n\n## Staying private online\n\nUse a first name or nickname in Dugout Diary and share player cards only with family and friends you trust."
+   "body": "Kids play their best when baseball is fun.\n\n- Cheer effort and teamwork, not just results\n- Let the coach coach. Save advice for the car ride home, and keep it short\n- Ask “What was your favorite part?” before asking about stats\n- Help your player track their own stats, and celebrate small improvements\n- Make sure they eat, sleep and rest their arm\n\n## Staying private online\n\nUse a first name or nickname in Plate 450 Diary and share player cards only with family and friends you trust."
   }
  ],
  "glossary": [

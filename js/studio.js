@@ -1,4 +1,4 @@
-/* Dugout Diary - Content Studio (#studio).
+/* Plate 450 Diary - Content Studio (#studio).
    A point-and-click editor for the site's trivia, quizzes, knowledge base, glossary, directory and Game IQ situations.
    It edits a draft kept in this browser, lets the owner preview it, and downloads the content file to upload to GitHub.
    There is no server and no database: the published site only changes when the downloaded file is uploaded. */
@@ -167,7 +167,7 @@
       '<button class="btn ghost block" data-action="s-preview-on">' + (pv ? 'Reload preview' : 'Preview my changes') + '</button></section>' +
       '<section class="card"><h3>3. Publish</h3>' + (n ? '<p><b>' + n + ' ' + (n === 1 ? 'change' : 'changes') + '</b> not published yet.</p>' : '<p class="muted">No unpublished changes.</p>') +
       '<button class="btn block" data-action="s-download">Download content file</button>' +
-      '<ol class="steps small" style="margin-top:14px"><li><div>Open your Dugout Diary project on <b>github.com</b> and click into the <b>content</b> folder.</div></li><li><div>Click <b>Add file</b>, then <b>Upload files</b>, and drop in the file you just downloaded. Its name must stay <b>content.js</b> so it replaces the old one.</div></li><li><div>Click <b>Commit changes</b>. The live site updates within a minute or two.</div></li></ol></section>' +
+      '<ol class="steps small" style="margin-top:14px"><li><div>Open your Plate 450 Diary project on <b>github.com</b> and click into the <b>content</b> folder.</div></li><li><div>Click <b>Add file</b>, then <b>Upload files</b>, and drop in the file you just downloaded. Its name must stay <b>content.js</b> so it replaces the old one.</div></li><li><div>Click <b>Commit changes</b>. The live site updates within a minute or two.</div></li></ol></section>' +
       '<section class="card"><h3>Start over</h3><p class="muted">Throw away your draft and go back to what is published.</p><button class="btn danger block" data-action="s-reset">' + (st.confirm === 'reset' ? 'Tap again to discard my draft' : 'Discard my draft') + '</button></section>' + A.footer();
   }
 
@@ -229,7 +229,7 @@
 
   function pasteView() {
     return msgBox() + back('Studio', 'studio') + '<section class="card hero"><p class="eyebrow">Listing request</p><h2>Paste a request</h2><p class="muted">Paste the whole email a trainer or team sent. We will turn it into a listing you can check before it goes live.</p></section>' +
-      '<section class="card"><form data-form="s-paste" novalidate><div class="error" data-errbox hidden role="alert"></div><div class="field"><label for="s-paste">Request text</label><textarea id="s-paste" name="text" rows="12" placeholder="DUGOUT DIARY LISTING REQUEST&#10;Type: trainer&#10;Name: ...">' + esc(st.paste) + '</textarea></div>' +
+      '<section class="card"><form data-form="s-paste" novalidate><div class="error" data-errbox hidden role="alert"></div><div class="field"><label for="s-paste">Request text</label><textarea id="s-paste" name="text" rows="12" placeholder="PLATE 450 DIARY LISTING REQUEST&#10;Type: trainer&#10;Name: ...">' + esc(st.paste) + '</textarea></div>' +
       '<button class="btn block" type="submit">Create the listing</button></form></section>';
   }
 

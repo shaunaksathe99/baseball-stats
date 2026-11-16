@@ -1,4 +1,4 @@
-/* Dugout Diary - pure stat math. No DOM access, so it can be unit tested in Node. */
+/* Plate 450 Diary - pure stat math. No DOM access, so it can be unit tested in Node. */
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) module.exports = factory();
   else root.Stats = factory();

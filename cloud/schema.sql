@@ -1,4 +1,4 @@
--- Dugout Diary online accounts: run this once in Supabase (SQL Editor -> New query -> Run).
+-- Plate 450 Diary online accounts: run this once in Supabase (SQL Editor -> New query -> Run).
 -- One row per signed-in parent/guardian. The row holds the whole diary as JSON and is readable only by its owner.
 
 create table if not exists public.diaries (

@@ -1,4 +1,4 @@
-/* Dugout Diary - Improvement Plan: shows which habits and errors keep coming up in game reviews and which are fixed.
+/* Plate 450 Diary - Improvement Plan: shows which habits and errors keep coming up in game reviews and which are fixed.
    Registers the #plan view with the app through window.DDApp. The logic lives in review.js. */
 (function () {
   'use strict';

@@ -19,5 +19,23 @@
     PATHS.forEach(function (n) { x.save(); x.translate(n.x, n.y); x.scale(n.s, -n.s); x.fillStyle = '#412402'; x.fill(n.p); x.restore(); });
     x.restore();
   }
-  root.Brand = { NAME: 'Plate 450', PRODUCT: 'Dugout Diary', crest: crest, colors: { charcoal: '#2C2C2A', gold: '#EF9F27', brown: '#412402', cream: '#F5EFE0' } };
+  var MARK = null;
+  /* Plate 450 Diary mark (plate, diary lines, badge ribbon). Same shapes as brand/diary-mark.svg, drawn in a 100-unit box. */
+  function mark(x, cx, cy, size) {
+    if (!MARK) MARK = {
+      tails: [new Path2D('M59 45 L67 45 L62 66 L58 62 L53 65 Z'), new Path2D('M65 45 L73 45 L79 65 L74 62 L70 66 Z')],
+      star: new Path2D('M66 26 L68 31.25 L73.61 31.53 L69.23 35.05 L70.7 40.47 L66 37.4 L61.3 40.47 L62.77 35.05 L58.39 31.53 L64 31.25 Z')
+    };
+    x.save(); x.translate(cx - size / 2, cy - size / 2); x.scale(size / 100, size / 100);
+    x.beginPath(); x.moveTo(12, 12); x.lineTo(88, 12); x.lineTo(88, 56); x.lineTo(50, 90); x.lineTo(12, 56); x.closePath();
+    x.fillStyle = '#EF9F27'; x.fill(); x.lineWidth = 8; x.lineJoin = 'round'; x.strokeStyle = '#EF9F27'; x.stroke();
+    x.strokeStyle = '#2C2C2A'; x.lineWidth = 4; x.lineCap = 'round';
+    [[30, 44], [42, 44], [54, 36]].forEach(function (l) { x.beginPath(); x.moveTo(24, l[0]); x.lineTo(l[1], l[0]); x.stroke(); });
+    x.fillStyle = '#2C2C2A'; MARK.tails.forEach(function (p) { x.fill(p); });
+    x.beginPath(); x.arc(66, 34, 14, 0, Math.PI * 2); x.fill();
+    x.beginPath(); x.arc(66, 34, 11, 0, Math.PI * 2); x.lineWidth = 1.5; x.strokeStyle = '#F5EFE0'; x.stroke();
+    x.fillStyle = '#EF9F27'; x.fill(MARK.star);
+    x.restore();
+  }
+  root.Brand = { NAME: 'Plate 450', PRODUCT: 'Plate 450 Diary', crest: crest, mark: mark, colors: { charcoal: '#2C2C2A', gold: '#EF9F27', brown: '#412402', cream: '#F5EFE0' } };
 })(typeof window !== 'undefined' ? window : this);
