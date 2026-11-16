@@ -567,6 +567,19 @@
   }
 
   /* ---------- views ---------- */
+  /* Shown on Log, Career and Goals when no player card exists yet: explains why and lets the visitor create one right here. */
+  function viewNeedPlayer(tab) {
+    const T = {
+      log: ['✍️', 'Log your first game', 'Create your player card first. Then you can log batting, pitching and fielding after every game.'],
+      career: ['📊', 'See your career stats', 'Create your player card first. Your totals, season tables and trend charts appear here once you have logged a game.'],
+      goals: ['🎯', 'Set goals and earn badges', 'Create your player card first. Then you can set goals and unlock badges as your numbers grow.']
+    }[tab];
+    ui.wantTab = tab;
+    return '<section class="card hero need"><p class="eyebrow">Step 1 of 2 &middot; Free and private</p>' +
+      '<h2><span aria-hidden="true">' + T[0] + '</span> ' + esc(T[1]) + '</h2>' +
+      '<p class="muted">' + esc(T[2]) + ' It takes about 20 seconds: just a name and where you play. No birthday, no email.</p></section>' +
+      '<section class="card"><h3>Create your player card</h3>' + playerForm(null) + '</section>';
+  }
   function viewHome(p) {
     if (!p) {
       return '<section class="card hero"><p class="eyebrow">Free &middot; Private &middot; No sign-up needed</p>' +
@@ -962,7 +975,7 @@
 
   function viewTerms() {
     const mail = CONTACT_EMAIL ? '<a href="mailto:' + esc(CONTACT_EMAIL) + '">Contact Us</a>' : 'the contact details on the site where you found this app';
-    const row = (a, b, c) => '<tr><td>' + a + '</td><td>' + b + '</td><td>' + c + '</td></tr>';
+    const row = (a, b, c) => '<tr><td data-label="Who">' + a + '</td><td data-label="Why">' + b + '</td><td data-label="What they receive">' + c + '</td></tr>';
     return '<section class="card hero"><p class="eyebrow">Version ' + TERMS_V + ' &middot; In plain English</p><h2>Terms &amp; Privacy</h2>' +
       '<p class="muted">Plate 450 Diary is a free stat diary from Plate 450 for baseball and softball players of all ages, with their families and coaches. There are no ads, no purchases, no chat, no public profiles, and no tracking. It is built to be suitable for everyone, including our youngest ballplayers.</p></section>' +
 
@@ -1126,7 +1139,7 @@
     const base = h.split('/')[0].split('?')[0];
     if (ext.views[base]) return base;
     if (TABS.indexOf(h) < 0) h = 'home';
-    if (!player() && h !== 'home' && h !== 'about' && h !== 'iq') h = 'home';
+    if (!player() && h !== 'home' && h !== 'about' && h !== 'iq' && h !== 'log' && h !== 'career' && h !== 'goals') h = 'home';
     return h;
   }
   function currentSub() { const h = (location.hash || '').slice(1); const i = h.indexOf('/'); return i < 0 ? [] : h.slice(i + 1).split('?')[0].split('/').map((x) => { try { return decodeURIComponent(x); } catch (e) { return x; } }); }
@@ -1134,6 +1147,7 @@
 
   function render() {
     const tab = currentTab(), p = player();
+    if (tab !== 'log' && tab !== 'career' && tab !== 'goals') ui.wantTab = '';
     let html = '';
     if (ui.flash) { html += '<div class="notice" role="status">' + esc(ui.flash) + '</div>'; ui.flash = ''; }
     if (ui.undo && p && ui.undo.pid === p.id && Date.now() - ui.undo.t < 60000 && tab !== 'card' && tab !== 'terms') html += '<div class="notice" role="status">Game deleted. <button class="link" data-action="undo-delete">Undo</button></div>';
@@ -1144,6 +1158,7 @@
     }
     else if (tab === 'terms') html += viewTerms();
     else if (ext.views[tab]) html += ext.views[tab](p && isUnlocked(p) ? p : null, currentSub());
+    else if (!p && (tab === 'log' || tab === 'career' || tab === 'goals')) html += viewNeedPlayer(tab);
     else if (p && !isUnlocked(p)) html += viewLock(p);
     else if (tab === 'print') html += viewPrint(p);
     else if (tab === 'iq') html += viewIq(p);
@@ -1598,7 +1613,8 @@
           ui.sim.round = null;
           db.players.push(np); db.active = np.id; ui.draft = null; ui.careerSeason = '';
           ui.flash = 'Player card created. Log your first game when you are ready!';
-          save(); askPersist(); closeModal(); go('log');
+          const dest = ui.wantTab === 'goals' ? 'goals' : 'log'; ui.wantTab = '';
+          save(); askPersist(); closeModal(); go(dest);
           if (rec) showRecovery(rec);
         };
         if (pin) {

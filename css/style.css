@@ -516,4 +516,15 @@ label.check input { width: 22px; height: 22px; flex: none; margin-top: 2px; }
 
 table.ptable { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin: 8px 0; }
 table.ptable th, table.ptable td { text-align: left; vertical-align: top; padding: 8px 6px; border-bottom: 1px solid var(--line); }
+table.ptable { table-layout: fixed; }
+table.ptable th, table.ptable td { white-space: normal; overflow-wrap: anywhere; position: static; background: transparent; }
+table.ptable th:nth-child(1), table.ptable td:nth-child(1) { width: 26%; font-weight: 600; }
+@media (max-width: 560px) {
+  table.ptable, table.ptable tbody, table.ptable tr, table.ptable td { display: block; width: 100%; }
+  table.ptable thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  table.ptable tr { border: 1px solid var(--line); border-radius: 12px; padding: 8px 12px; margin-bottom: 10px; }
+  table.ptable td { border: 0; padding: 4px 0; width: 100% !important; }
+  table.ptable td:nth-child(1) { font-size: 1rem; }
+  table.ptable td:nth-child(n+2)::before { content: attr(data-label); display: block; color: var(--muted); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.04em; }
+}
 table.ptable th { color: var(--muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; }

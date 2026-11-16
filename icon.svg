@@ -1,5 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 300 300" role="img" aria-label="Plate 450 icon">
-  <title>Plate 450 icon</title>
-  <circle cx="150" cy="150" r="150" fill="#2C2C2A"/>
-  <polygon points="58,56 242,56 242,148 150,240 58,148" fill="#EF9F27"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="#2C2C2A"/><g transform="translate(76 76) scale(3.6)"><polygon points="12,12 88,12 88,56 50,90 12,56" fill="#EF9F27" stroke="#EF9F27" stroke-width="8" stroke-linejoin="round"/><line x1="24" y1="30" x2="44" y2="30" stroke="#2C2C2A" stroke-width="4" stroke-linecap="round"/><line x1="24" y1="42" x2="44" y2="42" stroke="#2C2C2A" stroke-width="4" stroke-linecap="round"/><line x1="24" y1="54" x2="36" y2="54" stroke="#2C2C2A" stroke-width="4" stroke-linecap="round"/><path d="M59 45 L67 45 L62 66 L58 62 L53 65 Z" fill="#2C2C2A"/><path d="M65 45 L73 45 L79 65 L74 62 L70 66 Z" fill="#2C2C2A"/><circle cx="66" cy="34" r="14" fill="#2C2C2A"/><circle cx="66" cy="34" r="11" fill="none" stroke="#F5EFE0" stroke-width="1.5"/><polygon points="66,26 68,31.25 73.61,31.53 69.23,35.05 70.7,40.47 66,37.4 61.3,40.47 62.77,35.05 58.39,31.53 64,31.25" fill="#EF9F27"/></g></svg>

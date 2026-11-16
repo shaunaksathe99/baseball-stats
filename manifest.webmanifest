@@ -1,7 +1,7 @@
 {
-  "name": "Dugout Diary by Plate 450",
-  "short_name": "Dugout Diary",
-  "description": "A free career diary for young ballplayers, from Plate 450.",
+  "name": "Plate 450 Diary",
+  "short_name": "Plate 450 Diary",
+  "description": "A free career diary for every ballplayer, from Plate 450.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
