@@ -536,3 +536,63 @@ table.ptable th:nth-child(1), table.ptable td:nth-child(1) { width: 26%; font-we
   table.ptable td:nth-child(n+2)::before { content: attr(data-label); display: block; color: var(--muted); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.04em; }
 }
 table.ptable th { color: var(--muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; }
+
+/* ---------- collapsible sections ---------- */
+.fold { margin: 0; }
+.fold > summary { list-style: none; display: flex; align-items: center; gap: 10px; cursor: pointer; min-height: 44px; font-family: var(--display); font-weight: 700; font-size: 1.1rem; }
+.fold > summary::-webkit-details-marker { display: none; }
+.fold-t { flex: 1; min-width: 0; }
+.fold-n { color: var(--muted); font-family: var(--body); font-weight: 600; font-size: 0.82rem; white-space: nowrap; }
+.fold-i { width: 10px; height: 10px; border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted); transform: rotate(45deg); transition: transform 0.15s; margin: 0 4px 3px 2px; flex: none; }
+.fold[open] > summary > .fold-i { transform: rotate(-135deg); margin-top: 6px; }
+.fold-b { padding-top: 4px; }
+.fold-card { padding-top: 6px; padding-bottom: 8px; }
+.fold-sub { border-top: 1px solid var(--line); margin-top: 4px; }
+.fold-sub > summary { font-size: 1rem; }
+.fold-tools { justify-content: flex-end; margin: 2px 0 4px; }
+.plain p { margin: 0 0 8px; line-height: 1.5; }
+.plain p:last-child { margin-bottom: 0; }
+.chg { margin: 0; padding-left: 18px; line-height: 1.5; }
+.chg li { margin: 0 0 8px; }
+.plan-top { margin-bottom: 8px; }
+@media (prefers-reduced-motion: reduce) { .fold-i { transition: none; } }
+
+/* ---------- two progress bars in the header ---------- */
+.progress.dual { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.progress.dual .pcol { min-width: 0; }
+.progress.dual .bar { height: 10px; box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.25); }
+.progress.dual .bar span { border-radius: 999px; background: linear-gradient(90deg, #f5b94f, var(--gold-bg)); transition: width 0.6s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.progress.dual .bar.goals span { background: repeating-linear-gradient(135deg, var(--good) 0 6px, color-mix(in srgb, var(--good) 70%, #fff) 6px 12px); }
+.progress.dual p { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.progress.dual #bar-text::before { content: "\1F3C5\00a0"; }
+.progress.dual #goal-text::before { content: "\1F3AF\00a0"; }
+.progress.dual #goal-text a { color: var(--gold); font-weight: 600; }
+.ico { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; vertical-align: -4px; margin-right: 4px; }
+.share-scene { display: block; width: 120px; height: 70px; margin: 0 auto 4px; }
+@media (prefers-reduced-motion: reduce) { .progress.dual .bar span { transition: none; } }
+
+/* ---------- player card: team color, jersey chip, swatches ---------- */
+.hero.team { border-left: 6px solid var(--team, var(--gold)); position: relative; }
+.jchip { position: absolute; top: 14px; right: 14px; background: var(--team, var(--gold)); color: #1a1a18; font-weight: 800; font-size: 0.9rem; padding: 4px 12px; border-radius: 999px; }
+.swatches { border: 0; margin: 4px 0 8px; padding: 0; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.swatches legend { font-weight: 600; font-size: 0.9rem; margin-bottom: 6px; padding: 0; }
+.sw { position: relative; display: inline-block; cursor: pointer; }
+.sw input { position: absolute; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
+.sw span { display: block; width: 40px; height: 40px; border-radius: 50%; border: 3px solid var(--line); }
+.sw input:checked + span { border-color: var(--chalk); box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--chalk); }
+.sw input:focus-visible + span { outline: 3px solid var(--gold); outline-offset: 3px; }
+
+/* ---------- save-game celebration ---------- */
+.modal { position: relative; }
+.confetti { position: absolute; inset: 0; overflow: hidden; pointer-events: none; border-radius: inherit; }
+.confetti i { position: absolute; top: -12px; width: 9px; height: 14px; border-radius: 2px; opacity: 0; animation: confetti-fall 2.4s ease-in forwards; }
+@keyframes confetti-fall { 0% { opacity: 1; transform: translateY(0) rotate(0); } 100% { opacity: 0; transform: translateY(420px) rotate(540deg); } }
+.cheers { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 8px; }
+.cheers li { display: flex; gap: 10px; align-items: center; background: var(--tint); border-radius: 12px; padding: 10px 12px; }
+.cheers li span { font-size: 1.4rem; }
+@media (prefers-reduced-motion: reduce) { .confetti { display: none; } .celebrate { animation: none !important; } }
+
+/* ---------- My Idol poster ---------- */
+.idol .poster { position: relative; text-align: center; padding: 22px 14px 16px; border-radius: 10px; background: var(--card2); border: 2px solid var(--team, var(--gold)); transform: rotate(-1deg); box-shadow: 0 3px 8px rgba(0,0,0,.25); }
+.idol .poster h3 { margin: 4px 0 8px; font-size: 1.4rem; }
+.idol .poster .pin { position: absolute; top: -7px; left: 50%; width: 14px; height: 14px; margin-left: -7px; border-radius: 50%; background: var(--team, var(--gold)); box-shadow: 0 1px 3px rgba(0,0,0,.4); }

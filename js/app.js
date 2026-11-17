@@ -7,10 +7,8 @@
   const Rv = window.Review;
   const Content = window.Content;
   // Site content (scenarios, trivia, quizzes, articles, glossary, directory) comes from content/content.js.
-  // If this device has Preview turned on in the Content Studio, the unpublished draft is shown instead.
-  let CONTENT, PREVIEW = false;
-  try { const a = Content.active(window.DD_CONTENT, window.localStorage); CONTENT = a.content; PREVIEW = a.preview; }
-  catch (e) { CONTENT = Content.normalize(window.DD_CONTENT).content; }
+  const PREVIEW = false;
+  const CONTENT = Content.normalize(window.DD_CONTENT).content;
   Sim.setScenarios(CONTENT.scenarios);
   // Light / dark / auto. The choice is stored on this device only; "auto" follows the phone's setting.
   const THEME_KEY = 'dugoutDiary.theme';
@@ -31,6 +29,25 @@
   const VERSION = '0.1.0';
   const LEVELS = ['Tee Ball', 'Coach Pitch', 'Minors', 'Majors', 'Intermediate (50/70)', 'Juniors', 'Seniors', 'Travel / Club', 'Middle School', 'High School', 'College', 'Other'];
   const POSITIONS = ['', 'P', 'C', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF'];
+  /* Team colors for the player card: accent, then the two background shades used on the share image. */
+  const COLORS = {
+    gold: { name: 'Gold', acc: '#EF9F27', b1: '#2C2C2A', b2: '#1A1A18' },
+    red: { name: 'Red', acc: '#EF6A5E', b1: '#3A1D1B', b2: '#1F0E0D' },
+    blue: { name: 'Blue', acc: '#62AEF5', b1: '#172B47', b2: '#0C1829' },
+    green: { name: 'Green', acc: '#6CC574', b1: '#17341F', b2: '#0D1D12' },
+    purple: { name: 'Purple', acc: '#B994F5', b1: '#2B1E47', b2: '#190F29' },
+    teal: { name: 'Teal', acc: '#46C9BD', b1: '#12393A', b2: '#0A2425' },
+    silver: { name: 'Silver', acc: '#D8D8D4', b1: '#2E2E33', b2: '#18181B' }
+  };
+  const FAV_POS = ['P', 'C', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF', 'DH', 'IF', 'OF'];
+  const IDOL_LEAGUES = ['MLB', 'AUSL'];
+  function cleanJersey(v) { v = String(v == null ? '' : v).trim(); return /^\d{1,2}$/.test(v) ? String(Number(v)) : ''; }
+  function cleanIdol(o) {
+    if (!o || typeof o !== 'object') return null;
+    const n = String(o.n == null ? '' : o.n).replace(/[^A-Za-z0-9 .'\-\u00C0-\u024F]/g, '').replace(/\s+/g, ' ').trim().slice(0, 40);
+    if (n.length < 2) return null;
+    return { n: n, lg: IDOL_LEAGUES.indexOf(o.lg) >= 0 ? o.lg : 'MLB', src: o.src === 'list' ? 'list' : 'typed' };
+  }
   const STATES = 'AL AK AZ AR CA CO CT DE DC FL GA HI ID IL IN IA KS KY LA ME MD MA MI MN MS MO MT NE NV NH NJ NM NY NC ND OH OK OR PA RI SC SD TN TX UT VT VA WA WV WI WY'.split(' ');
   const TABS = ['home', 'log', 'career', 'goals', 'iq', 'about'];  // the Learn tab and Studio are extension views (see ext)
 
@@ -139,7 +156,7 @@
     if (!m || !isFinite(t) || t <= 0) return null;
     return { id: cleanId(x.id), metric: m.id, target: Math.min(t, 9999), scope: str(x.scope, 30) || 'career', created: Number(x.created) || Date.now() };
   }
-  function emptyIq() { return { r: {}, qz: {}, xp: 0, best: 0 }; }
+  function emptyIq() { return { r: {}, qz: {}, xp: 0, best: 0, dy: { l: '', s: 0, b: 0 } }; }
   function cleanIq(o) {
     const out = emptyIq();
     if (!o || typeof o !== 'object') return out;
@@ -157,6 +174,9 @@
       if (tot >= 1) out.qz[id] = [best, tot];
     });
     out.xp = S.int(o.xp, 999999); out.best = S.int(o.best, 99);
+    const dy = o.dy && typeof o.dy === 'object' ? o.dy : {};
+    out.dy = { l: /^\d{4}-\d{2}-\d{2}$/.test(String(dy.l || '')) ? String(dy.l) : '', s: S.int(dy.s, 9999), b: S.int(dy.b, 9999) };
+    out.dy.b = Math.max(out.dy.b, out.dy.s);
     return out;
   }
   function cleanPlayer(p) {
@@ -179,7 +199,8 @@
       innings: Number(p.innings) === 7 ? 7 : 6, iq: cleanIq(p.iq),
       created: Number(p.created) || Date.now(),
       last: { season: str(last.season, 30), team: str(last.team, 40), level: LEVELS.indexOf(last.level) >= 0 ? last.level : '' },
-      games: games, goals: goals, plan: Rv.note(p.plan)
+      games: games, goals: goals, plan: Rv.note(p.plan),
+      jersey: cleanJersey(p.jersey), fav: FAV_POS.indexOf(p.fav) >= 0 ? p.fav : '', color: Object.prototype.hasOwnProperty.call(COLORS, p.color) ? p.color : '', idol: cleanIdol(p.idol)
     };
   }
   function sanitizeDb(o) {
@@ -395,7 +416,7 @@
     const b = S.batting(pool), pi = S.pitching(pool, p.innings), f = S.fielding(pool);
     const pick = (o, keys) => { const r = {}; keys.forEach((k) => { r[k] = o[k]; }); return r; };
     return {
-      v: 1, id: '', n: p.name, l: withCity ? placeText(p) : '', k: label, t: last.team || '', lv: last.level || '', g: pool.length, one: one ? 1 : 0, i: p.innings,
+      v: 1, id: '', n: p.name, j: p.jersey || '', ps: p.fav || '', cl: p.color || '', l: withCity ? placeText(p) : '', k: label, t: last.team || '', lv: last.level || '', g: pool.length, one: one ? 1 : 0, i: p.innings,
       bat: pick(b, S.BAT_KEYS), pit: pick(pi, S.PIT_KEYS), fld: pick(f, S.FLD_KEYS),
       b: S.badges(p.games).filter((x) => x.earned).map((x) => x.id)
     };
@@ -407,7 +428,7 @@
     if (!name) return null;
     const ids = S.badgeIds();
     return {
-      v: 1, id: '', n: name, l: str(o.l, 60), k: str(o.k, 30), t: str(o.t, 40), lv: LEVELS.indexOf(o.lv) >= 0 ? o.lv : '',
+      v: 1, id: '', n: name, j: cleanJersey(o.j), ps: FAV_POS.indexOf(o.ps) >= 0 ? o.ps : '', cl: Object.prototype.hasOwnProperty.call(COLORS, o.cl) ? o.cl : '', l: str(o.l, 60), k: str(o.k, 30), t: str(o.t, 40), lv: LEVELS.indexOf(o.lv) >= 0 ? o.lv : '',
       g: S.int(o.g, 3000), one: o.one ? 1 : 0, i: Number(o.i) === 7 ? 7 : 6,
       bat: S.cleanSection(o.bat, S.BAT_KEYS), pit: S.cleanSection(o.pit, S.PIT_KEYS), fld: S.cleanSection(o.fld, S.FLD_KEYS),
       b: (Array.isArray(o.b) ? o.b : []).filter((x, i, a) => ids.indexOf(x) >= 0 && a.indexOf(x) === i).slice(0, 20)
@@ -435,30 +456,31 @@
     x.beginPath(); x.moveTo(a + r, b); x.arcTo(a + w, b, a + w, b + h, r); x.arcTo(a + w, b + h, a, b + h, r); x.arcTo(a, b + h, a, b, r); x.arcTo(a, b, a + w, b, r); x.closePath();
   }
   function drawCard(cv, c) {
-    const W = 1080, H = 1350, slab = 'Rockwell, "Roboto Slab", Georgia, "Times New Roman", serif', sans = 'system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif';
+    const col = COLORS[c.cl] || COLORS.gold, ACC = col.acc, W = 1080, H = 1350, slab = 'Rockwell, "Roboto Slab", Georgia, "Times New Roman", serif', sans = 'system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif';
     const paint = () => {
       cv.width = W; cv.height = H;
       const x = cv.getContext('2d');
-      const bg = x.createLinearGradient(0, 0, W, H); bg.addColorStop(0, '#2C2C2A'); bg.addColorStop(1, '#1A1A18');
+      const bg = x.createLinearGradient(0, 0, W, H); bg.addColorStop(0, col.b1); bg.addColorStop(1, col.b2);
       x.fillStyle = bg; x.fillRect(0, 0, W, H);
       x.globalAlpha = 0.07; x.fillStyle = '#F5EFE0'; x.beginPath(); x.arc(W - 120, 260, 340, 0, Math.PI * 2); x.fill(); x.globalAlpha = 1;
-      x.lineWidth = 14; x.strokeStyle = '#EF9F27'; rrect(x, 36, 36, W - 72, H - 72, 52); x.stroke();
+      if (c.j) { x.save(); x.globalAlpha = 0.08; x.fillStyle = ACC; x.textAlign = 'right'; x.font = '800 420px ' + slab; x.fillText(c.j, W - 70, 1010); x.restore(); }
+      x.lineWidth = 14; x.strokeStyle = ACC; rrect(x, 36, 36, W - 72, H - 72, 52); x.stroke();
       x.textAlign = 'center'; x.textBaseline = 'alphabetic';
-      x.fillStyle = '#EF9F27'; x.font = '700 40px ' + sans;
+      x.fillStyle = ACC; x.font = '700 40px ' + sans;
       x.fillText([c.k, c.lv].filter(Boolean).join('  ·  ').toUpperCase().slice(0, 44), W / 2, 130);
       let size = 108; x.fillStyle = '#F5EFE0';
       do { x.font = size + 'px ' + slab; size -= 4; } while (x.measureText(c.n).width > W - 160 && size > 40);
       x.fillText(c.n, W / 2, 275);
       x.fillStyle = '#ADA99E'; x.font = '600 40px ' + sans;
-      x.fillText([c.t, c.l].filter(Boolean).join('  ·  ').slice(0, 50) || (c.g + (c.g === 1 ? ' game' : ' games')), W / 2, 345);
-      if (c.id) { x.fillStyle = '#EF9F27'; x.font = '700 28px ui-monospace, Menlo, Consolas, monospace'; x.fillText('PLAYER ID  ' + fmtPid(c.id), W / 2, 392); }
+      x.fillText([c.j ? '#' + c.j : '', c.ps, c.t, c.l].filter(Boolean).join('  ·  ').slice(0, 56) || (c.g + (c.g === 1 ? ' game' : ' games')), W / 2, 345);
+      if (c.id) { x.fillStyle = ACC; x.font = '700 28px ui-monospace, Menlo, Consolas, monospace'; x.fillText('PLAYER ID  ' + fmtPid(c.id), W / 2, 392); }
       const f = cardFacts(c);
       const bw = 290, gap = 30, left = (W - (bw * 3 + gap * 2)) / 2;
       f.heads.forEach((h, i) => {
         const bx = left + i * (bw + gap);
         x.fillStyle = 'rgba(0,0,0,0.3)'; rrect(x, bx, 410, bw, 310, 28); x.fill();
         x.strokeStyle = 'rgba(245,239,224,0.16)'; x.lineWidth = 3; x.stroke();
-        x.fillStyle = '#EF9F27'; x.font = '112px ' + slab; x.fillText(String(h[1]), bx + bw / 2, 590);
+        x.fillStyle = ACC; x.font = '112px ' + slab; x.fillText(String(h[1]), bx + bw / 2, 590);
         x.fillStyle = '#ADA99E'; x.font = '700 38px ' + sans; x.fillText(h[0], bx + bw / 2, 670);
       });
       const sw = 215, sg = 20, sl = (W - (sw * 4 + sg * 3)) / 2;
@@ -473,7 +495,7 @@
       x.fillText(c.b.length ? c.b.length + (c.b.length === 1 ? ' BADGE EARNED' : ' BADGES EARNED') : 'BADGES: JUST GETTING STARTED', W / 2, 990);
       x.font = '70px ' + sans; x.fillStyle = '#F5EFE0';
       x.fillText(c.b.slice(0, 8).map((id) => icons[id]).join(' '), W / 2, 1085);
-      x.fillStyle = '#EF9F27'; rrect(x, 190, 1150, W - 380, 96, 48); x.fill();
+      x.fillStyle = ACC; rrect(x, 190, 1150, W - 380, 96, 48); x.fill();
       x.fillStyle = '#412402'; x.font = '800 42px ' + sans; x.fillText('Build your own card — free', W / 2, 1214);
       if (window.Brand) {
         window.Brand.mark(x, W / 2 - 205, 1296, 64);
@@ -504,7 +526,7 @@
 
   /* ---------- chrome (header, tabs, banner) ---------- */
   function renderBanner() {
-    $('#banner').innerHTML = (PREVIEW ? '<div class="notice" role="status"><b>Preview mode.</b> You are looking at the unpublished draft from the Content Studio, on this device only. <a href="#studio">Open the Studio</a> to turn it off.</div>' : '') + (memoryOnly
+    $('#banner').innerHTML = (memoryOnly
       ? '<div class="notice" role="alert"><b>Heads up:</b> your browser is not letting this page save data (private mode?). Stats will disappear when you close the tab, so use <b>About &rarr; Export backup</b> before leaving.</div>'
       : '');
   }
@@ -517,8 +539,13 @@
     if (p && isUnlocked(p)) {
       const bs = S.badges(p.games), n = bs.filter((b) => b.earned).length, pct = Math.round((n / bs.length) * 100);
       $('#bar-fill').style.width = pct + '%';
-      $('.bar').setAttribute('aria-valuenow', pct);
+      $('#bar-b').setAttribute('aria-valuenow', pct);
       $('#bar-text').textContent = n + ' of ' + bs.length + ' badges';
+      const met = p.goals.filter((g) => S.goalStatus(g, p.games, p.innings).met).length, gp = p.goals.length ? Math.round((met / p.goals.length) * 100) : 0;
+      $('#goal-fill').style.width = gp + '%';
+      $('#bar-g').setAttribute('aria-valuenow', gp);
+      $('#bar-g').setAttribute('aria-valuetext', p.goals.length ? met + ' of ' + p.goals.length + ' goals reached' : 'No goals set yet');
+      $('#goal-text').innerHTML = p.goals.length ? met + ' of ' + p.goals.length + ' goals' : '<a href="#goals">Set a goal</a>';
     }
     document.querySelectorAll('.tabs a').forEach((a) => {
       if (a.dataset.tab === (tab === 'print' ? 'log' : tab === 'terms' || tab === 'studio' ? 'about' : tab === 'iq' ? 'learn' : tab === 'plan' ? 'career' : tab)) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
@@ -531,13 +558,16 @@
     return '<option value="">State</option>' + STATES.map((s) => '<option' + (s === sel ? ' selected' : '') + '>' + s + '</option>').join('');
   }
   function playerForm(p) {
-    const v = p || { name: '', city: '', state: '', zip: '' };
+    const v = p || { name: '', city: '', state: '', zip: '', jersey: '', fav: '', color: '' };
     return '<form data-form="player" data-id="' + esc(p ? p.id : '') + '" novalidate>' +
       '<div class="error" data-errbox hidden role="alert"></div>' +
       '<div class="field"><label for="pf-name">Player name</label><input id="pf-name" name="name" type="text" maxlength="40" autocomplete="off" placeholder="First name or nickname" value="' + esc(v.name) + '"><p class="hint">A first name or nickname is perfectly fine.</p></div>' +
       '<div class="grid2"><div class="field"><label for="pf-city">City</label><input id="pf-city" name="city" type="text" maxlength="40" autocomplete="off" value="' + esc(v.city) + '"></div>' +
       '<div class="field"><label for="pf-state">State</label><select id="pf-state" name="state">' + stateOptions(v.state) + '</select></div></div>' +
       '<div class="field"><label for="pf-zip">&hellip;or just a ZIP code</label><input id="pf-zip" name="zip" type="text" inputmode="numeric" maxlength="5" autocomplete="off" placeholder="5-digit ZIP" value="' + esc(v.zip) + '"></div>' +
+      '<details class="pin-opt"' + (p && (v.jersey || v.fav || v.color) ? ' open' : '') + '><summary>Make it yours (optional)</summary><div class="grid2"><div class="field"><label for="pf-jersey">Jersey number</label><input id="pf-jersey" name="jersey" type="text" inputmode="numeric" maxlength="2" autocomplete="off" placeholder="0 to 99" value="' + esc(v.jersey || '') + '"></div>' +
+      '<div class="field"><label for="pf-fav">Favorite position</label><select id="pf-fav" name="fav"><option value="">Any</option>' + FAV_POS.map((x) => '<option' + (x === v.fav ? ' selected' : '') + '>' + x + '</option>').join('') + '</select></div></div>' +
+      '<fieldset class="swatches"><legend>Team color</legend>' + Object.keys(COLORS).map((k) => '<label class="sw" title="' + COLORS[k].name + '"><input type="radio" name="color" value="' + k + '"' + ((v.color || 'gold') === k ? ' checked' : '') + '><span style="background:' + COLORS[k].acc + '"></span><i class="sr">' + COLORS[k].name + '</i></label>').join('') + '</fieldset></details>' +
       (p ? '' : (hasCrypto ? '<details class="pin-opt"><summary>Protect with a PIN (optional)</summary><p class="hint">Keeps teammates and siblings out of this diary on a shared device.</p>' +
         '<div class="grid2"><div class="field"><label for="pf-pin">PIN (4 to 8 digits)</label><input id="pf-pin" name="pin" type="password" inputmode="numeric" autocomplete="off" maxlength="8"></div>' +
         '<div class="field"><label for="pf-pin2">Repeat PIN</label><input id="pf-pin2" name="pin2" type="password" inputmode="numeric" autocomplete="off" maxlength="8"></div></div></details>' : '') +
@@ -568,6 +598,8 @@
 
   /* ---------- views ---------- */
   /* Shown on Log, Career and Goals when no player card exists yet: explains why and lets the visitor create one right here. */
+  const SHARE_ICO = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="16" cy="8" r="5"/><path d="M13.3 5.6c1 .6 1.5 1.5 1.6 2.6M18.7 10.4c-1-.6-1.5-1.5-1.6-2.6"/><path d="M3 12.5l5-1.6M4 17l5.5-2.4M7 21l4.5-3"/></svg>';
+  const SHARE_SCENE = '<svg class="share-scene" viewBox="0 0 120 70" aria-hidden="true"><g transform="rotate(-35 30 52)"><rect x="4" y="48" width="50" height="7" rx="3.5" fill="var(--gold)"/><rect x="50" y="49.5" width="10" height="4" rx="2" fill="var(--gold)" opacity=".75"/></g><path d="M36 38C54 8 80 4 98 14" fill="none" stroke="var(--muted)" stroke-width="2" stroke-dasharray="1 6" stroke-linecap="round"/><circle cx="104" cy="18" r="10" fill="var(--chalk)" stroke="var(--line)"/><path d="M98.5 12.5c2.5 2 3 5 2 8M109.5 23.5c-2.5-2-3-5-2-8" fill="none" stroke="var(--bad)" stroke-width="1.6" stroke-linecap="round"/><path d="M84 6l2 4M112 4l-2 4M116 26l-4 1" stroke="var(--gold)" stroke-width="2" stroke-linecap="round"/></svg>';
   function viewNeedPlayer(tab) {
     const T = {
       log: ['✍️', 'Log your first game', 'Create your player card first. Then you can log batting, pitching and fielding after every game.'],
@@ -598,14 +630,15 @@
     const earned = S.badges(p.games).filter((b) => b.earned).length;
     const recent = S.sortGames(p.games).reverse().slice(0, 3);
     const streak = S.hitStreak(p.games);
-    return '<section class="card hero"><p class="eyebrow">' + esc(placeText(p)) + '</p><h2>Welcome back, ' + esc(p.name) + '!</h2>' +
+    const col = COLORS[p.color] || COLORS.gold, chip = [p.jersey ? '#' + p.jersey : '', p.fav].filter(Boolean).join(' &middot; ');
+    return '<section class="card hero team" style="--team:' + col.acc + '">' + (chip ? '<span class="jchip" aria-label="Jersey and position">' + chip + '</span>' : '') + '<p class="eyebrow">' + esc(placeText(p)) + '</p><h2>Welcome back, ' + esc(p.name) + '!</h2>' +
       '<p class="muted">' + (p.games.length ? 'You have logged ' + plural(p.games.length, 'game') + '. Keep the story going.' : 'Log your first game to start your career card.') + '</p>' +
       '<div class="stats four"><div class="stat"><b>' + p.games.length + '</b><span>Games</span></div><div class="stat"><b>' + S.fmtRate(bat.avg) + '</b><span>AVG</span></div><div class="stat"><b>' + S.fmtEra(pit.era) + '</b><span>ERA</span></div><div class="stat"><b>' + earned + '</b><span>Badges</span></div></div>' +
       '<div class="row wrap" style="margin-top:16px"><button class="btn grow" data-action="go" data-to="log">Log a game &rarr;</button><button class="btn ghost grow" data-action="go" data-to="career">My career</button></div>' +
-      (p.games.length ? '<button class="btn ghost block" style="margin-top:10px" data-action="share-open">📣 Share my player card</button>' : '') + '</section>' +
-      safeCard() + iqHomeCard(p) + (ext.homeCard ? ext.homeCard(p) : '') +
+      (p.games.length ? '<button class="btn ghost block" style="margin-top:10px" data-action="share-open">' + SHARE_ICO + ' Share my player card</button>' : '') + '</section>' +
+      safeCard() + idolCard(p) + iqHomeCard(p) + (ext.homeCard ? ext.homeCard(p) : '') +
       (streak.current >= 2 ? '<section class="card"><b>🔥 ' + streak.current + '-game hit streak!</b><span class="muted small"> Best: ' + streak.best + '</span></section>' : '') +
-      '<section class="card"><h3>Recent games</h3>' + (recent.length ? '<ul class="games">' + recent.map((g) => gameItem(g, true)).join('') + '</ul>' : '<p class="muted">Nothing yet. Your first game is a big one!</p>') + '</section>' +
+      '<section class="card fold-card">' + fold(p.id + ':recent', 'Recent games', recent.length ? 'Last ' + recent.length : '', recent.length ? '<ul class="games">' + recent.map((g) => gameItem(g, true)).join('') + '</ul>' : '<p class="muted">Nothing yet. Your first game is a big one!</p>', true) + '</section>' +
       '<section class="card"><div class="row between"><div><b>No phone in the dugout?</b><br><span class="muted small">Print a game sheet, fill it in by hand, then enter it here later.</span></div><a class="btn small" href="#print">Print</a></div></section>' +
       '<p style="text-align:center"><button class="link" data-action="new-player">+ Add another player</button></p>' + footer();
   }
@@ -745,6 +778,77 @@
   function compute(sec, games, inn) { return sec === 'bat' ? S.batting(games) : sec === 'pit' ? S.pitching(games, inn) : S.fielding(games); }
   function cell(t, col) { const v = t[col[1]]; return col[2] === 'rate' ? S.fmtRate(v) : col[2] === 'era' ? S.fmtEra(v) : v; }
 
+  /* ---------- collapsible sections (open or closed is remembered on this device) ---------- */
+  const FOLD_KEY = 'plate450.folds';
+  function foldState() { try { return JSON.parse(localStorage.getItem(FOLD_KEY)) || {}; } catch (e) { return {}; } }
+  function foldOpen(key, def) { const s = foldState(); return Object.prototype.hasOwnProperty.call(s, key) ? !!s[key] : def; }
+  function setFold(key, open) {
+    const s = foldState(); s[key] = open ? 1 : 0;
+    const ks = Object.keys(s); if (ks.length > 300) ks.slice(0, ks.length - 300).forEach((k) => { delete s[k]; });
+    try { localStorage.setItem(FOLD_KEY, JSON.stringify(s)); } catch (e) { /* storage full or blocked: the state just resets next time */ }
+  }
+  /* title is HTML; count is a short text shown on the right of the heading. */
+  function fold(key, title, count, body, def, cls) {
+    return '<details class="fold' + (cls ? ' ' + cls : '') + '" data-fold="' + esc(key) + '"' + (foldOpen(key, def !== false) ? ' open' : '') + '><summary><span class="fold-t">' + title + '</span>' +
+      (count ? '<span class="fold-n">' + esc(count) + '</span>' : '') + '<span class="fold-i" aria-hidden="true"></span></summary><div class="fold-b">' + body + '</div></details>';
+  }
+  document.addEventListener('toggle', (e) => { const d = e.target; if (d && d.dataset && d.dataset.fold) setFold(d.dataset.fold, d.open); }, true);
+
+  /* ---------- plain-language reading of the numbers ---------- */
+  function seasonLabel(g) { return g.season + (g.team ? ' (' + g.team + ')' : ''); }
+  function sayRate(v) { return S.fmtRate(v); }
+  function oneIn(x) { const n = Math.round(x * 10); return n <= 0 ? 'fewer than 1' : String(n); }
+  function plainWords(sec, t, label, inn) {
+    if (!t.g) return '';
+    const out = [];
+    const when = label === 'All time' ? 'Over your whole career' : 'In ' + label;
+    if (sec === 'bat') {
+      out.push(when + ' you have batted in ' + plural(t.g, 'game') + ': ' + t.h + (t.h === 1 ? ' hit' : ' hits') + ' in ' + t.ab + ' at-bats, a ' + sayRate(t.avg) + ' batting average. Average is hits divided by at-bats, so .250 means one hit every four tries.');
+      if (t.obp !== null && t.pa) out.push('You reached base about ' + oneIn(t.obp) + ' times out of every 10 plate appearances (OBP ' + sayRate(t.obp) + '). Walks count here, so a patient eye helps.');
+      const xb = t.d + t.t + t.hr;
+      if (xb) out.push('You have ' + plural(xb, 'extra-base hit') + (t.hr ? ', including ' + plural(t.hr, 'home run') : '') + ', and ' + t.rbi + ' RBI.'); else if (t.rbi) out.push('You drove in ' + t.rbi + ' runs.');
+      if (t.sb) out.push('You stole ' + plural(t.sb, 'base') + '.');
+    } else if (sec === 'pit') {
+      out.push(when + ' you pitched ' + t.ipText + ' innings in ' + plural(t.g, 'game') + ', with ' + t.k + ' strikeouts and ' + t.bb + ' walks.');
+      if (t.era !== null) out.push('Your ERA is ' + S.fmtEra(t.era) + '. That is the earned runs you give up per ' + inn + '-inning game, so lower is better.');
+      if (t.whip !== null) out.push('WHIP is ' + S.fmtEra(t.whip) + ': the batters you let on base each inning. Fewer is better.');
+    } else {
+      out.push(when + ' you handled ' + t.tc + ' fielding ' + (t.tc === 1 ? 'chance' : 'chances') + ' and made the play on ' + (t.po + t.a) + ' of them.');
+      if (t.fpct !== null) out.push('Fielding percentage is ' + sayRate(t.fpct) + ', about ' + Math.round(t.fpct * 100) + ' clean plays out of every 100 chances.');
+    }
+    return out.map((x) => '<p>' + esc(x) + '</p>').join('');
+  }
+  function dirWord(d, eps, hi) { return Math.abs(d) < eps ? 'held steady' : (d > 0) === !!hi ? 'improved' : 'dipped'; }
+  function seasonChanges(sec, grp, inn) {
+    const rows = grp.filter((g) => g.games.some(HAS[sec])).map((g) => ({ label: seasonLabel(g), t: compute(sec, g.games, inn) }));
+    const lines = [];
+    for (let i = rows.length - 1; i >= 1 && lines.length < 3; i--) {
+      const cur = rows[i], prev = rows[i - 1];
+      let head = esc(cur.label) + ' vs ' + esc(prev.label) + ': ', parts = [], note = '';
+      if (sec === 'bat') {
+        if (cur.t.ab < 10 || prev.t.ab < 10) { lines.push('<li><b>' + head + '</b>too few at-bats to compare fairly yet (needs 10 in each season).</li>'); continue; }
+        const da = cur.t.avg - prev.t.avg;
+        parts.push('average ' + dirWord(da, 0.005, true) + ' from ' + sayRate(prev.t.avg) + ' to ' + sayRate(cur.t.avg));
+        if (cur.t.obp !== null && prev.t.obp !== null) parts.push('on-base ' + dirWord(cur.t.obp - prev.t.obp, 0.005, true) + ' (' + sayRate(prev.t.obp) + ' to ' + sayRate(cur.t.obp) + ')');
+        parts.push('home runs ' + prev.t.hr + ' to ' + cur.t.hr);
+        note = da >= 0.005 ? 'Nice progress.' : da <= -0.005 ? 'Averages swing a lot over a few games, so keep logging to see the bigger picture.' : '';
+      } else if (sec === 'pit') {
+        if (cur.t.outs < 9 || prev.t.outs < 9) { lines.push('<li><b>' + head + '</b>too few innings to compare fairly yet (needs 3 in each season).</li>'); continue; }
+        const de = cur.t.era - prev.t.era;
+        parts.push('ERA ' + dirWord(de, 0.05, false) + ' from ' + S.fmtEra(prev.t.era) + ' to ' + S.fmtEra(cur.t.era));
+        parts.push('strikeouts ' + prev.t.k + ' to ' + cur.t.k);
+        note = de <= -0.05 ? 'Giving up fewer runs is the goal, so that is a good sign.' : de >= 0.05 ? 'ERA bounces around in small samples, so look at the trend over time.' : '';
+      } else {
+        if (cur.t.tc < 10 || prev.t.tc < 10) { lines.push('<li><b>' + head + '</b>too few fielding chances to compare fairly yet (needs 10 in each season).</li>'); continue; }
+        const df = cur.t.fpct - prev.t.fpct;
+        parts.push('fielding percentage ' + dirWord(df, 0.005, true) + ' from ' + sayRate(prev.t.fpct) + ' to ' + sayRate(cur.t.fpct));
+        note = df >= 0.005 ? 'Cleaner plays mean more outs for your team.' : '';
+      }
+      lines.push('<li><b>' + head + '</b>' + esc(parts.join('; ')) + '. ' + esc(note) + '</li>');
+    }
+    return lines;
+  }
+
   function viewCareer(p) {
     if (!p.games.length) {
       return emptyState('📊', 'Your career card is waiting', 'Log a game and your totals, season table and trend charts will appear here.', '<button class="btn" data-action="go" data-to="log">Log your first game</button>');
@@ -795,12 +899,20 @@
       '<tr><td><b>Career</b></td>' + COLS[sec].map((c) => '<td><b>' + cell(all, c) + '</b></td>').join('') + '</tr></tbody></table></div></section>' : '';
 
     const log = S.sortGames(pool).reverse();
+    const words = plainWords(sec, t, label, inn);
+    const sc = seasonChanges(sec, grp, inn);
+    const plain = words ? '<section class="card plain"><h3>What the numbers mean</h3>' + words + '</section>' : '';
+    const changes = '<section class="card plain"><h3>Season over season</h3>' + (sc.length ? '<ul class="chg">' + sc.join('') + '</ul>' : '<p class="muted">Once you have two seasons with ' + { bat: 'batting', pit: 'pitching', fld: 'fielding' }[sec] + ' stats, you will see how this season compares with the last one.</p>') + '</section>';
+    const bySeason = [], idx = {};
+    log.forEach((g) => { const k = g.season; if (idx[k] === undefined) { idx[k] = bySeason.length; bySeason.push({ season: k, games: [] }); } bySeason[idx[k]].games.push(g); });
+    const logBody = '<div class="row wrap fold-tools"><button type="button" class="btn ghost small" data-action="fold-all" data-val="1">Expand all</button><button type="button" class="btn ghost small" data-action="fold-all" data-val="0">Collapse all</button></div>' +
+      bySeason.map((s, i) => fold(p.id + ':log:' + s.season, esc(s.season), plural(s.games.length, 'game'), '<ul class="games">' + s.games.map((g) => gameItem(g, true)).join('') + '</ul>', i === 0, 'fold-sub')).join('');
+    const logCard = '<section class="card fold-card">' + fold(p.id + ':log', 'Game log <span class="muted small">(' + esc(label) + ')</span>', plural(log.length, 'game'), logBody, true) + '</section>';
     return path +
       '<section class="card"><div class="row between wrap" style="margin-bottom:12px"><h3 style="margin:0">Stats</h3><select aria-label="Season filter" data-setting="careerSeason" style="width:auto;min-height:40px"><option value="">All time</option>' +
       seasons.map((s) => '<option' + (s === ui.careerSeason ? ' selected' : '') + '>' + esc(s) + '</option>').join('') + '</select></div>' +
       '<div class="seg" role="group" aria-label="Stat type">' + segBtn('bat', 'Batting') + segBtn('pit', 'Pitching') + segBtn('fld', 'Fielding') + '</div>' + body + '</section>' +
-      trend + table +
-      '<section class="card"><h3>Game log <span class="muted small">(' + esc(label) + ')</span></h3><ul class="games">' + log.map((g) => gameItem(g, true)).join('') + '</ul></section>' +
+      plain + trend + changes + table + logCard +
       '<button class="btn ghost block" data-action="summary">Copy career summary</button><div style="height:16px"></div>';
   }
 
@@ -845,7 +957,7 @@
       '<section class="card"><h3>Your privacy</h3><p><b>What is stored:</b> a name or nickname, a city and state or ZIP code, the stats you enter, a random Player ID, and (if you choose) a PIN. All of it stays on your device. By default nothing leaves your device. If a parent or guardian chooses to sign in, the diary is also saved online under their email so it can follow them across devices.</p>' +
       '<p><b>What we never ask for:</b> birthdates, phone numbers, photos, passwords, or payment info. An email address is asked for only if a parent or guardian turns on online saving.</p>' +
       '<p class="muted small">Clearing your browser data erases it, so keep a backup. Read the full <a href="#terms">Terms &amp; Privacy Notice</a>.</p></section>' +
-      '<section class="card"><h3>Coaches, trainers &amp; teams</h3><p class="muted">Find a trainer, clinic or travel ball team, or ask to be listed.</p><div class="row wrap"><a class="btn grow" href="#learn/directory">Browse the directory</a><a class="btn ghost grow" href="#find-list">Get listed</a></div><p class="hint"><a href="#studio">Site editor (Content Studio)</a></p></section>' +
+      '<section class="card"><h3>Coaches, trainers &amp; teams</h3><p class="muted">Find a trainer, clinic or travel ball team, or ask to be listed.</p><div class="row wrap"><a class="btn grow" href="#learn/directory">Browse the directory</a><a class="btn ghost grow" href="#find-list">Get listed</a></div></section>' +
       '<section class="card"><h3>Appearance</h3><div class="seg" role="group" aria-label="Theme">' + [['auto', 'Auto'], ['light', 'Light'], ['dark', 'Dark']].map((o) => '<button data-action="theme-set" data-v="' + o[0] + '" aria-pressed="' + (themePref() === o[0]) + '">' + o[1] + '</button>').join('') + '</div><p class="hint">Auto follows your phone. Saved on this device only.</p></section>' +
       '<section class="card"><h3>Print sheets</h3><p class="muted">Take a paper game sheet or season grid to the field, then enter the numbers later.</p><a class="btn block" href="#print">Open printable sheets</a></section>' +
       edit + sec + (ext.aboutCard ? ext.aboutCard(p) : '') + backup + (danger ? '<section class="card"><h3>Reset</h3>' + danger + '</section>' : '') +
@@ -857,7 +969,7 @@
     S.badges([]).forEach((b) => { info[b.id] = b; });
     const mine = player();
     return '<section class="card hero"><p class="eyebrow">' + esc([c.k, c.lv].filter(Boolean).join(' · ') || 'Player card') + '</p><h2>' + esc(c.n) + '</h2>' +
-      '<p class="muted">' + esc([c.t, c.l, plural(c.g, 'game')].filter(Boolean).join(' · ')) + '</p>' + (c.id ? '<p class="small">Player ID <b class="pid">' + esc(fmtPid(c.id)) + '</b></p>' : '') +
+      '<p class="muted">' + esc([c.j ? '#' + c.j : '', c.ps, c.t, c.l, plural(c.g, 'game')].filter(Boolean).join(' · ')) + '</p>' + (c.id ? '<p class="small">Player ID <b class="pid">' + esc(fmtPid(c.id)) + '</b></p>' : '') +
       '<div class="stats">' + f.heads.map((h) => '<div class="stat"><b>' + esc(h[1]) + '</b><span>' + esc(h[0]) + '</span></div>').join('') + '</div>' +
       '<div class="stats four">' + f.rows.map((r) => '<div class="stat"><b>' + esc(r[1]) + '</b><span>' + esc(r[0]) + '</span></div>').join('') + '</div>' +
       (c.b.length ? '<div class="chips">' + c.b.map((id) => '<span class="chip">' + info[id].icon + ' ' + esc(info[id].name) + '</span>').join('') + '</div>' : '') + '</section>' +
@@ -898,10 +1010,52 @@
       '<div class="meter" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + Math.round(rk.pct * 100) + '"><span style="width:' + Math.round(rk.pct * 100) + '%"></span></div>' +
       '<div class="small muted">' + (rk.next ? rk.need + ' more to reach ' + esc(rk.next) : 'Top rank reached!') + ' &middot; ' + d.xp + ' XP' + (d.best ? ' &middot; best streak ' + d.best : '') + '</div></div></div>';
   }
+  /* Situation of the day: one scenario per calendar day, the same for everyone. The streak is days in a row played; missing a day simply starts a new run. */
+  function dailyId() {
+    const ids = Sim.ids(); if (!ids.length) return '';
+    const t = today(); let h = 7; for (let i = 0; i < t.length; i++) h = (h * 31 + t.charCodeAt(i)) % 1000003;
+    return ids[h % ids.length];
+  }
+  function dailyDone(d) { return !!d.dy && d.dy.l === today(); }
+  function dailyStreak(d) {
+    if (!d.dy || !d.dy.l) return 0;
+    const y = new Date(); y.setDate(y.getDate() - 1);
+    return d.dy.l === today() || d.dy.l === y.getFullYear() + '-' + pad(y.getMonth() + 1) + '-' + pad(y.getDate()) ? d.dy.s : 0;
+  }
+  function dailyCard(d, compact) {
+    if (!Sim.SCENARIOS.length) return '';
+    const done = dailyDone(d), s = dailyStreak(d);
+    const line = done ? '✓ Done today. Come back tomorrow for a new one.' : 'One quick situation. Make the call.';
+    return '<section class="card daily"><div class="row between"><div><b>📅 Situation of the day</b><br><span class="muted small">' + line + (s >= 2 ? ' &middot; <b>' + s + ' days in a row</b>' : '') + '</span></div>' +
+      '<button class="btn small' + (done ? ' ghost' : '') + '" data-action="sim-daily">' + (done ? 'Replay' : 'Play') + '</button></div></section>';
+  }
+  /* My Idol: a poster-style badge for a favorite MLB or AUSL player. Names are typed by the player, or picked from a list for signed-in users. */
+  function idolLink(i) {
+    return i.lg === 'AUSL' ? 'https://theausl.com/' : 'https://www.mlb.com/search?q=' + encodeURIComponent(i.n);
+  }
+  function idolCard(p) {
+    const i = p.idol, col = COLORS[p.color] || COLORS.gold;
+    if (!i) return '<section class="card"><div class="row between"><div><b>🖼️ My Idol</b><br><span class="muted small">Stick a favorite player on your wall.</span></div><button class="btn small ghost" data-action="idol-edit">Add</button></div></section>';
+    return '<section class="card idol" style="--team:' + col.acc + '"><div class="poster"><span class="pin" aria-hidden="true"></span><p class="eyebrow">My Idol</p><h3>' + esc(i.n) + '</h3><span class="chip">' + esc(i.lg) + '</span></div>' +
+      '<div class="row wrap" style="margin-top:10px"><a class="btn small grow" href="' + esc(idolLink(i)) + '" target="_blank" rel="noopener noreferrer">' + (i.lg === 'AUSL' ? 'AUSL website' : 'See stats on MLB.com') + ' &#8599;</a><button class="btn small ghost" data-action="idol-edit">Change</button></div>' +
+      '<p class="hint">Not affiliated with or endorsed by any league, team or player.</p></section>';
+  }
+  function idolModal(list) {
+    const p = player(), i = p.idol || { n: '', lg: 'MLB' };
+    const pick = list && list.length ? '<div class="field"><label for="idol-pick">Pick from the list</label><select id="idol-pick" name="pick"><option value="">Choose a player</option>' +
+      list.map((x, k) => '<option value="' + k + '">' + esc(x.n) + ' (' + esc(x.lg) + ')</option>').join('') + '</select></div><p class="hint">Or type any name below.</p>' : '';
+    openModal('<h3>My Idol</h3><form data-form="idol" novalidate><div class="error" data-errbox hidden role="alert"></div>' + pick +
+      '<div class="field"><label for="idol-n">Player name</label><input id="idol-n" name="n" maxlength="40" autocomplete="off" value="' + esc(i.n) + '"></div>' +
+      '<div class="field"><label for="idol-lg">League</label><select id="idol-lg" name="lg">' + IDOL_LEAGUES.map((x) => '<option' + (x === i.lg ? ' selected' : '') + '>' + x + '</option>').join('') + '</select></div>' +
+      (list === null ? '<p class="hint">Sign in (About tab) to pick from a list of players. This stays on this device unless a parent signs in.</p>' : '') +
+      '<div class="actions">' + (p.idol ? '<button type="button" class="btn ghost" data-action="idol-clear">Remove</button>' : '') + '<button type="button" class="btn ghost" data-action="modal-close">Cancel</button><button class="btn" type="submit">Save</button></div></form>' +
+      '');
+    ui.idolList = list || [];
+  }
   function iqHomeCard(p) {
     if (!Sim.SCENARIOS.length) return '';
     const m = Sim.masteredCount(p.iq.r), rk = Sim.rank(m, Sim.SCENARIOS.length);
-    return '<section class="card"><div class="row between"><div><b>' + rk.icon + ' Game IQ: ' + esc(rk.name) + '</b><br><span class="muted small">' + m + ' of ' + Sim.SCENARIOS.length + ' situations mastered</span></div><a class="btn small" href="#iq">Train</a></div></section>';
+    return dailyCard(p.iq) + '<section class="card"><div class="row between"><div><b>' + rk.icon + ' Game IQ: ' + esc(rk.name) + '</b><br><span class="muted small">' + m + ' of ' + Sim.SCENARIOS.length + ' situations mastered</span></div><a class="btn small" href="#iq">Train</a></div></section>';
   }
   function viewIq(p) {
     if (ui.sim.pid !== (p ? p.id : '')) { ui.sim.round = null; ui.sim.pid = p ? p.id : ''; }
@@ -922,7 +1076,7 @@
       '<p class="hint">' + (lv ? '<b>' + Sim.LEVELS[lv] + '</b>: ' + esc(Sim.LEVEL_INFO[lv]) + '. ' : '') + 'A is the basics, AA is tougher, AAA is big-league smarts.</p>';
     return '<section class="card hero"><p class="eyebrow">Game IQ Simulator</p><h2>Make the call.</h2>' +
       '<p class="muted">Real game situations. Pick the best play, learn why, and come back to the ones you missed until you have mastered them. Great ballplayers win with their heads, not just their arms.</p>' +
-      iqRankBlock(d) + '<h3 style="margin-top:16px">League level</h3>' + lvlChips + '<button class="btn block" data-action="sim-start" data-cat="mix" style="margin-top:14px">Play a 5-question round &rarr;</button></section>' +
+      iqRankBlock(d) + '</section>' + dailyCard(d) + '<section class="card"><h3>League level</h3>' + lvlChips + '<button class="btn block" data-action="sim-start" data-cat="mix" style="margin-top:14px">Play a 5-question round &rarr;</button></section>' +
       '<section class="card"><h3>Practice by skill</h3><div class="cats">' + cats + '</div></section>' +
       (p ? '' : '<section class="card"><h3>Keep your progress</h3><p class="muted">Create a free player card to save your Game IQ. No email or birthday needed.</p><button class="btn ghost block" data-action="go" data-to="home">Create my card</button></section>') + footer();
   }
@@ -955,12 +1109,12 @@
       return '<li class="' + (r.results[k] ? 'ok' : 'no') + '"><span class="mark" aria-label="' + (r.results[k] ? 'Correct' : 'Missed') + '">' + (r.results[k] ? '✓' : '✗') + '</span><div><b>' + c.icon + ' ' + esc(c.name) + '</b><br><span class="muted small">' + esc(sc.tip) + '</span></div></li>';
     }).join('');
     const rk = Sim.rank(Sim.masteredCount(d.r), Sim.SCENARIOS.length);
-    return '<section class="card hero"><p class="eyebrow">Round complete</p><h2>' + ok + ' of ' + n + ' correct</h2><p class="muted">' + stars + '</p>' +
+    return '<section class="card hero"><p class="eyebrow">' + (r.daily ? 'Situation of the day' : 'Round complete') + '</p><h2>' + (r.daily ? (ok ? 'Nice read!' : 'Good try. Now you know.') : ok + ' of ' + n + ' correct') + '</h2>' + (r.daily && r.dayStreak >= 2 ? '<p><b>📅 ' + r.dayStreak + ' days in a row!</b></p>' : '') + '<p class="muted">' + stars + '</p>' +
       '<div class="stats"><div class="stat"><b>' + ok + '/' + n + '</b><span>Score</span></div><div class="stat"><b>+' + r.xp + '</b><span>XP</span></div><div class="stat"><b>' + r.best + '</b><span>Best streak</span></div></div></section>' +
       '<section class="card"><h3>This round</h3><ul class="recap">' + rows + '</ul></section>' +
       '<section class="card">' + iqRankBlock(d) + '</section>' +
       (p ? '' : '<section class="card"><h3>Save your Game IQ</h3><p class="muted">You are playing as a guest. Create a free player card and this progress comes with you.</p><button class="btn block" data-action="go" data-to="home">Create my card</button></section>') +
-      '<div class="row wrap"><button class="btn grow" data-action="sim-start" data-cat="' + esc(r.cat) + '">Play again</button><button class="btn ghost grow" data-action="sim-menu">Menu</button></div><div style="height:16px"></div>';
+      '<div class="row wrap">' + (r.daily ? '<button class="btn grow" data-action="sim-start" data-cat="mix">Play a 5-question round</button>' : '<button class="btn grow" data-action="sim-start" data-cat="' + esc(r.cat) + '">Play again</button>') + '<button class="btn ghost grow" data-action="sim-menu">Menu</button></div><div style="height:16px"></div>';
   }
 
   function viewLock(p) {
@@ -986,7 +1140,7 @@
       '<h4>1. Who we are and where this applies</h4><p>Plate 450 Diary is made by Plate 450 (&ldquo;we&rdquo;, &ldquo;us&rdquo;), the business responsible for the information described here. It is offered to families in the United States and is not written as a privacy notice under the laws of any other country. You can reach a person about anything on this page through ' + mail + '.</p>' +
 
       '<h4>2. What we collect</h4>' +
-      '<p><b>On your device only (the default).</b></p><ul><li>A name or nickname, and an optional city and state or ZIP code</li><li>The games and stats you enter, your goals, Game IQ progress, and the review notes you write about each game</li><li>A random Player ID made on your device</li><li>If you choose one, a scrambled (hashed) PIN and recovery code</li></ul>' +
+      '<p><b>On your device only (the default).</b></p><ul><li>A name or nickname, and an optional city and state or ZIP code</li><li>The games and stats you enter, your goals, Game IQ progress, and the review notes you write about each game</li><li>Optional extras you choose: a jersey number, favorite position, team color, and the name of a favorite pro player (&ldquo;My Idol&rdquo;, not affiliated with or endorsed by any league, team or player)</li><li>A random Player ID made on your device</li><li>If you choose one, a scrambled (hashed) PIN and recovery code</li></ul>' +
       '<p><b>Only if a parent or guardian signs in.</b> Their email address, the date and version of the Terms they agreed to, and an online copy of the diary described above (including any PIN hash). Sign-in uses a one-time code sent to that email, so there is no password.</p>' +
       '<p><b>Technical data.</b> Like any website, the services that deliver the pages and run the online account (see section 5) may record technical details such as an IP address when a request is made. We do not use those logs to identify or follow anyone.</p>' +
       '<p><b>Never collected:</b> birthdates or ages; phone numbers or home addresses; photos, video, microphone or camera access; precise location (GPS); payment information; advertising or analytics data, cookies, or third-party trackers, fonts or scripts. We do not ask for health or injury details, so please do not type them into notes.</p>' +
@@ -1216,6 +1370,39 @@
 
   function earnedIds(games) { return S.badges(games).filter((b) => b.earned).map((b) => b.id); }
 
+  /* Short, positive call-outs shown after a game is saved: firsts, personal bests, milestones. */
+  function cheersFor(game, prior, allGames) {
+    const out = [];
+    const maxOf = (arr, sec, k) => arr.reduce((m, g) => Math.max(m, (g[sec] && g[sec][k]) || 0), 0);
+    const tot = (arr, sec, k) => arr.reduce((n, g) => n + ((g[sec] && g[sec][k]) || 0), 0);
+    if (!prior.length) out.push(['🎉', 'First game in the books! Every career starts here.']);
+    if (S.hasBat(game)) {
+      if (game.bat.hr > 0 && tot(prior, 'bat', 'hr') === 0) out.push(['💥', 'Your first career home run!']);
+      if (game.bat.h > 0 && prior.some(S.hasBat) && tot(prior, 'bat', 'h') === 0) out.push(['⚾', 'Your first career hit!']);
+      if (game.bat.sb > 0 && tot(prior, 'bat', 'sb') === 0) out.push(['💨', 'Your first stolen base!']);
+    }
+    if (S.hasPit(game) && game.pit.k > 0 && prior.some(S.hasPit) && tot(prior, 'pit', 'k') === 0) out.push(['🔥', 'Your first strikeout on the mound!']);
+    const sameSeason = prior.filter((g) => g.season === game.season);
+    let bests = 0;
+    [['bat', 'h', 'hit', 'hits'], ['bat', 'hr', 'home run', 'home runs'], ['bat', 'rbi', 'RBI', 'RBI'], ['bat', 'r', 'run scored', 'runs scored'], ['bat', 'sb', 'stolen base', 'stolen bases'], ['pit', 'k', 'strikeout', 'strikeouts']].forEach((m) => {
+      const sec = m[0], k = m[1], v = game[sec] ? game[sec][k] : 0;
+      if (bests >= 2 || v < 2 || !prior.some(sec === 'bat' ? S.hasBat : S.hasPit)) return;
+      const word = v + ' ' + (v === 1 ? m[2] : m[3]);
+      if (v > maxOf(prior, sec, k)) { out.push(['🏆', 'Career high: ' + word + ' in a game!']); bests++; }
+      else if (sameSeason.length && v > maxOf(sameSeason, sec, k)) { out.push(['⭐', 'Season high: ' + word + ' in a game!']); bests++; }
+    });
+    const n = allGames.length;
+    if ([5, 10, 25, 50, 75, 100, 150, 200].indexOf(n) >= 0 && n > 1) out.push(['📅', n + ' games logged. That is real dedication!']);
+    const st = S.hitStreak(allGames);
+    if (st.current >= 3) out.push(['🔥', st.current + '-game hit streak!']);
+    return out.slice(0, 3);
+  }
+  function confettiHtml() {
+    const cols = ['#EF9F27', '#F5EFE0', '#62AEF5', '#6CC574', '#EF6A5E', '#B994F5'];
+    let h = '<div class="confetti" aria-hidden="true">';
+    for (let i = 0; i < 24; i++) h += '<i style="left:' + Math.round(((i * 37) % 100)) + '%;background:' + cols[i % cols.length] + ';animation-delay:' + ((i % 8) * 0.12).toFixed(2) + 's;animation-duration:' + (1.8 + (i % 5) * 0.25).toFixed(2) + 's"></i>';
+    return h + '</div>';
+  }
   function saveGame() {
     const p = player(), d = ui.draft;
     if (!p || !d) return;
@@ -1247,6 +1434,7 @@
     ui.ackKey = '';
 
     const before = earnedIds(p.games);
+    const priorGames = p.games.filter((g) => g.id !== (d.id || ''));
     const game = cleanGame(Object.assign({ id: d.id || uid('g'), created: d.created || Date.now(), date: d.date, season: d.season, team: d.team, level: d.level, opp: d.opp, result: d.result, us: d.us, them: d.them, rv: d.rv, pos: d.fldMode === 'inning' ? '' : d.pos }, sec));
     const idx = p.games.findIndex((g) => g.id === game.id);
     if (idx >= 0) p.games[idx] = game; else p.games.push(game);
@@ -1254,6 +1442,7 @@
     save();
     const after = S.badges(p.games).filter((b) => b.earned && before.indexOf(b.id) < 0);
     const wasEdit = !!d.id;
+    const cheers = wasEdit ? [] : cheersFor(game, priorGames, p.games);
     ui.draft = null;
     ui.logTab = 'bat';
     renderChrome(currentTab(), p);
@@ -1262,10 +1451,11 @@
     if (S.hasBat(game)) bits.push(batText(game.bat));
     if (S.hasPit(game)) bits.push(pitText(game.pit));
     if (S.hasFld(game)) bits.push(fldLine(game));
-    openModal('<div class="celebrate" aria-hidden="true">' + (after.length ? '🎉' : '⚾') + '</div><h3 style="text-align:center">' + (wasEdit ? 'Game updated!' : 'Game logged!') + '</h3>' +
+    openModal((after.length || cheers.length ? confettiHtml() : '') + '<div class="celebrate" aria-hidden="true">' + (after.length || cheers.length ? '🎉' : '⚾') + '</div><h3 style="text-align:center">' + (wasEdit ? 'Game updated!' : 'Game logged!') + '</h3>' +
       '<p style="text-align:center">' + bits.map(esc).join('<br>') + '</p>' +
+      (cheers.length ? '<ul class="cheers" role="status">' + cheers.map((c) => '<li><span aria-hidden="true">' + c[0] + '</span><b>' + esc(c[1]) + '</b></li>').join('') + '</ul>' : '') +
       (after.length ? '<div class="earned">' + after.map((b) => b.icon + ' New badge: ' + esc(b.name)).join('<br>') + '</div>' : '') +
-      '<button class="btn block" style="margin-top:16px" data-action="share-game" data-id="' + esc(game.id) + '">📣 Share this game</button>' +
+      '<button class="btn block" style="margin-top:16px" data-action="share-game" data-id="' + esc(game.id) + '">' + SHARE_ICO + ' Share this game</button>' +
       '<button class="btn ghost block" style="margin-top:10px" data-action="edit-game" data-id="' + esc(game.id) + '">✏️ Fix a mistake in this game</button>' +
       '<div class="actions"><button class="btn ghost" data-action="after-save" data-id="log">Log another</button><button class="btn" data-action="after-save" data-id="career">See my career</button></div>');
   }
@@ -1358,7 +1548,7 @@
     const opts = shareOptions(p);
     const sc = opts.some((o) => o[0] === scope) ? scope : 'all';
     ui.share = { scope: sc, city: false, card: null };
-    openModal('<h3>Share your card</h3>' +
+    openModal(SHARE_SCENE + '<h3>Share your card</h3>' +
       '<div class="field"><label for="sh-scope">What to show</label><select id="sh-scope" data-share="scope">' + opts.map((o) => '<option value="' + esc(o[0]) + '"' + (o[0] === sc ? ' selected' : '') + '>' + esc(o[1]) + '</option>').join('') + '</select></div>' +
       '<label class="check"><input type="checkbox" data-share="city"> Show my city &amp; state on the card</label>' +
       '<canvas id="share-canvas" class="share-canvas" aria-label="Preview of your player card"></canvas>' +
@@ -1433,6 +1623,19 @@
       ui.sim.round = { cat: cat, ids: ids, i: 0, picked: -1, orders: ids.map((id) => Sim.shuffle(Sim.byId(id).opts.length)), results: [], xp: 0, streak: 0, best: 0, last: null, done: false };
       render(); window.scrollTo(0, 0);
     },
+    'idol-edit': () => {
+      ui.idolList = [];
+      if (ext.idols) { ext.idols().then((l) => { if (!$('#idol-n')) idolModal(l); }); idolModal(null); }
+      else idolModal(null);
+    },
+    'idol-clear': () => { const p = player(); if (!p) return; p.idol = null; save(); closeModal(); render(); },
+    'sim-daily': () => {
+      const id = dailyId(); if (!id) return;
+      { const pp = player(); ui.sim.pid = pp ? pp.id : ''; }
+      ui.sim.round = { cat: 'mix', ids: [id], i: 0, picked: -1, orders: [Sim.shuffle(Sim.byId(id).opts.length)], results: [], xp: 0, streak: 0, best: 0, last: null, done: false, daily: true };
+      if (location.hash !== '#iq') location.hash = '#iq'; else render();
+      window.scrollTo(0, 0);
+    },
     'sim-pick': (el) => {
       const r = ui.sim.round;
       if (!r || r.done || r.picked >= 0) return;
@@ -1444,6 +1647,11 @@
       d.xp = Math.min(999999, d.xp + xp);
       r.streak = ok ? r.streak + 1 : 0; r.best = Math.max(r.best, r.streak); d.best = Math.min(99, Math.max(d.best, r.streak));
       r.results.push(ok); r.xp += xp; r.picked = k; r.last = { ok: ok, xp: xp };
+      if (r.daily && !dailyDone(d)) {
+        const prev = dailyStreak(d); d.dy = d.dy || { l: '', s: 0, b: 0 };
+        d.dy.s = Math.min(9999, prev + 1); d.dy.b = Math.max(d.dy.b || 0, d.dy.s); d.dy.l = today();
+        d.xp = Math.min(999999, d.xp + 5); r.xp += 5; r.last.xp += 5; r.dayStreak = d.dy.s;
+      }
       if (p) save();
       render();
       setTimeout(() => { const f = $('#sim-feedback'); if (f && f.scrollIntoView) f.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }, 30);
@@ -1458,6 +1666,7 @@
     'sim-menu': () => { ui.sim.round = null; render(); window.scrollTo(0, 0); },
     'snooze-safe': () => { db.snooze = addDays(7); save(); render(); },
     'lock-now': () => { const p = player(); if (p && p.lock) { setUnlocked(p.id, false); go('home'); } },
+    'fold-all': (el) => { const open = el.dataset.val === '1'; const host = el.closest('details[data-fold]'); if (host) host.querySelectorAll('details[data-fold]').forEach((d) => { d.open = open; }); },
     'pin-set': () => openPinModal('set'),
     'pin-change': () => openPinModal('change'),
     'pin-remove': () => openPinModal('remove'),
@@ -1586,10 +1795,23 @@
   };
 
   const forms = {
+    idol: (f) => {
+      const p = player(), el = f.elements; if (!p) return;
+      const k = el.pick && el.pick.value !== '' ? ui.idolList[Number(el.pick.value)] : null;
+      const idol = cleanIdol(k ? { n: k.n, lg: k.lg, src: 'list' } : { n: el.n.value, lg: el.lg.value, src: 'typed' });
+      if (!idol) { showErrors(f.querySelector('[data-errbox]'), ['Add a player name (at least 2 letters).']); return; }
+      p.idol = idol; save(); closeModal(); ui.flash = 'Idol saved.'; render();
+    },
     player: (f) => {
       const id = f.dataset.id, el = f.elements;
       const data = { name: str(el.name.value, 40), city: str(el.city.value, 40), state: el.state.value, zip: String(el.zip.value).replace(/\s/g, '') };
+      const jerseyIn = el.jersey ? String(el.jersey.value).trim() : '';
+      data.jersey = cleanJersey(jerseyIn);
+      data.fav = el.fav && FAV_POS.indexOf(el.fav.value) >= 0 ? el.fav.value : '';
+      const colSel = f.querySelector('input[name=color]:checked');
+      data.color = colSel && colSel.value !== 'gold' && COLORS[colSel.value] ? colSel.value : '';
       const errs = [];
+      if (jerseyIn && !data.jersey) errs.push('A jersey number is 1 or 2 digits, like 7 or 24.');
       if (!data.name) errs.push('Add a first name or nickname.');
       if (data.zip && !/^\d{5}$/.test(data.zip)) errs.push('A ZIP code should be 5 digits.');
       if (!data.zip && !(data.city && data.state)) errs.push('Add a city and state, or just a ZIP code.');
@@ -1724,6 +1946,7 @@
   document.addEventListener('change', (e) => {
     onField(e);
     const t = e.target;
+    if (t.id === 'idol-pick' && t.value !== '' && ui.idolList[Number(t.value)]) { const k = ui.idolList[Number(t.value)], n = $('#idol-n'), g = $('#idol-lg'); if (n) n.value = k.n; if (g) g.value = k.lg; }
     if (t.dataset && t.dataset.ip && ui.draft) {
       const o = S.parseInnings(t.value);
       if (o !== null) { t.value = o ? S.fmtInnings(o) : ''; ui.draft.pit.ip = t.value; updateLive(); }

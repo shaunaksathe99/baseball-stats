@@ -60,3 +60,9 @@ The parent's email and one JSON copy of the diary (names or nicknames, optional 
 ## Good to know
 - Newest save wins per game on the same device; when two devices change things at once, the two diaries are combined, so a game deleted on one device can come back.
 - "Erase everything on this device" does not touch the online copy. **Delete my online account** does.
+
+## My Idol list (optional)
+
+1. In Supabase, open SQL Editor, paste the contents of `cloud/idols.sql`, and press Run.
+2. Open Table Editor > `idols` to add, rename or remove players. Only signed-in users can read the list; nobody can change it from the app.
+3. Signed-out visitors can still type any player's name. It stays on their device.

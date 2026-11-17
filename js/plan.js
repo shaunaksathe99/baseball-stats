@@ -49,7 +49,7 @@
   function view(p) {
     if (!p) return A.emptyState('📝', 'Pick a player first', 'Your improvement plan is built from your game reviews.', '<a class="btn" href="#home">Go to Home</a>');
     var a = Rv.analyze(p.games, 10);
-    var back = '<a class="link small noprint" href="#career">&larr; Career</a>';
+    var back = '<div class="row between noprint plan-top"><a class="link small" href="#career">&larr; Career</a><button type="button" class="btn ghost small" data-action="go" data-to="career" aria-label="Close improvement plan and go back to Career">Close &#10005;</button></div>';
     var head = '<section class="card hero"><p class="eyebrow">' + esc(p.name) + '</p><h2>My improvement plan</h2><p class="muted">Habits from your game reviews. Share it with your coach or trainer so you can work on the right things together.</p></section>';
     if (!a.reviewed && !a.errors.tracked) {
       return back + head + A.emptyState('📝', 'No reviews yet', 'When you log a game, open the Review tab and note what went well and what to work on. Your plan builds itself from those notes.', '<a class="btn" href="#log">Log a game</a>') + A.footer();
@@ -61,7 +61,7 @@
     var trend = '<section class="card"><h3>Trend</h3><div class="chart-wrap">' + chart(a) + '</div></section>';
     var share = '<section class="card noprint"><h3>Share with my coach</h3><div class="row wrap"><button class="btn grow" data-action="plan-copy">Copy plan</button><button class="btn ghost" data-action="plan-share">Share</button><button class="btn ghost" data-action="plan-print">Print</button></div>' +
       '<details style="margin-top:10px"><summary>Preview the text</summary><textarea id="plan-text" class="copybox" readonly rows="10">' + esc(txt) + '</textarea></details><p class="hint">Only what you choose to copy or share leaves this device.</p></section>';
-    return back + head + focus + tracker + trend + share + A.footer();
+    return back + head + focus + tracker + trend + share + '<button type="button" class="btn ghost block noprint" data-action="go" data-to="career">Close plan</button>' + A.footer();
   }
 
   A.ext.views.plan = function (p) { return view(p); };

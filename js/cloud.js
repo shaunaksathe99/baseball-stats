@@ -26,6 +26,9 @@
       Object.keys(b.qz || {}).forEach(function (id) { if (!a.qz[id] || b.qz[id][0] > a.qz[id][0] || (b.qz[id][0] === a.qz[id][0] && b.qz[id][1] > a.qz[id][1])) a.qz[id] = b.qz[id].slice(); });
       a.xp = Math.max(a.xp || 0, b.xp || 0); a.best = Math.max(a.best || 0, b.best || 0);
       if (!lp.plan && rp.plan) lp.plan = rp.plan;
+      ['jersey', 'fav', 'color'].forEach(function (k) { if (!lp[k] && rp[k]) lp[k] = rp[k]; });
+      if (!lp.idol && rp.idol) lp.idol = clone(rp.idol);
+      if (b.dy && (!a.dy || (b.dy.l || '') > (a.dy.l || ''))) a.dy = clone(b.dy); else if (a.dy && b.dy) a.dy.b = Math.max(a.dy.b || 0, b.dy.b || 0);
       if (!lp.last || !lp.last.season) lp.last = rp.last || lp.last;
     });
     if (!out.terms && remote && remote.terms) out.terms = clone(remote.terms);
@@ -201,6 +204,14 @@
     A.ext.actions['cloud-del'] = function () {
       A.openModal('<h3>Delete your online account?</h3><p>This permanently deletes your online copy and your account (the email address). The diary on this device is <b>not</b> deleted. Download a backup first if you want extra safety.</p>' +
         '<div class="actions"><button class="btn ghost" data-action="modal-close">Cancel</button><button class="btn danger" data-action="cloud-del-yes">Delete account</button></div>');
+    };
+    // Signed-in users get the starter list of players from the database; everyone else just types a name.
+    A.ext.idols = function () {
+      if (!signedIn()) return Promise.resolve(null);
+      return ensureToken().then(function (ok) { return ok ? req('GET', '/rest/v1/idols?select=name,league&order=league.asc,name.asc&limit=500') : { ok: false }; }).then(function (r) {
+        if (!r.ok || !Array.isArray(r.json)) return null;
+        return r.json.filter(function (x) { return x && typeof x.name === 'string' && (x.league === 'MLB' || x.league === 'AUSL'); }).map(function (x) { return { n: x.name.slice(0, 40), lg: x.league }; });
+      });
     };
     A.ext.actions['cloud-del-yes'] = function () {
       ensureToken().then(function (ok) { return ok ? req('POST', '/rest/v1/rpc/delete_account', {}) : { ok: false }; }).then(function (r) {
