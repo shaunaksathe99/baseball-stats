@@ -19,7 +19,12 @@
     if (v === 'auto') root.removeAttribute('data-theme'); else root.setAttribute('data-theme', v);
     const light = themeIsLight(), meta = document.querySelector('meta[name=theme-color]'), b = document.getElementById('theme-btn');
     if (meta) meta.setAttribute('content', light ? '#FBF8F1' : '#1A1A18');
-    if (b) { b.textContent = light ? '\u263E' : '\u2600'; b.title = light ? 'Switch to dark mode' : 'Switch to light mode'; }
+    if (b) {
+      const cur = themePref(), nxt = cur === 'auto' ? 'Light' : cur === 'light' ? 'Dark' : 'Auto';
+      b.textContent = cur === 'auto' ? '\u25D0' : cur === 'light' ? '\u2600' : '\u263E';
+      b.title = 'Theme: ' + cur.charAt(0).toUpperCase() + cur.slice(1) + '. Tap for ' + nxt;
+      b.setAttribute('aria-label', 'Theme: ' + cur + '. Tap to switch to ' + nxt.toLowerCase());
+    }
   }
   function setTheme(v) { try { if (v === 'auto') localStorage.removeItem(THEME_KEY); else localStorage.setItem(THEME_KEY, v); } catch (e) { /* private mode: applies until reload */ } applyTheme(); }
   try { window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', applyTheme); } catch (e) { /* older browsers */ }
@@ -156,7 +161,7 @@
     if (!m || !isFinite(t) || t <= 0) return null;
     return { id: cleanId(x.id), metric: m.id, target: Math.min(t, 9999), scope: str(x.scope, 30) || 'career', created: Number(x.created) || Date.now() };
   }
-  function emptyIq() { return { r: {}, qz: {}, xp: 0, best: 0, dy: { l: '', s: 0, b: 0 } }; }
+  function emptyIq() { return { r: {}, qz: {}, xp: 0, best: 0, ms: 0, dy: { l: '', s: 0, b: 0 } }; }
   function cleanIq(o) {
     const out = emptyIq();
     if (!o || typeof o !== 'object') return out;
@@ -175,6 +180,7 @@
     });
     out.xp = S.int(o.xp, 999999); out.best = S.int(o.best, 99);
     const dy = o.dy && typeof o.dy === 'object' ? o.dy : {};
+    out.ms = o.ms ? 1 : 0;
     out.dy = { l: /^\d{4}-\d{2}-\d{2}$/.test(String(dy.l || '')) ? String(dy.l) : '', s: S.int(dy.s, 9999), b: S.int(dy.b, 9999) };
     out.dy.b = Math.max(out.dy.b, out.dy.s);
     return out;
@@ -304,12 +310,29 @@
   }
   function safeCard() {
     if (!db.players.length || !totalGames() || (db.snooze && db.snooze >= today())) return '';
-    const due = backupDue(), tip = isMobile() && !isInstalled();
-    if (!due && !tip) return '';
+    const due = backupDue();
+    if (!due) return '';
     const why = due ? (db.bk ? 'Your last backup was ' + backupAgo() + (totalGames() - db.bkN >= 1 ? ', and you have logged ' + plural(totalGames() - db.bkN, 'game') + ' since.' : '.') : 'You have not saved a backup yet.') : 'Your diary lives in this browser.';
     return '<section class="card safe"><h3>Keep your stats safe</h3><p class="muted">' + why + ' Clearing browser data or switching phones would erase it, so save a copy now. It takes two taps.</p>' +
       '<div class="row wrap"><button class="btn grow" data-action="export">Export backup</button><button class="btn ghost grow" data-action="snooze-safe">Not now</button></div>' +
-      (tip ? '<details class="pin-opt"><summary>Add Plate 450 Diary to your Home Screen</summary><p class="hint">iPhone: tap Share, then Add to Home Screen. Android: open the browser menu, then Install app or Add to Home screen. It opens like an app, works offline, and your browser is far less likely to clear it.</p></details>' : '') + '</section>';
+      '</section>';
+  }
+  /* Add to Home Screen: a prominent card near the top on phones, until installed or dismissed. */
+  const INSTALL_KEY = 'plate450.noinstall';
+  let installEvt = null;
+  window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); installEvt = e; if (currentTab() === 'home') render(); });
+  function installCard() {
+    let hidden = false; try { hidden = localStorage.getItem(INSTALL_KEY) === '1'; } catch (e) { /* ignore */ }
+    if (hidden || isInstalled() || !(isMobile() || installEvt)) return '';
+    const ios = /iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+    return '<section class="card install"><div class="row between"><b>📲 Add Plate 450 Diary to your Home Screen</b><button class="link small" data-action="install-hide" aria-label="Hide this">Hide</button></div>' +
+      '<p class="muted">Open it like an app, even offline. Your browser is also far less likely to clear your diary.</p>' +
+      (installEvt ? '<button class="btn block" data-action="install-now">Add to Home Screen</button>' :
+        '<ol class="steps small"><li><div>' + (ios ? 'Tap the <b>Share</b> button in Safari.' : 'Open the browser menu (&#8942;).') + '</div></li><li><div>' + (ios ? 'Choose <b>Add to Home Screen</b>, then Add.' : 'Choose <b>Install app</b> or <b>Add to Home screen</b>.') + '</div></li></ol>') + '</section>';
+  }
+  function addPlayerCard() {
+    const n = db.players.length;
+    return '<section class="card"><div class="row between"><div><b>👥 ' + (n > 1 ? n + ' players on this device' : 'Another ballplayer in the family?') + '</b><br><span class="muted small">Each player gets their own diary, stats and badges.</span></div><button class="btn small" data-action="new-player">+ Add player</button></div></section>';
   }
   function player() { return db.players.find((p) => p.id === db.active) || null; }
 
@@ -599,7 +622,7 @@
   /* ---------- views ---------- */
   /* Shown on Log, Career and Goals when no player card exists yet: explains why and lets the visitor create one right here. */
   const SHARE_ICO = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="16" cy="8" r="5"/><path d="M13.3 5.6c1 .6 1.5 1.5 1.6 2.6M18.7 10.4c-1-.6-1.5-1.5-1.6-2.6"/><path d="M3 12.5l5-1.6M4 17l5.5-2.4M7 21l4.5-3"/></svg>';
-  const SHARE_SCENE = '<svg class="share-scene" viewBox="0 0 120 70" aria-hidden="true"><g transform="rotate(-35 30 52)"><rect x="4" y="48" width="50" height="7" rx="3.5" fill="var(--gold)"/><rect x="50" y="49.5" width="10" height="4" rx="2" fill="var(--gold)" opacity=".75"/></g><path d="M36 38C54 8 80 4 98 14" fill="none" stroke="var(--muted)" stroke-width="2" stroke-dasharray="1 6" stroke-linecap="round"/><circle cx="104" cy="18" r="10" fill="var(--chalk)" stroke="var(--line)"/><path d="M98.5 12.5c2.5 2 3 5 2 8M109.5 23.5c-2.5-2-3-5-2-8" fill="none" stroke="var(--bad)" stroke-width="1.6" stroke-linecap="round"/><path d="M84 6l2 4M112 4l-2 4M116 26l-4 1" stroke="var(--gold)" stroke-width="2" stroke-linecap="round"/></svg>';
+  const SHARE_SCENE = '<svg class="share-scene" viewBox="0 0 120 70" aria-hidden="true"><g transform="rotate(-35 30 52)"><path d="M4 49.4 L7 50.6 L36 50.7 C50 50.4 58 48.8 66 48.7 L74 48.7 Q78.5 48.7 78.5 52 Q78.5 55.3 74 55.3 L66 55.3 C58 55.2 50 53.6 36 53.3 L7 53.4 L4 54.6 Z" fill="#E0A94C" stroke="var(--chalk)" stroke-width="0.9" stroke-linejoin="round"/><path d="M4 49.4 L7 50.6 L30 50.7 L30 53.3 L7 53.4 L4 54.6 Z" fill="#5B3208" stroke="var(--chalk)" stroke-width="0.9" stroke-linejoin="round"/><path d="M12 50.8v2.4M17 50.8v2.4M22 50.8v2.4" stroke="#B98A4A" stroke-width="0.8" stroke-linecap="round"/><path d="M50 51.4h18M52 52.8h14" stroke="#B9822F" stroke-width="0.7" stroke-linecap="round" opacity=".7"/></g><path d="M80 14C86 6 94 5 98 9" fill="none" stroke="var(--muted)" stroke-width="2" stroke-dasharray="1 6" stroke-linecap="round"/><circle cx="104" cy="18" r="10" fill="var(--chalk)" stroke="var(--line)"/><path d="M98.5 12.5c2.5 2 3 5 2 8M109.5 23.5c-2.5-2-3-5-2-8" fill="none" stroke="var(--bad)" stroke-width="1.6" stroke-linecap="round"/><path d="M84 28l4 1M112 4l-2 4M116 30l-4 -1" stroke="var(--gold)" stroke-width="2" stroke-linecap="round"/></svg>';
   function viewNeedPlayer(tab) {
     const T = {
       log: ['✍️', 'Log your first game', 'Create your player card first. Then you can log batting, pitching and fielding after every game.'],
@@ -636,11 +659,11 @@
       '<div class="stats four"><div class="stat"><b>' + p.games.length + '</b><span>Games</span></div><div class="stat"><b>' + S.fmtRate(bat.avg) + '</b><span>AVG</span></div><div class="stat"><b>' + S.fmtEra(pit.era) + '</b><span>ERA</span></div><div class="stat"><b>' + earned + '</b><span>Badges</span></div></div>' +
       '<div class="row wrap" style="margin-top:16px"><button class="btn grow" data-action="go" data-to="log">Log a game &rarr;</button><button class="btn ghost grow" data-action="go" data-to="career">My career</button></div>' +
       (p.games.length ? '<button class="btn ghost block" style="margin-top:10px" data-action="share-open">' + SHARE_ICO + ' Share my player card</button>' : '') + '</section>' +
-      safeCard() + idolCard(p) + iqHomeCard(p) + (ext.homeCard ? ext.homeCard(p) : '') +
+      installCard() + addPlayerCard() + idolCard(p) + iqHomeCard(p) + (ext.homeCard ? ext.homeCard(p) : '') +
       (streak.current >= 2 ? '<section class="card"><b>🔥 ' + streak.current + '-game hit streak!</b><span class="muted small"> Best: ' + streak.best + '</span></section>' : '') +
       '<section class="card fold-card">' + fold(p.id + ':recent', 'Recent games', recent.length ? 'Last ' + recent.length : '', recent.length ? '<ul class="games">' + recent.map((g) => gameItem(g, true)).join('') + '</ul>' : '<p class="muted">Nothing yet. Your first game is a big one!</p>', true) + '</section>' +
       '<section class="card"><div class="row between"><div><b>No phone in the dugout?</b><br><span class="muted small">Print a game sheet, fill it in by hand, then enter it here later.</span></div><a class="btn small" href="#print">Print</a></div></section>' +
-      '<p style="text-align:center"><button class="link" data-action="new-player">+ Add another player</button></p>' + footer();
+      footer() + safeCard();
   }
 
   function stepper(sec, key, label, val, opts) {
@@ -863,8 +886,8 @@
 
     const planCta = '<section class="card"><div class="row between"><div><b>My improvement plan</b><br><span class="muted small">See which habits are fixed and which still need work</span></div><button class="btn small" data-action="go" data-to="plan">Open</button></div></section>';
     const shareCta = planCta + '<section class="card"><div class="row between"><div><b>Show off your card</b><br><span class="muted small">A shareable image and link for friends and family</span></div><button class="btn small" data-action="share-open">Share</button></div></section>';
-    const path = shareCta + '<section class="card"><h3>My path</h3><ul class="path">' + grp.map((g) =>
-      '<li><b>' + esc(g.season) + (g.level ? '<span class="level">' + esc(g.level) + '</span>' : '') + '</b><span class="muted small">' + (g.team ? esc(g.team) + ' &middot; ' : '') + plural(g.games.length, 'game') + '</span></li>').join('') + '</ul></section>';
+    const path = shareCta + '<section class="card fold-card">' + fold(p.id + ':path', 'My path', plural(grp.length, 'season'), '<ul class="path">' + grp.map((g) =>
+      '<li><b>' + esc(g.season) + (g.level ? '<span class="level">' + esc(g.level) + '</span>' : '') + '</b><span class="muted small">' + (g.team ? esc(g.team) + ' &middot; ' : '') + plural(g.games.length, 'game') + '</span></li>').join('') + '</ul>') + '</section>';
 
     const segBtn = (k, l) => '<button type="button" data-action="seg" data-grp="careerTab" data-val="' + k + '" aria-pressed="' + (sec === k) + '">' + l + '</button>';
     let body = '';
@@ -957,8 +980,8 @@
       '<section class="card"><h3>Your privacy</h3><p><b>What is stored:</b> a name or nickname, a city and state or ZIP code, the stats you enter, a random Player ID, and (if you choose) a PIN. All of it stays on your device. By default nothing leaves your device. If a parent or guardian chooses to sign in, the diary is also saved online under their email so it can follow them across devices.</p>' +
       '<p><b>What we never ask for:</b> birthdates, phone numbers, photos, passwords, or payment info. An email address is asked for only if a parent or guardian turns on online saving.</p>' +
       '<p class="muted small">Clearing your browser data erases it, so keep a backup. Read the full <a href="#terms">Terms &amp; Privacy Notice</a>.</p></section>' +
-      '<section class="card"><h3>Coaches, trainers &amp; teams</h3><p class="muted">Find a trainer, clinic or travel ball team, or ask to be listed.</p><div class="row wrap"><a class="btn grow" href="#learn/directory">Browse the directory</a><a class="btn ghost grow" href="#find-list">Get listed</a></div></section>' +
-      '<section class="card"><h3>Appearance</h3><div class="seg" role="group" aria-label="Theme">' + [['auto', 'Auto'], ['light', 'Light'], ['dark', 'Dark']].map((o) => '<button data-action="theme-set" data-v="' + o[0] + '" aria-pressed="' + (themePref() === o[0]) + '">' + o[1] + '</button>').join('') + '</div><p class="hint">Auto follows your phone. Saved on this device only.</p></section>' +
+      '<section class="card"><h3>Coaches, trainers &amp; teams</h3><p class="muted">Find a trainer, clinic or travel ball team, or request a listing (listings are reviewed and approved first).</p><div class="row wrap"><a class="btn grow" href="#learn/directory">Browse the directory</a><a class="btn ghost grow" href="#find-list">Request a listing</a></div></section>' +
+
       '<section class="card"><h3>Print sheets</h3><p class="muted">Take a paper game sheet or season grid to the field, then enter the numbers later.</p><a class="btn block" href="#print">Open printable sheets</a></section>' +
       edit + sec + (ext.aboutCard ? ext.aboutCard(p) : '') + backup + (danger ? '<section class="card"><h3>Reset</h3>' + danger + '</section>' : '') +
       '<section class="card"><h3>The fine print</h3><p class="muted small">Plate 450 Diary is made by Plate 450, an independent project. It is not affiliated with or endorsed by Little League International, GameChanger, Sports Connect, or any league. Stats are self-reported by families and are not official records. Accessibility: large tap targets, keyboard navigation, and screen reader labels are built in; tell us if something is hard to use.</p></section>' + footer();
@@ -1006,9 +1029,9 @@
   }
   function iqRankBlock(d) {
     const total = Sim.SCENARIOS.length, m = Sim.masteredCount(d.r), rk = Sim.rank(m, total);
-    return '<div class="rank"><div class="rank-ic" aria-hidden="true">' + rk.icon + '</div><div class="grow"><b>' + esc(rk.name) + '</b><span class="muted small"> &middot; ' + m + ' of ' + total + ' situations mastered</span>' +
+    return '<div class="rank"><div class="rank-ic" aria-hidden="true">' + rk.icon + '</div><div class="grow"><b>' + esc(rk.name) + '</b>' + (d.ms ? ' <span class="chip">👑 Game IQ Master</span>' : '') + '<span class="muted small"> &middot; ' + m + ' of ' + total + ' situations mastered</span>' +
       '<div class="meter" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + Math.round(rk.pct * 100) + '"><span style="width:' + Math.round(rk.pct * 100) + '%"></span></div>' +
-      '<div class="small muted">' + (rk.next ? rk.need + ' more to reach ' + esc(rk.next) : 'Top rank reached!') + ' &middot; ' + d.xp + ' XP' + (d.best ? ' &middot; best streak ' + d.best : '') + '</div></div></div>';
+      '<div class="small muted">' + (rk.next ? rk.need + ' more to reach ' + esc(rk.next) : 'Top rank reached!') + ' &middot; ' + d.xp + ' XP (experience points)' + (d.best ? ' &middot; best streak ' + d.best : '') + '</div></div></div>';
   }
   /* Situation of the day: one scenario per calendar day, the same for everyone. The streak is days in a row played; missing a day simply starts a new run. */
   function dailyId() {
@@ -1036,8 +1059,8 @@
   function idolCard(p) {
     const i = p.idol, col = COLORS[p.color] || COLORS.gold;
     if (!i) return '<section class="card"><div class="row between"><div><b>🖼️ My Idol</b><br><span class="muted small">Stick a favorite player on your wall.</span></div><button class="btn small ghost" data-action="idol-edit">Add</button></div></section>';
-    return '<section class="card idol" style="--team:' + col.acc + '"><div class="poster"><span class="pin" aria-hidden="true"></span><p class="eyebrow">My Idol</p><h3>' + esc(i.n) + '</h3><span class="chip">' + esc(i.lg) + '</span></div>' +
-      '<div class="row wrap" style="margin-top:10px"><a class="btn small grow" href="' + esc(idolLink(i)) + '" target="_blank" rel="noopener noreferrer">' + (i.lg === 'AUSL' ? 'AUSL website' : 'See stats on MLB.com') + ' &#8599;</a><button class="btn small ghost" data-action="idol-edit">Change</button></div>' +
+    return '<section class="card idol" style="--team:' + col.acc + '"><div class="idol-mat"><div class="idol-frame"><div class="idol-canvas"><p class="eyebrow">My Idol</p><h3>' + esc(i.n) + '</h3><div class="idol-rule"></div><span class="idol-tag">' + esc(i.lg) + '</span></div></div></div>' +
+      '<div class="row wrap" style="margin-top:12px"><a class="btn small grow" href="' + esc(idolLink(i)) + '" target="_blank" rel="noopener noreferrer">' + (i.lg === 'AUSL' ? 'AUSL website' : 'See stats on MLB.com') + ' &#8599;</a><button class="btn small ghost" data-action="idol-edit">Change</button></div>' +
       '<p class="hint">Not affiliated with or endorsed by any league, team or player.</p></section>';
   }
   function idolModal(list) {
@@ -1076,7 +1099,7 @@
       '<p class="hint">' + (lv ? '<b>' + Sim.LEVELS[lv] + '</b>: ' + esc(Sim.LEVEL_INFO[lv]) + '. ' : '') + 'A is the basics, AA is tougher, AAA is big-league smarts.</p>';
     return '<section class="card hero"><p class="eyebrow">Game IQ Simulator</p><h2>Make the call.</h2>' +
       '<p class="muted">Real game situations. Pick the best play, learn why, and come back to the ones you missed until you have mastered them. Great ballplayers win with their heads, not just their arms.</p>' +
-      iqRankBlock(d) + '</section>' + dailyCard(d) + '<section class="card"><h3>League level</h3>' + lvlChips + '<button class="btn block" data-action="sim-start" data-cat="mix" style="margin-top:14px">Play a 5-question round &rarr;</button></section>' +
+      iqRankBlock(d) + '<p class="hint"><b>XP = experience points.</b> You earn them every time you make the right call.</p></section>' + dailyCard(d) + '<section class="card"><h3>League level</h3>' + lvlChips + '<button class="btn block" data-action="sim-start" data-cat="mix" style="margin-top:14px">Play a 5-question round &rarr;</button></section>' +
       '<section class="card"><h3>Practice by skill</h3><div class="cats">' + cats + '</div></section>' +
       (p ? '' : '<section class="card"><h3>Keep your progress</h3><p class="muted">Create a free player card to save your Game IQ. No email or birthday needed.</p><button class="btn ghost block" data-action="go" data-to="home">Create my card</button></section>') + footer();
   }
@@ -1110,7 +1133,7 @@
     }).join('');
     const rk = Sim.rank(Sim.masteredCount(d.r), Sim.SCENARIOS.length);
     return '<section class="card hero"><p class="eyebrow">' + (r.daily ? 'Situation of the day' : 'Round complete') + '</p><h2>' + (r.daily ? (ok ? 'Nice read!' : 'Good try. Now you know.') : ok + ' of ' + n + ' correct') + '</h2>' + (r.daily && r.dayStreak >= 2 ? '<p><b>📅 ' + r.dayStreak + ' days in a row!</b></p>' : '') + '<p class="muted">' + stars + '</p>' +
-      '<div class="stats"><div class="stat"><b>' + ok + '/' + n + '</b><span>Score</span></div><div class="stat"><b>+' + r.xp + '</b><span>XP</span></div><div class="stat"><b>' + r.best + '</b><span>Best streak</span></div></div></section>' +
+      '<div class="stats"><div class="stat"><b>' + ok + '/' + n + '</b><span>Score</span></div><div class="stat"><b>+' + r.xp + '</b><span>XP (experience points)</span></div><div class="stat"><b>' + r.best + '</b><span>Best streak</span></div></div></section>' +
       '<section class="card"><h3>This round</h3><ul class="recap">' + rows + '</ul></section>' +
       '<section class="card">' + iqRankBlock(d) + '</section>' +
       (p ? '' : '<section class="card"><h3>Save your Game IQ</h3><p class="muted">You are playing as a guest. Create a free player card and this progress comes with you.</p><button class="btn block" data-action="go" data-to="home">Create my card</button></section>') +
@@ -1615,7 +1638,7 @@
   };
 
   const actions = {
-    'theme-cycle': () => { setTheme(themeIsLight() ? 'dark' : 'light'); render(); },
+    'theme-cycle': () => { const c = themePref(), n = c === 'auto' ? 'light' : c === 'light' ? 'dark' : 'auto'; setTheme(n); ui.flash = 'Theme: ' + n.charAt(0).toUpperCase() + n.slice(1); render(); },
     'theme-set': (el) => { setTheme(el.dataset.v); render(); },
     'sim-start': (el) => {
       const cat = Sim.catOf(el.dataset.cat) ? el.dataset.cat : 'mix', d = iqData(player());
@@ -1623,6 +1646,8 @@
       ui.sim.round = { cat: cat, ids: ids, i: 0, picked: -1, orders: ids.map((id) => Sim.shuffle(Sim.byId(id).opts.length)), results: [], xp: 0, streak: 0, best: 0, last: null, done: false };
       render(); window.scrollTo(0, 0);
     },
+    'install-hide': () => { try { localStorage.setItem(INSTALL_KEY, '1'); } catch (e) { /* ignore */ } render(); },
+    'install-now': () => { const e = installEvt; installEvt = null; if (e && e.prompt) { e.prompt(); } render(); },
     'idol-edit': () => {
       ui.idolList = [];
       if (ext.idols) { ext.idols().then((l) => { if (!$('#idol-n')) idolModal(l); }); idolModal(null); }
@@ -1642,10 +1667,13 @@
       const k = Number(el.dataset.i), sc = Sim.byId(r.ids[r.i]), order = r.orders[r.i];
       if (!sc || !(k >= 0 && k < order.length)) return;
       const ok = order[k] === sc.ans, p = player(), d = iqData(p), rec = d.r[sc.id] || [0, 0, 0], first = rec[0] === 0;
+      const totalSc = Sim.SCENARIOS.length, wasAll = totalSc > 0 && Sim.masteredCount(d.r) === totalSc;
       rec[0] = Math.min(9999, rec[0] + 1); if (ok) rec[1] = Math.min(9999, rec[1] + 1); rec[2] = ok ? 1 : 0; d.r[sc.id] = rec;
       const xp = ok ? (first ? 10 : 5) : 0;
       d.xp = Math.min(999999, d.xp + xp);
       r.streak = ok ? r.streak + 1 : 0; r.best = Math.max(r.best, r.streak); d.best = Math.min(99, Math.max(d.best, r.streak));
+      let becameMaster = false;
+      if (!wasAll && totalSc > 0 && Sim.masteredCount(d.r) === totalSc) { d.ms = 1; becameMaster = true; }
       r.results.push(ok); r.xp += xp; r.picked = k; r.last = { ok: ok, xp: xp };
       if (r.daily && !dailyDone(d)) {
         const prev = dailyStreak(d); d.dy = d.dy || { l: '', s: 0, b: 0 };
@@ -1654,6 +1682,7 @@
       }
       if (p) save();
       render();
+      if (becameMaster) openModal(confettiHtml() + '<div class="celebrate" aria-hidden="true">👑</div><h3 style="text-align:center">Game IQ Master!</h3><p style="text-align:center">You have mastered every situation. That makes you a <b>Legend</b>. New situations get added over time, so keep checking back.</p><div class="actions"><button class="btn" data-action="modal-close">Keep playing</button></div>');
       setTimeout(() => { const f = $('#sim-feedback'); if (f && f.scrollIntoView) f.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }, 30);
     },
     'sim-next': () => {

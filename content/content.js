@@ -1,7 +1,7 @@
 /* Plate 450 Diary content. Do not edit by hand: use the Content Studio (#studio on the site), download this file, and upload it to the content folder on GitHub. */
 (function (r) { r.DD_CONTENT = {
  "version": 1,
- "updated": "2026-11-15",
+ "updated": "2026-11-17",
  "scenarios": [
   {
    "id": "run1",
@@ -1872,6 +1872,62 @@
    "title": "How parents can help (without the pressure)",
    "summary": "Simple ways to support your ballplayer.",
    "body": "Kids play their best when baseball is fun.\n\n- Cheer effort and teamwork, not just results\n- Let the coach coach. Save advice for the car ride home, and keep it short\n- Ask “What was your favorite part?” before asking about stats\n- Help your player track their own stats, and celebrate small improvements\n- Make sure they eat, sleep and rest their arm\n\n## Staying private online\n\nUse a first name or nickname in Plate 450 Diary and share player cards only with family and friends you trust."
+  },
+  {
+   "id": "choosing-a-bat",
+   "cat": "Gear & Basics",
+   "title": "How to choose the right bat",
+   "summary": "Length, weight, drop and the stamp your league requires.",
+   "body": "Start with the player, not the bat. Height and weight matter more than age, and a bat that is too long or too heavy slows the swing and hurts the mechanics. When in doubt, go a little shorter and lighter.\n\n## Length\n\nAs a rough guide by age: ages 5 to 7 use about 24 to 26 inches, ages 8 to 9 about 26 to 28 inches, and age 10 about 28 to 29 inches. Two kids the same age can be very different sizes, so check a height and weight chart too.\n\n## Drop weight\n\nDrop is the bat's length in inches minus its weight in ounces. A 30 inch bat that weighs 20 ounces is a -10. The bigger the minus number, the lighter the bat. Many players around 8 to 12 swing a -10 to -12, and stronger players move toward -8 or -5 as they get older.\n\n## The stamp matters more than the price\n\nLeagues require a certification mark on the barrel. If a bat has no stamp, it is not legal for that league.\n\n- **USABat:** the standard for most youth leagues, such as Little League, Cal Ripken, Babe Ruth, PONY and Dixie Youth. It has no drop weight limit.\n- **USSSA 1.15 BPF:** common in travel and select ball for 13U and under. As of 2026, USSSA national 14U play moved to BBCOR or wood.\n- **BBCOR .50:** the high school and college standard. Every BBCOR bat is a -3 (a 33 inch bat weighs 30 ounces). High school rules are changing from 2028 to also allow some USABat drops, so check current rules.\n\n## Before you buy\n\nAsk the coach or league which stamp is required, let the player take a few practice swings, and pick the bat that feels balanced and controllable, not the heaviest one. Rules change, so always check your own league's current rules."
+  },
+  {
+   "id": "choosing-a-glove",
+   "cat": "Gear & Basics",
+   "title": "How to choose the right glove",
+   "summary": "Sizes by age and position, and how each type of glove is different.",
+   "body": "A good glove fits the hand and the position. Gloves are measured in inches from the tip of the index finger down to the heel, and catcher's mitts are measured around the outside.\n\n## Size by age (a starting point)\n\nTypical youth baseball sizes: age 5 and under about 9 to 10 inches, ages 6 to 7 about 10 to 10.5 inches, ages 8 to 10 about 10.75 to 11.5 inches, and ages 11 to 12 about 11 to 12 inches. Brands differ, so try one on. A glove that is too big is harder to close.\n\n## Size and style by position\n\n- **Infield:** shorter, with a shallow pocket for quick transfers. Adults often use about 11 to 11.75 inches.\n- **Outfield:** longer and deeper to reach and secure fly balls. Often about 12 to 12.75 inches for older players.\n- **Pitcher:** usually a closed web so the hitter cannot see the grip.\n- **First base:** a mitt with extra length and a scoop shape to catch throws in the dirt.\n- **Catcher:** a heavily padded mitt. Youth sizes run about 29.5 to 30 inches under age 7, 30 to 32 inches for ages 8 to 10, and 31 to 32.5 inches for ages 11 to 13.\n\n## Softball\n\nFastpitch gloves are sized a little differently. For youth fastpitch, infield gloves are often about 10.5 to 11 inches and outfield gloves about 11 to 11.5 inches. Softballs are bigger, so check the size guide for softball gloves.\n\n## Breaking it in\n\nPlay catch a lot. Use a little glove conditioner, keep a ball in the pocket with a band around it overnight, and store it flat. Avoid heat tricks such as ovens or microwaves, which damage the leather.\n\nWhich glove fits best is personal. If the player can open and close it easily and the ball stays in the pocket, it is a good fit."
+  },
+  {
+   "id": "ball-sizes-weights",
+   "cat": "Gear & Basics",
+   "title": "Baseball and softball sizes and weights",
+   "summary": "How big and heavy each ball is, and what changes by age.",
+   "body": "**Baseballs** are the same size almost everywhere. An official baseball is 9 to 9.25 inches around and weighs 5 to 5.25 ounces. The same size ball is used from youth leagues through the majors. Some leagues use softer balls for the youngest players, such as tee ball and coach pitch.\n\n**Softballs** are bigger and a bit heavier.\n\n- **12 inch softball:** the standard for most fastpitch and slowpitch play. About 6.25 to 7 ounces.\n- **11 inch softball:** often used by players 10 and under. About 6 ounces.\n\n## Why softball is bigger\n\nA softball is thrown underhand from a shorter distance, so the bigger ball gives hitters a fair look. Fielders also have to get used to catching and throwing a bigger ball, so it helps to practice with the exact ball your league uses.\n\n## Quick compare\n\n| Ball | Around | Weight |\n| --- | --- | --- |\n| Baseball | 9 to 9.25 in | 5 to 5.25 oz |\n| 11 inch softball | 11 in | about 6 oz |\n| 12 inch softball | 12 in | 6.25 to 7 oz |\n\nLeagues set the official ball for each age group, so check yours before buying balls for practice."
+  },
+  {
+   "id": "types-of-pitches",
+   "cat": "Gear & Basics",
+   "title": "Types of pitches and when to learn them",
+   "summary": "Fastball, changeup, curveball and more, with age guidance.",
+   "body": "## The main baseball pitches\n\n- **Fastball:** the foundation. Thrown with backspin, straight and hard for the player's level. Four-seam is straighter, two-seam moves a little.\n- **Changeup:** looks like a fastball but is slower, so the hitter swings early.\n- **Curveball:** spins forward and breaks downward.\n- **Slider:** harder than a curveball, with a sharp sideways break.\n- **Other pitches:** the cutter, splitter, forkball and knuckleball.\n\n## When to learn them\n\nDoctors and coaches in the USA Baseball and MLB Pitch Smart guidelines suggest this order, give or take about two years: fastball around age 8, changeup around 10, curveball around 14, and sliders and splitters around 16. Younger players do best learning to throw strikes with a good fastball and changeup first.\n\n## Overuse is the real risk\n\nResearch from Little League and USA Baseball found that overuse, throwing too many pitches without enough rest, is the main cause of youth arm injuries. Follow your league's pitch counts and rest days, do not pitch on several teams at once, and take a few months off from pitching every year. The current limits are at mlb.com/pitch-smart.\n\n## Softball pitching\n\nSoftball pitchers throw underhand in a windmill motion. The fastball and changeup come first, and a pitching coach introduces other pitches such as the rise, drop and curve as the pitcher grows.\n\nAlways tell a coach or parent if your arm hurts. Pain is a reason to stop and rest."
+  },
+  {
+   "id": "gear-checklist",
+   "cat": "Gear & Basics",
+   "title": "Other gear a ballplayer needs",
+   "summary": "Helmet, cleats, protective gear and what to bring to every game.",
+   "body": "Not everything has to be bought new. Many leagues lend out helmets and catcher's gear, so ask first.\n\n## Always\n\n- **Batting helmet:** required for hitting and base running in most leagues. It should fit snugly and carry the required safety mark for your league.\n- **Cleats:** molded plastic cleats are the standard for younger players. Metal cleats are limited or banned in many youth leagues, so check the rules.\n- **Glove:** see the glove guide for sizes and types.\n- **Water and a snack:** more important than any piece of equipment.\n\n## By position\n\n- **Catchers:** helmet with a mask, chest protector, leg guards and a protective cup. Fit matters a lot for safety.\n- **Pitchers and infielders:** some leagues recommend or require protective gear such as a face guard, so ask your league.\n- **Batters:** a protective cup is recommended for boys, and a batting glove can help grip.\n\n## For the bag\n\nExtra socks, a clean jersey if you have one, sunscreen, a hat and a towel. Label everything with your name.\n\nCheck your own league's rules for any required safety gear."
+  },
+  {
+   "id": "why-umpire",
+   "cat": "Umpiring",
+   "title": "Why become an umpire",
+   "summary": "A way to stay in the game after you age out of playing.",
+   "body": "Playing is not the only way to stay in baseball or softball. Umpiring keeps you in the game, pays a little, and makes you a better player because you learn the rules from the inside.\n\n## What you get\n\n- **A job you can start young.** Many local programs take umpires around age 13 to 15, though the minimum age varies by league and state.\n- **Pay.** Youth games often pay about $10 to $50 a game, and high school games often pay $50 to $100. It depends on the area and the level.\n- **Leadership.** You make quick decisions and stay calm with coaches and parents watching.\n- **A path.** Some umpires move up to high school and college games.\n\n## What it asks of you\n\nLearn the rules, show up on time, stay calm and be fair. Some leagues use volunteer umpires, so ask what is available near you.\n\nPay, age limits and training differ by league and state. Your local league or umpire association has the real answers."
+  },
+  {
+   "id": "how-to-start-umpiring",
+   "cat": "Umpiring",
+   "title": "How to get started as an umpire",
+   "summary": "The usual steps, from training to your first game.",
+   "body": "The path depends on where you live, but it usually looks like this.\n\n## Steps\n\n1. **Ask your local league or umpire association.** They often run a youth umpire program. Ages vary. Examples include programs for ages 13 to 17 or 14 to 17, and some leagues ask for a minimum age of 15.\n2. **Attend training.** A common setup is a classroom clinic plus field days that cover plate and base work. Many are free.\n3. **Pass a rules test** if your league requires one.\n4. **Start small.** New umpires usually work younger divisions such as coach pitch and minors, often with a more experienced umpire nearby.\n5. **Keep learning.** Return to training each year and read the official rulebook for your league.\n\n## Good to know\n\n- Some leagues do not certify umpires at all. All their umpires are volunteers who receive training.\n- High school games are usually assigned through your state's high school athletic association. That often means passing an exam and being 18 or older.\n- Some programs require a background check, and a parent may need to help with rides to games.\n- Baseball and softball have different rulebooks. Learn the ones your league uses.\n\nRules, ages and pay are set locally. Contact your league or a local umpire association to find the exact steps."
+  },
+  {
+   "id": "umpire-basics",
+   "cat": "Umpiring",
+   "title": "Umpire basics: positions, signals and staying calm",
+   "summary": "The first skills every new umpire learns.",
+   "body": "You do not need to know everything on day one. These are the first things to practice.\n\n## Where to stand\n\n- **Behind the plate:** stay behind the catcher and just off center, so you can see the whole strike zone over the catcher's shoulder.\n- **On the bases:** move to see the play clearly and be set before the throw arrives. Do not guess; watch the foot and the ball.\n\n## Make clear calls\n\n- Make calls loudly and with a clear signal, so players and fans can see and hear them.\n- Wait until the play is over before you call it.\n- Stay square to the play, and keep your eyes on the ball and the base.\n\n## Know the basics first\n\nLearn the strike zone, fair and foul, safe and out, force plays, the infield fly, balks and obstruction. Your league's official rulebook is the final word, and the rules are not the same for every league.\n\n## Stay calm\n\nCoaches and parents will sometimes disagree. Stay polite and firm, explain a call in a few words, and do not argue. If a situation gets heated, follow your league's process and ask the league to step in.\n\nPractice by watching games and calling pitches from the stands. The best way to learn is to umpire games with a mentor."
   }
  ],
  "glossary": [

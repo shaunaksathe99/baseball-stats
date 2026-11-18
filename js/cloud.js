@@ -28,6 +28,7 @@
       if (!lp.plan && rp.plan) lp.plan = rp.plan;
       ['jersey', 'fav', 'color'].forEach(function (k) { if (!lp[k] && rp[k]) lp[k] = rp[k]; });
       if (!lp.idol && rp.idol) lp.idol = clone(rp.idol);
+      if (b.ms) a.ms = 1;
       if (b.dy && (!a.dy || (b.dy.l || '') > (a.dy.l || ''))) a.dy = clone(b.dy); else if (a.dy && b.dy) a.dy.b = Math.max(a.dy.b || 0, b.dy.b || 0);
       if (!lp.last || !lp.last.season) lp.last = rp.last || lp.last;
     });

@@ -68,8 +68,8 @@
       (n.kb ? tile('learn/kb', '📚', 'Knowledge base', n.kb + ' how-to articles') : '') +
       (n.glossary ? tile('learn/glossary', '🔤', 'Glossary', n.glossary + ' baseball terms') : '') +
       '</div></section>' +
-      '<section class="card"><h3>Trainers, coaches &amp; travel teams</h3><p class="muted">' + (n.dir ? 'Browse ' + n.dir + (n.dir === 1 ? ' listing' : ' listings') + ' from local trainers, clinics and teams.' : 'The directory is just getting started. Be one of the first to list your services or team.') + '</p>' +
-      '<div class="row wrap"><a class="btn grow" href="#learn/directory">Browse the directory</a><a class="btn ghost grow" href="#find-list">Get listed</a></div></section>' + A.footer();
+      '<section class="card"><h3>Trainers, coaches &amp; travel teams</h3><p class="muted">' + (n.dir ? 'Browse ' + n.dir + (n.dir === 1 ? ' listing' : ' listings') + ' from local trainers, clinics and teams.' : 'The directory is just getting started. Trainers, coaches and teams can submit their details for review and approval.') + '</p>' +
+      '<div class="row wrap"><a class="btn grow" href="#learn/directory">Browse the directory</a><a class="btn ghost grow" href="#find-list">Request a listing</a></div></section>' + A.footer();
   }
 
   function viewTrivia(p) {
@@ -147,7 +147,7 @@
       if (st.dstate && d.state !== st.dstate) return false;
       return !q || [d.name, d.tagline, d.city, d.state, d.notes, d.services.join(' ')].join(' ').toLowerCase().indexOf(q) >= 0;
     }).sort(function (a, b) { return a.name.toLowerCase() < b.name.toLowerCase() ? -1 : 1; });
-    if (!list('directory').length) return A.emptyState('🧢', 'No listings yet', 'Be one of the first: trainers, coaches, clinics and travel teams can ask to be listed for free.', '<a class="btn" href="#find-list">Get listed</a>');
+    if (!list('directory').length) return A.emptyState('🧢', 'No listings yet', 'Trainers, coaches, clinics and travel teams can submit their details for review. Approved listings appear here.', '<a class="btn" href="#find-list">Request a listing</a>');
     if (!items.length) return '<p class="muted">No listings match those filters.</p>';
     return items.map(listing).join('');
   }
@@ -161,7 +161,7 @@
       '<div class="notice" role="note"><b>For parents and guardians.</b> Listings are provided by the businesses and teams themselves. Plate 450 Diary does not vet, endorse or guarantee anyone listed. Do your own research, and always make contact yourself on your child’s behalf. See the <a href="#terms">Terms</a>.</div>' +
       (all.length ? '<section class="card"><div class="field"><label for="l-dq">Search</label><input id="l-dq" type="search" data-lin="dir" autocomplete="off" placeholder="Name, city or skill" value="' + esc(st.dq) + '"></div>' + stSel + chips + '</section>' : '') +
       '<div id="l-list">' + dirList() + '</div>' +
-      (all.length ? '<section class="card"><h3>Not listed?</h3><p class="muted">Trainers, coaches and teams can ask to be added for free.</p><a class="btn ghost block" href="#find-list">Get listed</a></section>' : '') + A.footer();
+      (all.length ? '<section class="card"><h3>Not listed?</h3><p class="muted">Listings are not automatic. Submit your details and we review each one before it is published.</p><a class="btn ghost block" href="#find-list">Request a listing</a></section>' : '') + A.footer();
   }
 
   /* ---------- listing request ---------- */
@@ -176,7 +176,7 @@
         '<button class="btn ghost block" style="margin-top:10px" data-action="l-reqnew">Start over</button></section>' + A.footer();
     }
     function inp(id, label, ph, extra) { return '<div class="field"><label for="lf-' + id + '">' + label + '</label><input id="lf-' + id + '" name="' + id + '" type="text" autocomplete="off" placeholder="' + esc(ph || '') + '"' + (extra || '') + '></div>'; }
-    return back('Directory', 'learn/directory') + head('Get listed', 'Trainers, coaches & travel teams', 'Free. For adults who run a business, program or team. Business information only, please: no player names or kids’ details.') +
+    return back('Directory', 'learn/directory') + head('Request a listing', 'Trainers, coaches & travel teams', 'Submitting this form does not publish anything. Every request is reviewed and must be approved before it appears. For adults who run a business, program or team. Business information only, please: no player names or kids’ details.') +
       '<section class="card"><form data-form="l-request" novalidate><div class="error" data-errbox hidden role="alert"></div>' +
       '<div class="field"><label for="lf-type">What are you listing?</label><select id="lf-type" name="type"><option value="">Choose one</option>' + C.DIR_TYPES.map(function (t) { return '<option value="' + t.id + '">' + esc(t.name) + '</option>'; }).join('') + '</select></div>' +
       inp('name', 'Name', 'Coach Sam Baseball Academy', ' maxlength="80"') + inp('tagline', 'One-line description', 'Hitting lessons for ages 8-14', ' maxlength="120"') +
@@ -185,7 +185,7 @@
       inp('website', 'Website', 'https://example.com', ' maxlength="200" inputmode="url"') + inp('email', 'Business email', '', ' maxlength="100" inputmode="email"') + inp('phone', 'Business phone', '', ' maxlength="25" inputmode="tel"') +
       '<div class="field"><label for="lf-notes">Anything else (optional)</label><textarea id="lf-notes" name="notes" rows="3" maxlength="300"></textarea></div>' +
       '<label class="check agree"><input type="checkbox" name="confirm"> <span>I am 18 or older, this is my own business, program or team, and this information may be published on Plate 450 Diary. I understand this site does not endorse listings.</span></label>' +
-      '<button class="btn block" type="submit">Prepare my request</button><p class="hint">Nothing is sent until you email it yourself.</p></form></section>' + A.footer();
+      '<button class="btn block" type="submit">Prepare my listing request</button><p class="hint">Nothing is sent until you email it yourself.</p></form></section>' + A.footer();
   }
 
   /* ---------- home card ---------- */

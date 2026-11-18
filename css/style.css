@@ -593,6 +593,21 @@ table.ptable th { color: var(--muted); font-size: 0.75rem; text-transform: upper
 @media (prefers-reduced-motion: reduce) { .confetti { display: none; } .celebrate { animation: none !important; } }
 
 /* ---------- My Idol poster ---------- */
-.idol .poster { position: relative; text-align: center; padding: 22px 14px 16px; border-radius: 10px; background: var(--card2); border: 2px solid var(--team, var(--gold)); transform: rotate(-1deg); box-shadow: 0 3px 8px rgba(0,0,0,.25); }
-.idol .poster h3 { margin: 4px 0 8px; font-size: 1.4rem; }
-.idol .poster .pin { position: absolute; top: -7px; left: 50%; width: 14px; height: 14px; margin-left: -7px; border-radius: 50%; background: var(--team, var(--gold)); box-shadow: 0 1px 3px rgba(0,0,0,.4); }
+
+/* ---------- tabs: bigger words, clear highlight ---------- */
+.seg button { font-size: 1rem; min-height: 48px; letter-spacing: 0.01em; }
+.seg button[aria-pressed=true] { background: var(--gold); color: #1a1a18; box-shadow: none; }
+.card.install { border-left: 6px solid var(--gold); }
+.card.install .steps { margin: 6px 0 0; }
+
+/* ---------- My Idol: matte pixel-weave canvas (replaces the tilted poster) ---------- */
+.idol { --mat1: #4A4741; --mat2: #423F3A; --cv1: #33312D; --cv2: #2C2A27; --ink: #F5EFE0; --lab: var(--team, var(--gold)); }
+html[data-theme=light] .idol { --mat1: #D9CDB0; --mat2: #D0C3A4; --cv1: #F1E8D2; --cv2: #E9DFC6; --ink: #2C2C2A; --lab: #8A5200; }
+@media (prefers-color-scheme: light) { :root:not([data-theme=dark]) .idol { --mat1: #D9CDB0; --mat2: #D0C3A4; --cv1: #F1E8D2; --cv2: #E9DFC6; --ink: #2C2C2A; --lab: #8A5200; } }
+.idol-mat { padding: 16px; background-color: var(--mat1); background-image: conic-gradient(var(--mat1) 25%, var(--mat2) 0 50%, var(--mat1) 0 75%, var(--mat2) 0); background-size: 8px 8px; }
+.idol-frame { border: 4px solid var(--team, var(--gold)); }
+.idol-canvas { text-align: center; padding: 28px 12px 22px; background-color: var(--cv1); background-image: conic-gradient(var(--cv1) 25%, var(--cv2) 0 50%, var(--cv1) 0 75%, var(--cv2) 0); background-size: 6px 6px; }
+.idol-canvas .eyebrow { color: var(--lab); letter-spacing: 0.2em; margin: 0; }
+.idol-canvas h3 { font-family: var(--display); font-size: 1.7rem; line-height: 1.15; color: var(--ink); margin: 8px 0 6px; overflow-wrap: anywhere; }
+.idol-rule { width: 48px; height: 4px; background: var(--team, var(--gold)); margin: 10px auto 12px; }
+.idol-tag { display: inline-block; background: #EF9F27; color: #2a1700; font-weight: 600; font-size: 0.8rem; letter-spacing: 0.12em; padding: 4px 16px; }

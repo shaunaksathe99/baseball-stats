@@ -99,7 +99,8 @@
     { name: 'Utility Player', at: 0.1, icon: '🧢' },
     { name: 'Starter', at: 0.3, icon: '⚾' },
     { name: 'All-Star', at: 0.55, icon: '⭐' },
-    { name: 'Hall of Famer', at: 0.8, icon: '🏆' }
+    { name: 'Hall of Famer', at: 0.8, icon: '🏆' },
+    { name: 'Legend', at: 1, icon: '👑' }
   ];
   // mastered = scenarios whose most recent answer was correct
   function rank(mastered, total) {
