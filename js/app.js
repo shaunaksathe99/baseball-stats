@@ -144,6 +144,7 @@
       season: str(g.season, 30) || 'Season',
       team: str(g.team, 40),
       level: LEVELS.indexOf(g.level) >= 0 ? g.level : '',
+      jersey: cleanJersey(g.jersey),
       opp: str(g.opp, 40),
       result: scored ? Rv.resultOf(us, them) : (['W', 'L', 'T'].indexOf(g.result) >= 0 ? g.result : ''),
       us: scored ? us : null, them: scored ? them : null,
@@ -204,7 +205,7 @@
       state: STATES.indexOf(p.state) >= 0 ? p.state : '', zip: zip,
       innings: Number(p.innings) === 7 ? 7 : 6, iq: cleanIq(p.iq),
       created: Number(p.created) || Date.now(),
-      last: { season: str(last.season, 30), team: str(last.team, 40), level: LEVELS.indexOf(last.level) >= 0 ? last.level : '' },
+      last: { season: str(last.season, 30), team: str(last.team, 40), level: LEVELS.indexOf(last.level) >= 0 ? last.level : '', jersey: cleanJersey(last.jersey) },
       games: games, goals: goals, plan: Rv.note(p.plan),
       jersey: cleanJersey(p.jersey), fav: FAV_POS.indexOf(p.fav) >= 0 ? p.fav : '', color: Object.prototype.hasOwnProperty.call(COLORS, p.color) ? p.color : '', idol: cleanIdol(p.idol)
     };
@@ -341,7 +342,7 @@
   function newDraft(p) {
     const last = (p && p.last) || {};
     return {
-      id: null, created: 0, date: today(), season: last.season || defaultSeason(), team: last.team || '', level: last.level || '',
+      id: null, created: 0, date: today(), season: last.season || defaultSeason(), team: last.team || '', level: last.level || '', jersey: last.jersey || (p && p.jersey) || '',
       opp: '', result: '', us: '', them: '', rv: [blankRv(0)], pos: '',
       bat: blank(S.BAT_KEYS),
       pit: { ip: '', h: 0, r: 0, er: 0, bb: 0, k: 0, pitches: 0 },
@@ -350,7 +351,7 @@
   }
   function draftFromGame(g) {
     return {
-      id: g.id, created: g.created, date: g.date, season: g.season, team: g.team, level: g.level, opp: g.opp, result: g.result, pos: g.pos,
+      id: g.id, created: g.created, date: g.date, season: g.season, team: g.team, level: g.level, jersey: g.jersey || '', opp: g.opp, result: g.result, pos: g.pos,
       us: g.us === null || g.us === undefined ? '' : String(g.us), them: g.them === null || g.them === undefined ? '' : String(g.them),
       rv: (g.rv && g.rv.some((e) => e.i === 0) ? [] : [blankRv(0)]).concat((g.rv || []).map((e) => ({ i: e.i, well: e.well.slice(), work: e.work.slice(), wn: e.wn, kn: e.kn }))),
       bat: Object.assign({}, g.bat),
@@ -435,11 +436,11 @@
       pool = g ? [g] : []; label = g ? fmtDate(g.date) : ''; one = !!g;
     } else if (scope === 'all') { pool = p.games; label = 'Career'; }
     else { pool = p.games.filter((g) => g.season === scope); label = scope; }
-    const last = S.sortGames(pool).slice(-1)[0] || {};
+    const same = (vals) => { const u = vals.filter(Boolean).filter((v, i, arr) => arr.indexOf(v) === i); return u.length === 1 ? u[0] : ''; };
     const b = S.batting(pool), pi = S.pitching(pool, p.innings), f = S.fielding(pool);
     const pick = (o, keys) => { const r = {}; keys.forEach((k) => { r[k] = o[k]; }); return r; };
     return {
-      v: 1, id: '', n: p.name, j: p.jersey || '', ps: p.fav || '', cl: p.color || '', l: withCity ? placeText(p) : '', k: label, t: last.team || '', lv: last.level || '', g: pool.length, one: one ? 1 : 0, i: p.innings,
+      v: 1, id: '', n: p.name, j: same(pool.map((g) => g.jersey || p.jersey || '')), ps: p.fav || '', cl: p.color || '', l: withCity ? placeText(p) : '', k: label, t: same(pool.map((g) => g.team)), lv: same(pool.map((g) => g.level)), g: pool.length, one: one ? 1 : 0, i: p.innings,
       bat: pick(b, S.BAT_KEYS), pit: pick(pi, S.PIT_KEYS), fld: pick(f, S.FLD_KEYS),
       b: S.badges(p.games).filter((x) => x.earned).map((x) => x.id)
     };
@@ -489,48 +490,49 @@
       if (c.j) { x.save(); x.globalAlpha = 0.08; x.fillStyle = ACC; x.textAlign = 'right'; x.font = '800 420px ' + slab; x.fillText(c.j, W - 70, 1010); x.restore(); }
       x.lineWidth = 14; x.strokeStyle = ACC; rrect(x, 36, 36, W - 72, H - 72, 52); x.stroke();
       x.textAlign = 'center'; x.textBaseline = 'alphabetic';
-      x.fillStyle = ACC; x.font = '700 40px ' + sans;
-      x.fillText([c.k, c.lv].filter(Boolean).join('  ·  ').toUpperCase().slice(0, 44), W / 2, 130);
-      let size = 108; x.fillStyle = '#F5EFE0';
+      const fit = (txt, mk, maxW, size, min) => { do { x.font = mk(size); size -= 2; } while (x.measureText(txt).width > maxW && size > min); };
+      const top = [c.k, c.lv].filter(Boolean).join('  ·  ').toUpperCase();
+      x.fillStyle = ACC; fit(top, (n) => '700 ' + n + 'px ' + sans, W - 200, 46, 26);
+      x.fillText(top, W / 2, 132);
+      let size = 120; x.fillStyle = '#F5EFE0';
       do { x.font = size + 'px ' + slab; size -= 4; } while (x.measureText(c.n).width > W - 160 && size > 40);
-      x.fillText(c.n, W / 2, 275);
-      x.fillStyle = '#ADA99E'; x.font = '600 40px ' + sans;
-      x.fillText([c.j ? '#' + c.j : '', c.ps, c.t, c.l].filter(Boolean).join('  ·  ').slice(0, 56) || (c.g + (c.g === 1 ? ' game' : ' games')), W / 2, 345);
-      if (c.id) { x.fillStyle = ACC; x.font = '700 28px ui-monospace, Menlo, Consolas, monospace'; x.fillText('PLAYER ID  ' + fmtPid(c.id), W / 2, 392); }
+      x.fillText(c.n, W / 2, 280);
+      const sub = [c.j ? '#' + c.j : '', c.ps, c.t, c.l].filter(Boolean).join('  ·  ') || (c.g + (c.g === 1 ? ' game' : ' games'));
+      x.fillStyle = '#ADA99E'; fit(sub, (n) => '600 ' + n + 'px ' + sans, W - 160, 44, 24);
+      x.fillText(sub, W / 2, 352);
+      if (c.id) { x.fillStyle = ACC; x.font = '700 30px ui-monospace, Menlo, Consolas, monospace'; x.fillText('PLAYER ID  ' + fmtPid(c.id), W / 2, 400); }
       const f = cardFacts(c);
       const bw = 290, gap = 30, left = (W - (bw * 3 + gap * 2)) / 2;
       f.heads.forEach((h, i) => {
         const bx = left + i * (bw + gap);
-        x.fillStyle = 'rgba(0,0,0,0.3)'; rrect(x, bx, 410, bw, 310, 28); x.fill();
+        x.fillStyle = 'rgba(0,0,0,0.3)'; rrect(x, bx, 425, bw, 330, 28); x.fill();
         x.strokeStyle = 'rgba(245,239,224,0.16)'; x.lineWidth = 3; x.stroke();
-        x.fillStyle = ACC; x.font = '112px ' + slab; x.fillText(String(h[1]), bx + bw / 2, 590);
-        x.fillStyle = '#ADA99E'; x.font = '700 38px ' + sans; x.fillText(h[0], bx + bw / 2, 670);
+        x.fillStyle = ACC; x.font = '136px ' + slab; x.fillText(String(h[1]), bx + bw / 2, 600);
+        x.fillStyle = '#C9C5B8'; x.font = '700 46px ' + sans; x.fillText(h[0], bx + bw / 2, 700);
       });
       const sw = 215, sg = 20, sl = (W - (sw * 4 + sg * 3)) / 2;
       f.rows.forEach((r, i) => {
         const bx = sl + i * (sw + sg);
-        x.fillStyle = 'rgba(0,0,0,0.22)'; rrect(x, bx, 765, sw, 150, 22); x.fill();
-        x.fillStyle = '#F5EFE0'; x.font = '54px ' + slab; x.fillText(String(r[1]), bx + sw / 2, 845);
-        x.fillStyle = '#ADA99E'; x.font = '700 28px ' + sans; x.fillText(r[0], bx + sw / 2, 890);
+        x.fillStyle = 'rgba(0,0,0,0.22)'; rrect(x, bx, 790, sw, 190, 22); x.fill();
+        x.fillStyle = '#F5EFE0'; x.font = '70px ' + slab; x.fillText(String(r[1]), bx + sw / 2, 889);
+        x.fillStyle = '#C9C5B8'; x.font = '700 36px ' + sans; x.fillText(r[0], bx + sw / 2, 948);
       });
       const icons = {}; S.badges([]).forEach((b) => { icons[b.id] = b.icon; });
-      x.fillStyle = '#ADA99E'; x.font = '700 30px ' + sans;
-      x.fillText(c.b.length ? c.b.length + (c.b.length === 1 ? ' BADGE EARNED' : ' BADGES EARNED') : 'BADGES: JUST GETTING STARTED', W / 2, 990);
-      x.font = '70px ' + sans; x.fillStyle = '#F5EFE0';
-      x.fillText(c.b.slice(0, 8).map((id) => icons[id]).join(' '), W / 2, 1085);
-      /* Footer row: button on the left, logo and name on the right, all inside the border. */
-      const rowY = 1160, rowH = 96, bx0 = 90, bwid = 470;
-      x.fillStyle = ACC; rrect(x, bx0, rowY, bwid, rowH, 48); x.fill();
-      x.fillStyle = '#412402'; x.textAlign = 'center';
-      let bsz = 32; const lbl = 'Build your own card \u2014 free';
-      do { x.font = '800 ' + bsz + 'px ' + sans; bsz -= 1; } while (x.measureText(lbl).width > bwid - 50 && bsz > 18);
-      x.fillText(lbl, bx0 + bwid / 2, rowY + rowH / 2 + Math.round(bsz * 0.36));
-      const lx = bx0 + bwid + 34, cyy = rowY + rowH / 2;
-      if (window.Brand) {
-        window.Brand.mark(x, lx + 32, cyy, 64);
-        x.textAlign = 'left'; x.fillStyle = '#F5EFE0'; x.font = '700 32px ' + sans; x.fillText('Plate 450 Diary', lx + 80, cyy - 2);
-        x.fillStyle = '#ADA99E'; x.font = '600 22px ' + sans; x.fillText('diary.plate450.com', lx + 80, cyy + 30); x.textAlign = 'center';
-      } else { x.fillStyle = '#ADA99E'; x.font = '600 28px ' + sans; x.textAlign = 'left'; x.fillText('Plate 450 Diary', lx, cyy + 8); x.textAlign = 'center'; }
+      x.fillStyle = '#C9C5B8'; x.font = '700 34px ' + sans;
+      x.fillText(c.b.length ? c.b.length + (c.b.length === 1 ? ' BADGE EARNED' : ' BADGES EARNED') : 'BADGES: JUST GETTING STARTED', W / 2, 1042);
+      x.font = '78px ' + sans; x.fillStyle = '#F5EFE0';
+      x.fillText(c.b.slice(0, 8).map((id) => icons[id]).join(' '), W / 2, 1135);
+      /* Footer: logo, name, address and tagline, centered inside the border. */
+      const cyy = 1235, t1 = 'Plate 450 Diary', t2 = 'diary.plate450.com  ·  Free player cards';
+      x.textAlign = 'left';
+      x.font = '700 46px ' + sans; const w1 = x.measureText(t1).width;
+      x.font = '600 28px ' + sans; const w2 = x.measureText(t2).width;
+      const msz = window.Brand ? 88 : 0, tw = Math.max(w1, w2), total = msz + (msz ? 22 : 0) + tw, fx = (W - total) / 2;
+      if (window.Brand) window.Brand.mark(x, fx + msz / 2, cyy, msz);
+      const tx = fx + (msz ? msz + 22 : 0);
+      x.fillStyle = '#F5EFE0'; x.font = '700 46px ' + sans; x.fillText(t1, tx, cyy - 4);
+      x.fillStyle = '#C9C5B8'; x.font = '600 28px ' + sans; x.fillText(t2, tx, cyy + 34);
+      x.textAlign = 'center';
     };
     paint();
   }
@@ -628,7 +630,6 @@
   /* ---------- views ---------- */
   /* Shown on Log, Career and Goals when no player card exists yet: explains why and lets the visitor create one right here. */
   const SHARE_ICO = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="16" cy="8" r="5"/><path d="M13.3 5.6c1 .6 1.5 1.5 1.6 2.6M18.7 10.4c-1-.6-1.5-1.5-1.6-2.6"/><path d="M3 12.5l5-1.6M4 17l5.5-2.4M7 21l4.5-3"/></svg>';
-  const SHARE_SCENE = '<svg class="share-scene" viewBox="0 0 120 70" aria-hidden="true"><g transform="rotate(-35 30 52)"><path d="M4 49.4 L7 50.6 L36 50.7 C50 50.4 58 48.8 66 48.7 L74 48.7 Q78.5 48.7 78.5 52 Q78.5 55.3 74 55.3 L66 55.3 C58 55.2 50 53.6 36 53.3 L7 53.4 L4 54.6 Z" fill="#E0A94C" stroke="var(--chalk)" stroke-width="0.9" stroke-linejoin="round"/><path d="M4 49.4 L7 50.6 L30 50.7 L30 53.3 L7 53.4 L4 54.6 Z" fill="#5B3208" stroke="var(--chalk)" stroke-width="0.9" stroke-linejoin="round"/><path d="M12 50.8v2.4M17 50.8v2.4M22 50.8v2.4" stroke="#B98A4A" stroke-width="0.8" stroke-linecap="round"/><path d="M50 51.4h18M52 52.8h14" stroke="#B9822F" stroke-width="0.7" stroke-linecap="round" opacity=".7"/></g><path d="M80 14C86 6 94 5 98 9" fill="none" stroke="var(--muted)" stroke-width="2" stroke-dasharray="1 6" stroke-linecap="round"/><circle cx="104" cy="18" r="10" fill="var(--chalk)" stroke="var(--line)"/><path d="M98.5 12.5c2.5 2 3 5 2 8M109.5 23.5c-2.5-2-3-5-2-8" fill="none" stroke="var(--bad)" stroke-width="1.6" stroke-linecap="round"/><path d="M84 28l4 1M112 4l-2 4M116 30l-4 -1" stroke="var(--gold)" stroke-width="2" stroke-linecap="round"/></svg>';
   function viewNeedPlayer(tab) {
     const T = {
       log: ['✍️', 'Log your first game', 'Create your player card first. Then you can log batting, pitching and fielding after every game.'],
@@ -758,7 +759,8 @@
       LEVELS.map((l) => '<option' + (l === d.level ? ' selected' : '') + '>' + esc(l) + '</option>').join('') + '</select></div>' +
       '<div class="field"><label for="f-result">Result</label><select id="f-result" data-field="result">' +
       [['', 'Skip'], ['W', 'Win'], ['L', 'Loss'], ['T', 'Tie']].map((x) => '<option value="' + x[0] + '"' + (x[0] === d.result ? ' selected' : '') + '>' + x[1] + '</option>').join('') + '</select></div></div>' +
-      '<div class="field"><label for="f-opp">Opponent <span class="muted">(optional)</span></label><input id="f-opp" type="text" maxlength="40" data-field="opp" value="' + esc(d.opp) + '" placeholder="Team name"></div>' +
+      '<div class="grid2"><div class="field"><label for="f-opp">Opponent <span class="muted">(optional)</span></label><input id="f-opp" type="text" maxlength="40" data-field="opp" value="' + esc(d.opp) + '" placeholder="Team name"></div>' +
+      '<div class="field"><label for="f-jersey">Jersey # <span class="muted">(optional)</span></label><input id="f-jersey" type="text" inputmode="numeric" maxlength="2" data-field="jersey" value="' + esc(d.jersey || '') + '" placeholder="7"></div></div>' +
       '<div class="grid2"><div class="field"><label for="f-us">Final score: us</label><input id="f-us" type="number" inputmode="numeric" min="0" max="99" data-field="us" value="' + esc(d.us) + '" placeholder="0"></div>' +
       '<div class="field"><label for="f-them">Final score: them</label><input id="f-them" type="number" inputmode="numeric" min="0" max="99" data-field="them" value="' + esc(d.them) + '" placeholder="0"></div></div>' +
       '<p class="hint" id="score-hint" aria-live="polite">' + scoreHint(d) + '</p></section>' +
@@ -1182,6 +1184,7 @@
       '<table class="ptable"><thead><tr><th>Who</th><th>Why</th><th>What they receive</th></tr></thead><tbody>' +
       row('GitHub Pages', 'Delivers the web pages', 'Ordinary request details (such as IP address). It does not receive your diary.') +
       row('Supabase', 'Online accounts and storage (only if a parent signs in)', 'The parent’s email and the online copy of the diary.') +
+      row('Cloudflare Turnstile', 'Checks that a sign-in request comes from a person and not a robot (only when a parent signs in)', 'Ordinary request details (such as IP address) and a browser check. No diary or account information.') +
       row('Email delivery service', 'Sends the one-time approval code', 'The parent’s email address and the code message.') +
       row('Our email provider', 'Replying to messages sent to Contact Us', 'Your email address and what you write.') +
       row('Domain registrar', 'Holds the plate450.com name', 'No diary or account information.') + '</tbody></table>' +
@@ -1464,10 +1467,10 @@
 
     const before = earnedIds(p.games);
     const priorGames = p.games.filter((g) => g.id !== (d.id || ''));
-    const game = cleanGame(Object.assign({ id: d.id || uid('g'), created: d.created || Date.now(), date: d.date, season: d.season, team: d.team, level: d.level, opp: d.opp, result: d.result, us: d.us, them: d.them, rv: d.rv, pos: d.fldMode === 'inning' ? '' : d.pos }, sec));
+    const game = cleanGame(Object.assign({ id: d.id || uid('g'), created: d.created || Date.now(), date: d.date, season: d.season, team: d.team, level: d.level, jersey: d.jersey, opp: d.opp, result: d.result, us: d.us, them: d.them, rv: d.rv, pos: d.fldMode === 'inning' ? '' : d.pos }, sec));
     const idx = p.games.findIndex((g) => g.id === game.id);
     if (idx >= 0) p.games[idx] = game; else p.games.push(game);
-    p.last = { season: game.season, team: game.team, level: game.level };
+    p.last = { season: game.season, team: game.team, level: game.level, jersey: game.jersey };
     save();
     const after = S.badges(p.games).filter((b) => b.earned && before.indexOf(b.id) < 0);
     const wasEdit = !!d.id;
@@ -1577,15 +1580,13 @@
     const opts = shareOptions(p);
     const sc = opts.some((o) => o[0] === scope) ? scope : 'all';
     ui.share = { scope: sc, city: false, card: null };
-    openModal('<div class="share-head">' + SHARE_SCENE + '<h3>Share your card</h3></div>' +
-      '<div class="field"><label for="sh-scope">What to show</label><select id="sh-scope" data-share="scope">' + opts.map((o) => '<option value="' + esc(o[0]) + '"' + (o[0] === sc ? ' selected' : '') + '>' + esc(o[1]) + '</option>').join('') + '</select></div>' +
+    openModal('<button type="button" class="modal-x" data-action="modal-close" aria-label="Close">\u00d7</button><h3 class="share-h">Share your card</h3>' +
+      '<div class="share-ctl"><label for="sh-scope">What to show</label><select id="sh-scope" data-share="scope">' + opts.map((o) => '<option value="' + esc(o[0]) + '"' + (o[0] === sc ? ' selected' : '') + '>' + esc(o[1]) + '</option>').join('') + '</select></div>' +
       '<label class="check"><input type="checkbox" data-share="city"> Show my city &amp; state on the card</label>' +
       '<canvas id="share-canvas" class="share-canvas" aria-label="Preview of your player card"></canvas>' +
       '<input id="share-url" class="share-url" type="text" readonly tabindex="-1" aria-hidden="true">' +
       '<p class="hint">Shared image and link contain only what you see on the card.</p>' +
-      '<div class="actions share-actions"><button class="btn" data-action="share-image">Share image</button></div>' +
-      '<div class="actions share-actions"><button class="btn ghost" data-action="share-link">Share link</button><button class="btn ghost" data-action="copy-link">Copy link</button></div>' +
-      '<div class="actions share-actions"><button class="btn ghost" data-action="modal-close">Close</button></div>');
+      '<div class="share-actions"><button class="btn" data-action="share-image">Share image</button><button class="btn ghost" data-action="share-link">Share link</button><button class="btn ghost" data-action="copy-link">Copy link</button></div>');
     refreshShare();
   }
   function copyFromInput(el, label) {

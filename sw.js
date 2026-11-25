@@ -1,5 +1,5 @@
 /* Network-first so updates ship immediately; cache is only the offline fallback. */
-var CACHE = 'plate450-diary-v22';
+var CACHE = 'plate450-diary-v23';
 var FILES = ['./', 'index.html', 'css/style.css', 'js/stats.js', 'js/sim.js', 'content/content.js', 'js/content.js', 'js/app.js', 'js/learn.js', 'js/brand.js', 'brand/plate450-mark.svg', 'brand/plate450-mark-dark.svg', 'brand/diary-mark.svg', 'favicon-32.png', 'js/review.js', 'js/plan.js', 'js/cloud-config.js', 'js/cloud.js', 'icon.svg', 'manifest.webmanifest'];
 self.addEventListener('install', function (e) {
   self.skipWaiting();

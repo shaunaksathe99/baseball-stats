@@ -46,6 +46,36 @@
     var on = /^https:\/\/[a-z0-9.-]+$/i.test(url) || /^http:\/\/(127\.0\.0\.1|localhost)(:\d+)?$/i.test(url);
     on = on && key.length > 20;
     var esc = A.esc;
+    var tsKey = /^[0-9A-Za-z_-]{10,60}$/.test(String(cfg.turnstileKey || '')) ? String(cfg.turnstileKey) : '';
+    var ts = { id: null, token: '', loading: null };
+    /* Invisible Cloudflare Turnstile check on the sign-in code request. Loaded only when that form opens. */
+    function loadTs() {
+      if (win.turnstile) return Promise.resolve(true);
+      if (ts.loading) return ts.loading;
+      ts.loading = new Promise(function (res) {
+        var sc = document.createElement('script'); sc.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit'; sc.async = true;
+        sc.onload = function () { res(!!win.turnstile); }; sc.onerror = function () { ts.loading = null; res(false); };
+        document.head.appendChild(sc);
+      });
+      return ts.loading;
+    }
+    function mountTs() {
+      ts.token = ''; ts.id = null;
+      var box = document.getElementById('cl-ts'); if (!tsKey || !box) return;
+      loadTs().then(function (ok) {
+        box = document.getElementById('cl-ts'); if (!ok || !box || ts.id !== null) return;
+        try {
+          ts.id = win.turnstile.render(box, { sitekey: tsKey, appearance: 'interaction-only', callback: function (t) { ts.token = t; }, 'expired-callback': function () { ts.token = ''; }, 'error-callback': function () { ts.token = ''; } });
+        } catch (e) { ts.id = null; }
+      });
+    }
+    function tsToken() {
+      if (!tsKey) return Promise.resolve('');
+      return new Promise(function (res) {
+        var n = 0, t = setInterval(function () { n++; if (ts.token || n > 60) { clearInterval(t); res(ts.token); } }, 150);
+      });
+    }
+    function resetTs() { ts.token = ''; try { if (ts.id !== null && win.turnstile) win.turnstile.reset(ts.id); } catch (e) { /* ignore */ } }
     var st = { s: null, last: '', dirty: false, at: 0 };
     try { var raw = JSON.parse(localStorage.getItem(K) || 'null'); if (raw && raw.s && raw.s.a && raw.s.r && raw.s.u) st = { s: { a: String(raw.s.a), r: String(raw.s.r), x: Number(raw.s.x) || 0, u: String(raw.s.u), e: String(raw.s.e || '') }, last: String(raw.last || ''), dirty: !!raw.dirty, at: Number(raw.at) || 0 }; } catch (e) { /* start signed out */ }
     var ui = { status: 'idle', msg: '', email: '', busy: false, again: false, timer: null };
@@ -154,11 +184,13 @@
         '<div class="field"><label for="cl-email">Parent or guardian email</label><input id="cl-email" name="email" type="email" inputmode="email" autocomplete="email" maxlength="120" value="' + esc(ui.email) + '"></div>' +
         '<label class="check"><input type="checkbox" name="agree"> <span>I am a parent or guardian, 18 or older. I give permission for my child’s diary (nicknames, stats and notes) to be saved online under my email, and I accept the <a href="#terms" target="_blank" rel="noopener">Terms &amp; Privacy Notice</a>.</span></label>' +
         '<p class="hint">Use your own email, not your child’s. We send the approval code there. Only your email is stored, never your child’s.</p>' +
-        '<div class="actions"><button type="button" class="btn ghost" data-action="modal-close">Cancel</button><button class="btn" type="submit">Email me a code</button></div></form>');
+        '<div id="cl-ts"></div><div class="actions"><button type="button" class="btn ghost" data-action="modal-close">Cancel</button><button class="btn" type="submit">Email me a code</button></div></form>');
+      mountTs();
       if (msg) { var f = document.querySelector('form[data-form=cloud-email]'); if (f) err(f, msg); }
     }
     function stepCode(msg) {
-      A.openModal('<h3>Approve with the code</h3><p class="muted">We sent an approval code to <b>' + esc(ui.email) + '</b>. It can take a minute. Check spam too. <b>Only the parent or guardian should enter it.</b> If your child asked you to set this up, enter the code yourself.</p>' +
+      A.openModal('<h3>Approve with the code</h3><p class="muted">We sent an approval code to <b>' + esc(ui.email) + '</b>. It can take a minute. <b>Only the parent or guardian should enter it.</b> If your child asked you to set this up, enter the code yourself.</p>' +
+        '<p class="hint spam-note"><b>Don\u2019t see it?</b> Check your spam or junk folder. The email comes from no-reply@mail.plate450.com.</p>' +
         '<form data-form="cloud-code" novalidate><div class="error" data-errbox hidden role="alert"></div>' +
         '<div class="field"><label for="cl-code">Code from the email</label><input id="cl-code" name="code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="123456"></div>' +
         '<div class="actions"><button type="button" class="btn ghost" data-action="cloud-back">Back</button><button class="btn" type="submit">Approve and sign in</button></div></form>');
@@ -173,8 +205,15 @@
       if (!/^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]{2,}$/.test(email) || email.length > 120) return err(f, 'Enter the parent or guardian’s email address.');
       if (!f.elements.agree.checked) return err(f, 'Please confirm you are the parent or guardian and agree to the Terms & Privacy Notice.');
       ui.email = email; err(f, ''); var b = f.querySelector('button[type=submit]'); b.disabled = true; b.textContent = 'Sending…';
-      req('POST', '/auth/v1/otp', { email: email, create_user: true }, { noAuth: true }).then(function (r) {
+      tsToken().then(function (token) {
+        if (tsKey && !token) { b.disabled = false; b.textContent = 'Email me a code'; err(f, 'We could not confirm you are not a robot. Check your connection and try again.'); resetTs(); return null; }
+        var body = { email: email, create_user: true };
+        if (token) body.gotrue_meta_security = { captcha_token: token };
+        return req('POST', '/auth/v1/otp', body, { noAuth: true });
+      }).then(function (r) {
+        if (!r) return;
         if (r.ok) { stepCode(); return; }
+        resetTs();
         var m = r.status === 429 ? 'Too many tries. Wait a few minutes and try again.' : r.status === 0 ? 'Could not reach the sign-in service. Check your connection.' : 'Could not send the email. Check the address and try again.';
         b.disabled = false; b.textContent = 'Email me a code'; err(f, m);
       });
