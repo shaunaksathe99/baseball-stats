@@ -1577,14 +1577,15 @@
     const opts = shareOptions(p);
     const sc = opts.some((o) => o[0] === scope) ? scope : 'all';
     ui.share = { scope: sc, city: false, card: null };
-    openModal(SHARE_SCENE + '<h3>Share your card</h3>' +
+    openModal('<div class="share-head">' + SHARE_SCENE + '<h3>Share your card</h3></div>' +
       '<div class="field"><label for="sh-scope">What to show</label><select id="sh-scope" data-share="scope">' + opts.map((o) => '<option value="' + esc(o[0]) + '"' + (o[0] === sc ? ' selected' : '') + '>' + esc(o[1]) + '</option>').join('') + '</select></div>' +
       '<label class="check"><input type="checkbox" data-share="city"> Show my city &amp; state on the card</label>' +
       '<canvas id="share-canvas" class="share-canvas" aria-label="Preview of your player card"></canvas>' +
-      '<div class="field"><label for="share-url">Link that opens your card</label><input id="share-url" type="text" readonly></div>' +
-      '<p class="hint">Nothing is uploaded. The image and link contain only what you see on the card.</p>' +
-      '<div class="actions"><button class="btn" data-action="share-image">Share image</button><button class="btn ghost" data-action="share-link">Share link</button></div>' +
-      '<div class="actions"><button class="btn ghost" data-action="modal-close">Close</button></div>');
+      '<input id="share-url" class="share-url" type="text" readonly tabindex="-1" aria-hidden="true">' +
+      '<p class="hint">Shared image and link contain only what you see on the card.</p>' +
+      '<div class="actions share-actions"><button class="btn" data-action="share-image">Share image</button></div>' +
+      '<div class="actions share-actions"><button class="btn ghost" data-action="share-link">Share link</button><button class="btn ghost" data-action="copy-link">Copy link</button></div>' +
+      '<div class="actions share-actions"><button class="btn ghost" data-action="modal-close">Close</button></div>');
     refreshShare();
   }
   function copyFromInput(el, label) {
@@ -1729,6 +1730,7 @@
       if (navigator.share) navigator.share({ title: 'Plate 450 Diary', text: c.n + '’s player card', url: $('#share-url').value }).catch(() => {});
       else copyFromInput(el, 'Link copied ✓');
     },
+    'copy-link': (el) => copyFromInput(el, 'Link copied ✓'),
     'modal-close': () => closeModal(),
     'modal-bg': (el, e) => { if (e.target === el) closeModal(); },
     seg: (el) => { ui[el.dataset.grp] = el.dataset.val; render(); },

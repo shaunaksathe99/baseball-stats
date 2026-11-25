@@ -619,3 +619,16 @@ html[data-theme=light] .tabs a[aria-current=page] svg, html[data-theme=light] na
   :root:not([data-theme=dark]) .tabs a[aria-current=page], :root:not([data-theme=dark]) nav.tabs [aria-current=page] { color: #412402; font-weight: 700; }
   :root:not([data-theme=dark]) .tabs a[aria-current=page] svg, :root:not([data-theme=dark]) nav.tabs [aria-current=page] svg { stroke: #412402; stroke-width: 2.4; }
 }
+
+/* Compact share pop-up */
+.share-head { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 6px; }
+.share-head .share-scene { margin: 0; width: 76px; height: 44px; flex: none; }
+.share-head h3 { margin: 0; font-size: 1.15rem; }
+.share-url { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+.modal:has(.share-head) { padding: 14px 16px 16px; }
+.modal:has(.share-head) .field { margin-bottom: 8px; }
+.modal:has(.share-head) .check { margin-bottom: 8px; }
+.modal:has(.share-head) .hint { margin: 0 0 6px; text-align: center; }
+.share-canvas { width: auto; max-width: 100%; max-height: 28vh; margin: 2px auto 8px; }
+.modal .actions.share-actions { margin-top: 8px; gap: 8px; }
+.modal .actions.share-actions .btn { min-height: 40px; height: 40px; padding: 0 12px; font-size: 0.92rem; }
