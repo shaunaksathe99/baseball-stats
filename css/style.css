@@ -611,3 +611,11 @@ html[data-theme=light] .idol { --mat1: #D9CDB0; --mat2: #D0C3A4; --cv1: #F1E8D2;
 .idol-canvas h3 { font-family: var(--display); font-size: 1.7rem; line-height: 1.15; color: var(--ink); margin: 8px 0 6px; overflow-wrap: anywhere; }
 .idol-rule { width: 48px; height: 4px; background: var(--team, var(--gold)); margin: 10px auto 12px; }
 .idol-tag { display: inline-block; background: #EF9F27; color: #2a1700; font-weight: 600; font-size: 0.8rem; letter-spacing: 0.12em; padding: 4px 16px; }
+
+/* ---------- bottom nav: stronger selected tab in light mode ---------- */
+html[data-theme=light] .tabs a[aria-current=page], html[data-theme=light] nav.tabs [aria-current=page] { color: #412402; font-weight: 700; }
+html[data-theme=light] .tabs a[aria-current=page] svg, html[data-theme=light] nav.tabs [aria-current=page] svg { stroke: #412402; stroke-width: 2.4; }
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme=dark]) .tabs a[aria-current=page], :root:not([data-theme=dark]) nav.tabs [aria-current=page] { color: #412402; font-weight: 700; }
+  :root:not([data-theme=dark]) .tabs a[aria-current=page] svg, :root:not([data-theme=dark]) nav.tabs [aria-current=page] svg { stroke: #412402; stroke-width: 2.4; }
+}

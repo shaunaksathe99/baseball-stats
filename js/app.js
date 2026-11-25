@@ -518,13 +518,19 @@
       x.fillText(c.b.length ? c.b.length + (c.b.length === 1 ? ' BADGE EARNED' : ' BADGES EARNED') : 'BADGES: JUST GETTING STARTED', W / 2, 990);
       x.font = '70px ' + sans; x.fillStyle = '#F5EFE0';
       x.fillText(c.b.slice(0, 8).map((id) => icons[id]).join(' '), W / 2, 1085);
-      x.fillStyle = ACC; rrect(x, 190, 1150, W - 380, 96, 48); x.fill();
-      x.fillStyle = '#412402'; x.font = '800 42px ' + sans; x.fillText('Build your own card — free', W / 2, 1214);
+      /* Footer row: button on the left, logo and name on the right, all inside the border. */
+      const rowY = 1160, rowH = 96, bx0 = 90, bwid = 470;
+      x.fillStyle = ACC; rrect(x, bx0, rowY, bwid, rowH, 48); x.fill();
+      x.fillStyle = '#412402'; x.textAlign = 'center';
+      let bsz = 32; const lbl = 'Build your own card \u2014 free';
+      do { x.font = '800 ' + bsz + 'px ' + sans; bsz -= 1; } while (x.measureText(lbl).width > bwid - 50 && bsz > 18);
+      x.fillText(lbl, bx0 + bwid / 2, rowY + rowH / 2 + Math.round(bsz * 0.36));
+      const lx = bx0 + bwid + 34, cyy = rowY + rowH / 2;
       if (window.Brand) {
-        window.Brand.mark(x, W / 2 - 205, 1296, 64);
-        x.textAlign = 'left'; x.fillStyle = '#F5EFE0'; x.font = '700 34px ' + sans; x.fillText('Plate 450 Diary', W / 2 - 160, 1294);
-        x.fillStyle = '#ADA99E'; x.font = '600 24px ' + sans; x.fillText('diary.plate450.com', W / 2 - 160, 1324); x.textAlign = 'center';
-      } else { x.fillStyle = '#ADA99E'; x.font = '600 32px ' + sans; x.fillText('Plate 450 Diary', W / 2, 1296); }
+        window.Brand.mark(x, lx + 32, cyy, 64);
+        x.textAlign = 'left'; x.fillStyle = '#F5EFE0'; x.font = '700 32px ' + sans; x.fillText('Plate 450 Diary', lx + 80, cyy - 2);
+        x.fillStyle = '#ADA99E'; x.font = '600 22px ' + sans; x.fillText('diary.plate450.com', lx + 80, cyy + 30); x.textAlign = 'center';
+      } else { x.fillStyle = '#ADA99E'; x.font = '600 28px ' + sans; x.textAlign = 'left'; x.fillText('Plate 450 Diary', lx, cyy + 8); x.textAlign = 'center'; }
     };
     paint();
   }

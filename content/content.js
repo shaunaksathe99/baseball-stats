@@ -1857,7 +1857,7 @@
    "cat": "Pitching & arm care",
    "title": "Arm care for young pitchers",
    "summary": "Simple habits that protect a growing arm.",
-   "body": "A young arm is still growing, so protect it.\n\n- Warm up before you throw and stretch afterward\n- Follow your league’s pitch-count and rest-day rules, every time\n- Never pitch through pain. Tell your coach right away\n- Take time off from throwing during the year\n- Avoid pitching for two teams on the same days\n- Learn good mechanics before you throw harder\n\nPain, tightness or a tired arm are warning signs. Rest is part of training. If something keeps hurting, talk to a parent and a doctor."
+   "body": "A young arm is still growing, so protect it.\n\n- Stretch before your warm-up\n- Warm up, play catch, then cool down\n- Follow your league’s pitch-count and rest-day rules, every time\n- Never pitch through pain. Tell your coach right away\n- Take time off from throwing during the year\n- Avoid pitching for two teams on the same days\n- Learn good mechanics before you throw harder\n\nPain, tightness or a tired arm are warning signs. Rest is part of training. If something keeps hurting, talk to a parent and a doctor."
   },
   {
    "id": "who-covers-what",
