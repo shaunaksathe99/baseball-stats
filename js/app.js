@@ -29,7 +29,7 @@
   function setTheme(v) { try { if (v === 'auto') localStorage.removeItem(THEME_KEY); else localStorage.setItem(THEME_KEY, v); } catch (e) { /* private mode: applies until reload */ } applyTheme(); }
   try { window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', applyTheme); } catch (e) { /* older browsers */ }
   applyTheme();
-  const ext = { views: {}, actions: {}, forms: {}, homeCard: null, onSave: null, aboutCard: null };
+  const ext = { views: {}, actions: {}, forms: {}, homeCard: null, onSave: null, aboutCard: null, onRender: null };
   const KEY = 'dugoutDiary.v1';
   const VERSION = '0.1.0';
   const LEVELS = ['Tee Ball', 'Coach Pitch', 'Minors', 'Majors', 'Intermediate (50/70)', 'Juniors', 'Seniors', 'Travel / Club', 'Middle School', 'High School', 'College', 'Other'];
@@ -579,7 +579,7 @@
       $('#goal-text').innerHTML = p.goals.length ? met + ' of ' + p.goals.length + ' goals' : '<a href="#goals">Set a goal</a>';
     }
     document.querySelectorAll('.tabs a').forEach((a) => {
-      if (a.dataset.tab === (tab === 'print' ? 'log' : tab === 'terms' || tab === 'studio' ? 'about' : tab === 'iq' ? 'learn' : tab === 'plan' ? 'career' : tab)) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
+      if (a.dataset.tab === (tab === 'print' ? 'log' : tab === 'terms' || tab === 'studio' ? 'about' : tab === 'iq' ? 'learn' : tab === 'plan' || tab === 'matchup' ? 'career' : tab)) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
     });
     renderBanner();
   }
@@ -642,6 +642,9 @@
       '<p class="muted">' + esc(T[2]) + ' It takes about 20 seconds: just a name and where you play. No birthday, no email.</p></section>' +
       '<section class="card"><h3>Create your player card</h3>' + playerForm(null) + '</section>';
   }
+  function matchCard(p) {
+    return '<section class="card match-card"><div class="row between"><div><p class="eyebrow">New</p><b>Match Up</b><br><span class="muted small">Level up against your old self, or invite a friend to compare stats</span></div><a class="btn small" href="#matchup">Open</a></div></section>';
+  }
   function viewHome(p) {
     if (!p) {
       return '<section class="card hero"><p class="eyebrow">Free &middot; Private &middot; No sign-up needed</p>' +
@@ -666,7 +669,7 @@
       '<div class="stats four"><div class="stat"><b>' + p.games.length + '</b><span>Games</span></div><div class="stat"><b>' + S.fmtRate(bat.avg) + '</b><span>AVG</span></div><div class="stat"><b>' + S.fmtEra(pit.era) + '</b><span>ERA</span></div><div class="stat"><b>' + earned + '</b><span>Badges</span></div></div>' +
       '<div class="row wrap" style="margin-top:16px"><button class="btn grow" data-action="go" data-to="log">Log a game &rarr;</button><button class="btn ghost grow" data-action="go" data-to="career">My career</button></div>' +
       (p.games.length ? '<button class="btn ghost block" style="margin-top:10px" data-action="share-open">' + SHARE_ICO + ' Share my player card</button>' : '') + '</section>' +
-      installCard() + addPlayerCard() + idolCard(p) + iqHomeCard(p) + (ext.homeCard ? ext.homeCard(p) : '') +
+      matchCard(p) + installCard() + addPlayerCard() + idolCard(p) + iqHomeCard(p) + (ext.homeCard ? ext.homeCard(p) : '') +
       (streak.current >= 2 ? '<section class="card"><b>🔥 ' + streak.current + '-game hit streak!</b><span class="muted small"> Best: ' + streak.best + '</span></section>' : '') +
       '<section class="card fold-card">' + fold(p.id + ':recent', 'Recent games', recent.length ? 'Last ' + recent.length : '', recent.length ? '<ul class="games">' + recent.map((g) => gameItem(g, true)).join('') + '</ul>' : '<p class="muted">Nothing yet. Your first game is a big one!</p>', true) + '</section>' +
       '<section class="card"><div class="row between"><div><b>No phone in the dugout?</b><br><span class="muted small">Print a game sheet, fill it in by hand, then enter it here later.</span></div><a class="btn small" href="#print">Print</a></div></section>' +
@@ -892,7 +895,8 @@
     const label = ui.careerSeason || 'All time';
     const grp = S.groups(p.games);
 
-    const planCta = '<section class="card"><div class="row between"><div><b>My improvement plan</b><br><span class="muted small">See which habits are fixed and which still need work</span></div><button class="btn small" data-action="go" data-to="plan">Open</button></div></section>';
+    const matchCta = '<section class="card match-card"><div class="row between"><div><b>Match Up</b><br><span class="muted small">Compare me with me, or invite a friend</span></div><a class="btn small" href="#matchup">Open</a></div></section>';
+    const planCta = matchCta + '<section class="card"><div class="row between"><div><b>My improvement plan</b><br><span class="muted small">See which habits are fixed and which still need work</span></div><button class="btn small" data-action="go" data-to="plan">Open</button></div></section>';
     const shareCta = planCta + '<section class="card"><div class="row between"><div><b>Show off your card</b><br><span class="muted small">A shareable image and link for friends and family</span></div><button class="btn small" data-action="share-open">Share</button></div></section>';
     const path = shareCta + '<section class="card fold-card">' + fold(p.id + ':path', 'My path', plural(grp.length, 'season'), '<ul class="path">' + grp.map((g) =>
       '<li><b>' + esc(g.season) + (g.level ? '<span class="level">' + esc(g.level) + '</span>' : '') + '</b><span class="muted small">' + (g.team ? esc(g.team) + ' &middot; ' : '') + plural(g.games.length, 'game') + '</span></li>').join('') + '</ul>') + '</section>';
@@ -1178,7 +1182,7 @@
 
       '<h4>3. What we do not do</h4><ul><li>We do not sell or rent personal information, or share it for advertising.</li><li>We do not show ads or send data to ad networks.</li><li>We do not track you across other sites or apps.</li><li>We do not use diary content to train machine-learning models.</li><li>We do not use information in ways materially different from the purposes below without telling you first and, where the law requires it, getting consent.</li></ul>' +
 
-      '<h4>4. How we use information</h4><ul><li>To run the diary, draw your trends and plans, and let you print or share what you choose.</li><li>To save and restore a diary across devices, if a parent or guardian signs in.</li><li>To answer messages sent to us, keep the service secure, fix faults and prevent abuse.</li><li>To meet legal obligations.</li></ul>' +
+      '<h4>4. How we use information</h4><ul><li>To run the diary, draw your trends and plans, and let you print or share what you choose.</li><li>To save and restore a diary across devices, if a parent or guardian signs in.</li><li>To compare stats in Match Up. When you choose to share an invite, the link, image or QR code holds only your name (if you leave Show my name on), the stretch of games and the stats you picked. Nothing is uploaded, and we cannot see who opens it. Friends you save from an invite stay on your device (up to 10), and the other player\u2019s numbers are never sent anywhere.</li><li>To answer messages sent to us, keep the service secure, fix faults and prevent abuse.</li><li>To meet legal obligations.</li></ul>' +
 
       '<h4>5. Who else handles information</h4><p>Only service providers that run the site for us, and only for that purpose:</p>' +
       '<table class="ptable"><thead><tr><th>Who</th><th>Why</th><th>What they receive</th></tr></thead><tbody>' +
@@ -1320,6 +1324,7 @@
   function currentTab() {
     let h = (location.hash || '#home').slice(1);
     if (h.indexOf('card=') === 0) return 'card';
+    if (h.indexOf('invite=') === 0) return 'matchup';
     if (h === 'print') return 'print';
     if (h === 'terms') return 'terms';
     const base = h.split('/')[0].split('?')[0];
@@ -1355,6 +1360,7 @@
     else html += viewAbout(p);
     main.innerHTML = html;
     renderChrome(tab, p);
+    if (ext.onRender) ext.onRender(tab);
     if (tab === 'print') fitSheets();
     if (ui.lastTab !== tab) { window.scrollTo(0, 0); ui.lastTab = tab; }
   }
@@ -1585,7 +1591,7 @@
       '<label class="check"><input type="checkbox" data-share="city"> Show my city &amp; state on the card</label>' +
       '<canvas id="share-canvas" class="share-canvas" aria-label="Preview of your player card"></canvas>' +
       '<input id="share-url" class="share-url" type="text" readonly tabindex="-1" aria-hidden="true">' +
-      '<p class="hint">Shared image and link contain only what you see on the card.</p>' +
+      '<p class="hint">Shared image and link contain only what you see on the card. <a href="#matchup" data-action="modal-close">Compare stats with a friend →</a></p>' +
       '<div class="share-actions"><button class="btn" data-action="share-image">Share image</button><button class="btn ghost" data-action="share-link">Share link</button><button class="btn ghost" data-action="copy-link">Copy link</button></div>');
     refreshShare();
   }
@@ -1642,7 +1648,8 @@
     ext: ext, Sim: Sim, content: () => CONTENT, preview: () => PREVIEW, contactEmail: CONTACT_EMAIL, esc: esc,
     player: () => { const p = player(); return p && isUnlocked(p) ? p : null; },
     iqData: iqData, recordQuiz: recordQuiz, diamondSvg: diamondSvg, scoreboard: scoreboard, render: render, go: go, footer: footer, emptyState: emptyState,
-    flash: (m) => { ui.flash = m; }, save: () => save(), getDb: () => db, setDb: setDb, setConsent: () => { db.cons = { v: TERMS_V, at: today() }; save(); }, sanitizeDb: sanitizeDb, openModal: openModal, closeModal: closeModal
+    flash: (m) => { ui.flash = m; }, save: () => save(), getDb: () => db, setDb: setDb, setConsent: () => { db.cons = { v: TERMS_V, at: today() }; save(); }, sanitizeDb: sanitizeDb, openModal: openModal, closeModal: closeModal,
+    shareBase: shareBase, colors: COLORS, fmtPid: fmtPid, closeShare: () => closeModal()
   };
 
   const actions = {
@@ -1829,7 +1836,7 @@
       ui.draft = null; save(); closeModal(); go('home'); render();
     },
     'reset-all': () => confirmModal('Erase everything?', 'Every player, game, and goal on this device will be deleted. This cannot be undone.', 'Yes, erase everything', 'confirm-reset-all'),
-    'confirm-reset-all': () => { db = emptyDb(); ui.draft = null; save(); closeModal(); go('home'); render(); }
+    'confirm-reset-all': () => { db = emptyDb(); ui.draft = null; save(); window.dispatchEvent(new Event('plate450:erase')); closeModal(); go('home'); render(); }
   };
 
   const forms = {

@@ -7,7 +7,11 @@
   var esc = A.esc, content = A.content();
   function list(k) { return C.visible(content[k] || []); }
 
-  var st = { run: null, tlvl: 0, kbq: '', kbcat: '', gq: '', dtype: '', dstate: '', dq: '', req: null };
+  var st = { run: null, tlvl: 0, kbq: '', kbcat: '', gq: '', dtype: '', dstate: '', dq: '', dloc: '', dage: '', dskill: '', dsaved: false, dmore: 20, req: null };
+  var SAVE_KEY = 'plate450.savedlistings', AGE_KEY = 'plate450.dirage';
+  function savedIds() { try { var v = JSON.parse(localStorage.getItem(SAVE_KEY)); return Array.isArray(v) ? v.filter(function (x) { return typeof x === 'string'; }).slice(0, 200) : []; } catch (e) { return []; } }
+  function setSaved(ids) { try { localStorage.setItem(SAVE_KEY, JSON.stringify(ids)); } catch (e) { /* private mode */ } }
+  try { st.dage = localStorage.getItem(AGE_KEY) || ''; } catch (e0) { st.dage = ''; }
 
   function back(label, to) { return '<a class="link small" href="#' + to + '">&larr; ' + esc(label) + '</a>'; }
   function head(eyebrow, title, text) { return '<section class="card hero"><p class="eyebrow">' + esc(eyebrow) + '</p><h2>' + esc(title) + '</h2>' + (text ? '<p class="muted">' + esc(text) + '</p>' : '') + '</section>'; }
@@ -102,12 +106,20 @@
       return '<a class="cat" href="#learn/kb/' + encodeURIComponent(a.id) + '"><span class="grow"><b>' + esc(a.title) + '</b><span class="muted small">' + esc(a.cat) + (a.summary ? ' &middot; ' + esc(a.summary) : '') + '</span></span><span class="cat-go" aria-hidden="true">&rsaquo;</span></a>';
     }).join('') + '</div>';
   }
+  var ART_LINK = {
+    'arm-care': ['Find a pitching coach', 'trainer', 'pitching'], 'types-of-pitches': ['Find a pitching coach', 'trainer', 'pitching'],
+    'why-umpire': ['Find a league', 'team', ''], 'how-to-start-umpiring': ['Find a league', 'team', ''], 'umpire-basics': ['Find a league', 'team', '']
+  };
+  function articleLink(a) {
+    var l = ART_LINK[a.id];
+    return l ? '<p style="margin-top:14px"><button class="btn ghost block" data-action="l-find" data-t="' + l[1] + '" data-q="' + l[2] + '">' + esc(l[0]) + ' →</button></p>' : '';
+  }
   function viewKb(p, sub) {
     var all = list('kb');
     if (sub[0]) {
       var a = all.filter(function (x) { return x.id === sub[0]; })[0];
       if (!a) return back('Knowledge base', 'learn/kb') + none('📚', 'Article not found', 'It may have been renamed or removed.', 'learn/kb');
-      return back('Knowledge base', 'learn/kb') + '<section class="card article"><p class="eyebrow">' + esc(a.cat) + '</p><h2>' + esc(a.title) + '</h2>' + C.md(a.body) + '</section>' + A.footer();
+      return back('Knowledge base', 'learn/kb') + '<section class="card article"><p class="eyebrow">' + esc(a.cat) + '</p><h2>' + esc(a.title) + '</h2>' + C.md(a.body) + articleLink(a) + '</section>' + A.footer();
     }
     if (!all.length) return none('📚', 'No articles yet', 'New articles are on the way.');
     var chips = '<div class="chips" style="margin:0 0 12px"><button class="chip' + (st.kbcat ? '' : ' on') + '" data-action="l-kbcat" data-cat="">All</button>' +
@@ -130,36 +142,88 @@
 
   /* ---------- directory ---------- */
   function telHref(ph) { return 'tel:' + String(ph).replace(/[^0-9+]/g, ''); }
-  function listing(d) {
-    var t = C.dirType(d.type), where = [d.city, d.state].filter(Boolean).join(', ');
+  function listing(d, tier, isSaved) {
+    var t = C.dirType(d.type), where = [d.city, d.state].filter(Boolean).join(', ') + (d.zip ? ' ' + d.zip : '');
     var links = [];
     if (d.website) links.push('<a class="btn small" href="' + esc(d.website) + '" target="_blank" rel="noopener noreferrer nofollow">Website</a>');
     if (d.email) links.push('<a class="btn ghost small" href="mailto:' + esc(d.email) + '">Email</a>');
     if (d.phone) links.push('<a class="btn ghost small" href="' + esc(telHref(d.phone)) + '">' + esc(d.phone) + '</a>');
-    return '<article class="card listing"><div class="chips" style="margin:0 0 8px"><span class="chip">' + esc(t ? t.name : d.type) + '</span>' + (where ? '<span class="chip">' + esc(where) + '</span>' : '') + (d.ages ? '<span class="chip">Ages ' + esc(d.ages) + '</span>' : '') + '</div>' +
+    return '<article class="card listing' + (d.featured ? ' featured' : '') + '"><div class="row between" style="align-items:flex-start"><div class="chips" style="margin:0 0 8px">' + (d.featured ? '<span class="chip feat">★ Featured</span>' : '') + '<span class="chip">' + esc(t ? t.name : d.type) + '</span>' + (where.trim() ? '<span class="chip">' + esc(where.trim()) + '</span>' : '') + (tier === 1 ? '<span class="chip">Nearby area</span>' : '') + (d.ages ? '<span class="chip">Ages ' + esc(d.ages) + '</span>' : '') + '</div>' +
+      '<button class="heart' + (isSaved ? ' on' : '') + '" data-action="l-save" data-id="' + esc(d.id) + '" aria-pressed="' + (isSaved ? 'true' : 'false') + '" aria-label="' + (isSaved ? 'Remove ' : 'Save ') + esc(d.name) + (isSaved ? ' from saved' : ' to saved') + '">' + (isSaved ? '♥' : '♡') + '</button></div>' +
       '<h3>' + esc(d.name) + '</h3>' + (d.tagline ? '<p class="muted">' + esc(d.tagline) + '</p>' : '') +
       (d.services.length ? '<ul class="svc">' + d.services.map(function (s) { return '<li>' + esc(s) + '</li>'; }).join('') + '</ul>' : '') +
       (d.notes ? '<p class="small">' + esc(d.notes) + '</p>' : '') + (links.length ? '<div class="row wrap" style="margin-top:10px">' + links.join('') + '</div>' : '') + '</article>';
   }
-  function dirList() {
-    var q = st.dq.trim().toLowerCase(), items = list('directory').filter(function (d) {
+  /* Does a listing's age text ("7-14", "12U", "6+", "All ages") fit this age? Unreadable text is never filtered out. */
+  function ageMatch(txt, age) {
+    var s = String(txt || '').toLowerCase().trim(), m;
+    if (!s || /all|any|every/.test(s)) return true;
+    if ((m = /(\d{1,2})\s*(?:-|–|to)\s*(\d{1,2})/.exec(s))) return age >= Number(m[1]) && age <= Number(m[2]);
+    if ((m = /(\d{1,2})\s*u\b/.exec(s))) return age <= Number(m[1]);
+    if ((m = /(\d{1,2})\s*\+/.exec(s))) return age >= Number(m[1]);
+    if ((m = /(\d{1,2})/.exec(s))) return age === Number(m[1]);
+    return true;
+  }
+  /* 0 = this ZIP or city, 1 = same first three digits (nearby), -1 = not a match */
+  function locTier(d, loc) {
+    if (!loc) return 0;
+    var l = loc.toLowerCase();
+    if (/^\d{3,5}$/.test(l)) {
+      var zips = [d.zip].concat(d.areas || []).filter(Boolean);
+      if (l.length < 5) return zips.some(function (z) { return z.indexOf(l) === 0; }) ? 0 : -1;
+      if (zips.indexOf(l) >= 0) return 0;
+      return zips.some(function (z) { return z.slice(0, 3) === l.slice(0, 3); }) ? 1 : -1;
+    }
+    if (d.city && d.city.toLowerCase().indexOf(l) >= 0) return 0;
+    if (/^[a-z]{2}$/.test(l) && d.state && d.state.toLowerCase() === l) return 0;
+    return -1;
+  }
+  var STOP = { and: 1, the: 1, for: 1, with: 1, ages: 1, your: 1, our: 1, from: 1, all: 1, more: 1, year: 1, round: 1, private: 1, small: 1, group: 1, based: 1 };
+  function skillChips(all) {
+    var n = {};
+    all.forEach(function (d) { var seen = {}; d.services.join(' ').toLowerCase().replace(/[^a-z ]/g, ' ').split(/\s+/).forEach(function (w) { if (w.length < 4 || STOP[w] || seen[w]) return; seen[w] = 1; n[w] = (n[w] || 0) + 1; }); });
+    return Object.keys(n).sort(function (a, b) { return n[b] - n[a] || (a < b ? -1 : 1); }).slice(0, 8);
+  }
+  function dirMatches() {
+    var q = st.dq.trim().toLowerCase(), loc = st.dloc.trim(), age = parseInt(st.dage, 10), saved = savedIds();
+    return list('directory').map(function (d) { return { d: d, tier: locTier(d, loc) }; }).filter(function (x) {
+      var d = x.d;
+      if (x.tier < 0) return false;
+      if (st.dsaved && saved.indexOf(d.id) < 0) return false;
       if (st.dtype && d.type !== st.dtype) return false;
       if (st.dstate && d.state !== st.dstate) return false;
-      return !q || [d.name, d.tagline, d.city, d.state, d.notes, d.services.join(' ')].join(' ').toLowerCase().indexOf(q) >= 0;
-    }).sort(function (a, b) { return a.name.toLowerCase() < b.name.toLowerCase() ? -1 : 1; });
+      if (st.dskill && d.services.join(' ').toLowerCase().indexOf(st.dskill) < 0) return false;
+      if (age > 0 && !ageMatch(d.ages, age)) return false;
+      return !q || [d.name, d.tagline, d.city, d.state, d.zip, d.notes, d.services.join(' ')].join(' ').toLowerCase().indexOf(q) >= 0;
+    }).sort(function (a, b) {
+      if (!!b.d.featured !== !!a.d.featured) return b.d.featured ? 1 : -1;
+      if (a.tier !== b.tier) return a.tier - b.tier;
+      return a.d.name.toLowerCase() < b.d.name.toLowerCase() ? -1 : 1;
+    });
+  }
+  function filtersOn() { return !!(st.dq.trim() || st.dloc.trim() || parseInt(st.dage, 10) > 0 || st.dtype || st.dstate || st.dskill || st.dsaved); }
+  function dirList() {
     if (!list('directory').length) return A.emptyState('🧢', 'No listings yet', 'Trainers, coaches, clinics and travel teams can submit their details for review. Approved listings appear here.', '<a class="btn" href="#find-list">Request a listing</a>');
-    if (!items.length) return '<p class="muted">No listings match those filters.</p>';
-    return items.map(listing).join('');
+    var items = dirMatches(), saved = savedIds(), shown = items.slice(0, st.dmore);
+    var bar = '<div class="row between dir-count"><b>' + items.length + (items.length === 1 ? ' listing' : ' listings') + '</b>' + (filtersOn() ? '<button class="link" data-action="l-clear">Clear filters</button>' : '') + '</div>';
+    if (!items.length) return bar + '<section class="card"><p class="muted">No listings match those filters. Try a nearby ZIP, a different city, or clear the filters.</p></section>';
+    return bar + shown.map(function (x) { return listing(x.d, x.tier, saved.indexOf(x.d.id) >= 0); }).join('') +
+      (items.length > shown.length ? '<button class="btn ghost block" data-action="l-more">Show more (' + (items.length - shown.length) + ' left)</button>' : '');
   }
   function viewDirectory() {
-    var all = list('directory'), states = {};
+    var all = list('directory'), states = {}, p = A.player();
     all.forEach(function (d) { if (d.state) states[d.state] = 1; });
     var chips = '<div class="chips" style="margin:0 0 12px"><button class="chip' + (st.dtype ? '' : ' on') + '" data-action="l-dtype" data-t="">All</button>' +
-      C.DIR_TYPES.map(function (t) { return '<button class="chip' + (st.dtype === t.id ? ' on' : '') + '" data-action="l-dtype" data-t="' + t.id + '">' + esc(t.name) + '</button>'; }).join('') + '</div>';
-    var stSel = Object.keys(states).length > 1 ? '<div class="field"><label for="l-dstate">State</label><select id="l-dstate" data-lsel="dstate"><option value="">All states</option>' + Object.keys(states).sort().map(function (s) { return '<option' + (st.dstate === s ? ' selected' : '') + '>' + esc(s) + '</option>'; }).join('') + '</select></div>' : '';
+      C.DIR_TYPES.map(function (t) { return '<button class="chip' + (st.dtype === t.id ? ' on' : '') + '" data-action="l-dtype" data-t="' + t.id + '">' + esc(t.name) + '</button>'; }).join('') +
+      '<button class="chip' + (st.dsaved ? ' on' : '') + '" data-action="l-saved">♥ Saved (' + savedIds().length + ')</button></div>';
+    var sk = skillChips(all), skills = sk.length ? '<div class="chips" style="margin:0 0 12px" aria-label="Skills">' + sk.map(function (w) { return '<button class="chip' + (st.dskill === w ? ' on' : '') + '" data-action="l-skill" data-k="' + esc(w) + '">' + esc(w) + '</button>'; }).join('') + '</div>' : '';
+    var stSel = Object.keys(states).length > 1 ? '<div class="field"><label for="l-dstate">State (optional)</label><select id="l-dstate" data-lsel="dstate"><option value="">All states</option>' + Object.keys(states).sort().map(function (s) { return '<option' + (st.dstate === s ? ' selected' : '') + '>' + esc(s) + '</option>'; }).join('') + '</select></div>' : '';
+    var myZip = p && /^\d{5}$/.test(p.zip || '') ? '<button class="link" data-action="l-myzip">Use my ZIP (' + esc(p.zip) + ')</button>' : '';
     return back('Learn', 'learn') + head('Directory', 'Trainers, coaches & travel teams', 'Find help to get better, or a team to join.') +
       '<div class="notice" role="note"><b>For parents and guardians.</b> Listings are provided by the businesses and teams themselves. Plate 450 Diary does not vet, endorse or guarantee anyone listed. Do your own research, and always make contact yourself on your child’s behalf. See the <a href="#terms">Terms</a>.</div>' +
-      (all.length ? '<section class="card"><div class="field"><label for="l-dq">Search</label><input id="l-dq" type="search" data-lin="dir" autocomplete="off" placeholder="Name, city or skill" value="' + esc(st.dq) + '"></div>' + stSel + chips + '</section>' : '') +
+      (all.length ? '<section class="card"><div class="grid2"><div class="field"><label for="l-dloc">ZIP code or city</label><input id="l-dloc" type="search" data-lin="dloc" autocomplete="off" inputmode="text" placeholder="78701 or Austin" value="' + esc(st.dloc) + '"></div>' +
+        '<div class="field"><label for="l-dage">Player age</label><input id="l-dage" type="number" data-lin="dage" min="3" max="19" inputmode="numeric" placeholder="e.g. 10" value="' + esc(st.dage) + '"></div></div>' + (myZip ? '<p class="small" style="margin:-6px 0 12px">' + myZip + '</p>' : '') +
+        '<div class="field"><label for="l-dq">Name or skill</label><input id="l-dq" type="search" data-lin="dir" autocomplete="off" placeholder="Name, pitching, camps…" value="' + esc(st.dq) + '"></div>' + skills + stSel + chips + '</section>' : '') +
       '<div id="l-list">' + dirList() + '</div>' +
       (all.length ? '<section class="card"><h3>Not listed?</h3><p class="muted">Listings are not automatic. Submit your details and we review each one before it is published.</p><a class="btn ghost block" href="#find-list">Request a listing</a></section>' : '') + A.footer();
   }
@@ -181,7 +245,7 @@
       '<div class="field"><label for="lf-type">What are you listing?</label><select id="lf-type" name="type"><option value="">Choose one</option>' + C.DIR_TYPES.map(function (t) { return '<option value="' + t.id + '">' + esc(t.name) + '</option>'; }).join('') + '</select></div>' +
       inp('name', 'Name', 'Coach Sam Baseball Academy', ' maxlength="80"') + inp('tagline', 'One-line description', 'Hitting lessons for ages 8-14', ' maxlength="120"') +
       '<div class="field"><label for="lf-services">Services or details (one per line)</label><textarea id="lf-services" name="services" rows="4" placeholder="Private hitting lessons&#10;Pitching clinics&#10;Summer camps"></textarea></div>' +
-      inp('ages', 'Ages or levels', '8-14', ' maxlength="30"') + '<div class="grid2">' + inp('city', 'City', '', ' maxlength="40"') + inp('state', 'State', 'CA', ' maxlength="30"') + '</div>' +
+      inp('ages', 'Ages or levels', '8-14', ' maxlength="30"') + '<div class="grid2">' + inp('city', 'City', '', ' maxlength="40"') + inp('state', 'State', 'CA', ' maxlength="30"') + '</div>' + inp('zip', 'ZIP code', '78701', ' maxlength="5" inputmode="numeric" autocomplete="postal-code"') + inp('areas', 'Other ZIP codes you serve (optional)', '78702, 78703', ' maxlength="60" inputmode="numeric"') +
       inp('website', 'Website', 'https://example.com', ' maxlength="200" inputmode="url"') + inp('email', 'Business email', '', ' maxlength="100" inputmode="email"') + inp('phone', 'Business phone', '', ' maxlength="25" inputmode="tel"') +
       '<div class="field"><label for="lf-notes">Anything else (optional)</label><textarea id="lf-notes" name="notes" rows="3" maxlength="300"></textarea></div>' +
       '<label class="check agree"><input type="checkbox" name="confirm"> <span>I am 18 or older, this is my own business, program or team, and this information may be published on Plate 450 Diary. I understand this site does not endorse listings.</span></label>' +
@@ -189,11 +253,12 @@
   }
 
   /* ---------- home card ---------- */
+  function findCard() { return '<section class="card"><div class="row between"><div><b>Find a coach or trainer</b><br><span class="muted small">Search by ZIP code or city</span></div><a class="btn small" href="#learn/directory">Search</a></div></section>'; }
   A.ext.homeCard = function () {
     var all = list('trivia');
-    if (!all.length) return '<section class="card"><div class="row between"><div><b>📚 Learn</b><br><span class="muted small">Trivia, quizzes, articles and a coach directory</span></div><a class="btn small" href="#learn">Open</a></div></section>';
+    if (!all.length) return '<section class="card"><div class="row between"><div><b>📚 Learn</b><br><span class="muted small">Trivia, quizzes, articles and a coach directory</span></div><a class="btn small" href="#learn">Open</a></div></section>' + findCard();
     var t = all[dayIndex(all.length)];
-    return '<section class="card"><p class="eyebrow">Trivia of the day</p><p><b>' + esc(t.q) + '</b></p><div class="row wrap"><button class="btn small grow" data-action="l-daily">Answer it</button><a class="btn ghost small grow" href="#learn">More to learn</a></div></section>';
+    return '<section class="card"><p class="eyebrow">Trivia of the day</p><p><b>' + esc(t.q) + '</b></p><div class="row wrap"><button class="btn small grow" data-action="l-daily">Answer it</button><a class="btn ghost small grow" href="#learn">More to learn</a></div></section>' + findCard();
   };
 
   /* ---------- routing and actions ---------- */
@@ -239,6 +304,20 @@
   X['l-end'] = function () { st.run = null; A.render(); };
   X['l-kbcat'] = function (el) { st.kbcat = el.dataset.cat || ''; A.render(); };
   X['l-dtype'] = function (el) { st.dtype = el.dataset.t || ''; A.render(); };
+  function refreshList() { var box = document.getElementById('l-list'); if (box) box.innerHTML = dirList(); }
+  X['l-skill'] = function (el) { st.dskill = st.dskill === el.dataset.k ? '' : el.dataset.k; st.dmore = 20; A.render(); };
+  X['l-saved'] = function () { st.dsaved = !st.dsaved; st.dmore = 20; A.render(); };
+  X['l-more'] = function () { st.dmore += 20; refreshList(); };
+  X['l-clear'] = function () { st.dq = ''; st.dloc = ''; st.dage = ''; st.dtype = ''; st.dstate = ''; st.dskill = ''; st.dsaved = false; st.dmore = 20; try { localStorage.removeItem(AGE_KEY); } catch (e) { /* ignore */ } A.render(); };
+  X['l-myzip'] = function () { var p = A.player(); if (p && /^\d{5}$/.test(p.zip || '')) { st.dloc = p.zip; st.dmore = 20; A.render(); } };
+  X['l-save'] = function (el) {
+    var ids = savedIds(), i = ids.indexOf(el.dataset.id);
+    if (i >= 0) ids.splice(i, 1); else ids.push(el.dataset.id);
+    setSaved(ids);
+    if (st.dsaved) refreshList(); else { var on = i < 0; el.classList.toggle('on', on); el.textContent = on ? '♥' : '♡'; el.setAttribute('aria-pressed', on ? 'true' : 'false'); }
+    var chip = document.querySelector('[data-action="l-saved"]'); if (chip) chip.textContent = '♥ Saved (' + ids.length + ')';
+  };
+  X['l-find'] = function (el) { st.dtype = el.dataset.t || ''; st.dq = el.dataset.q || ''; st.dloc = ''; st.dskill = ''; st.dsaved = false; st.dmore = 20; A.go('learn/directory'); };
   X['l-reqnew'] = function () { st.req = null; A.render(); };
   X['l-copy'] = function (el) {
     var ta = document.getElementById('l-reqtxt'); if (!ta) return;
@@ -249,8 +328,9 @@
 
   A.ext.forms['l-request'] = function (form) {
     var el = form.elements, box = form.querySelector('[data-errbox]');
-    var raw = { type: el.type.value, name: el.name.value, tagline: el.tagline.value, services: el.services.value, ages: el.ages.value, city: el.city.value, state: el.state.value, website: el.website.value, email: el.email.value, phone: el.phone.value, notes: el.notes.value };
+    var raw = { type: el.type.value, name: el.name.value, tagline: el.tagline.value, services: el.services.value, ages: el.ages.value, city: el.city.value, state: el.state.value, zip: el.zip.value, areas: el.areas.value, website: el.website.value, email: el.email.value, phone: el.phone.value, notes: el.notes.value };
     var res = C.clean('directory', raw, {}), errs = res.errors.slice();
+    if (!/^\d{5}$/.test(String(el.zip.value).replace(/\s+/g, '')) && errs.indexOf('The ZIP code must be 5 digits.') < 0) errs.push('Add your 5-digit ZIP code so families nearby can find you.');
     if (!el.confirm.checked) errs.push('Please confirm that you are 18 or older and that this is your own business or team.');
     if (errs.length) { box.hidden = false; box.innerHTML = errs.length === 1 ? esc(errs[0]) : '<ul>' + errs.map(function (e) { return '<li>' + esc(e) + '</li>'; }).join('') + '</ul>'; box.scrollIntoView({ block: 'center', behavior: 'smooth' }); return; }
     st.req = { text: C.buildRequest(res.item) }; A.render();
@@ -260,11 +340,14 @@
   document.addEventListener('input', function (e) {
     var el = e.target.closest && e.target.closest('[data-lin]'); if (!el) return;
     var k = el.dataset.lin, box = document.getElementById('l-list'); if (!box) return;
-    if (k === 'kb') { st.kbq = el.value; box.innerHTML = kbList(); } else if (k === 'gloss') { st.gq = el.value; box.innerHTML = glossList(); } else if (k === 'dir') { st.dq = el.value; box.innerHTML = dirList(); }
+    if (k === 'kb') { st.kbq = el.value; box.innerHTML = kbList(); } else if (k === 'gloss') { st.gq = el.value; box.innerHTML = glossList(); } else if (k === 'dir' || k === 'dloc' || k === 'dage') {
+      if (k === 'dir') st.dq = el.value; else if (k === 'dloc') st.dloc = el.value; else { st.dage = el.value.replace(/[^0-9]/g, '').slice(0, 2); try { localStorage.setItem(AGE_KEY, st.dage); } catch (e) { /* ignore */ } }
+      st.dmore = 20; box.innerHTML = dirList();
+    }
   });
   document.addEventListener('change', function (e) {
     var el = e.target.closest && e.target.closest('[data-lsel]'); if (!el) return;
-    if (el.dataset.lsel === 'dstate') { st.dstate = el.value; var box = document.getElementById('l-list'); if (box) box.innerHTML = dirList(); }
+    if (el.dataset.lsel === 'dstate') { st.dstate = el.value; st.dmore = 20; var box = document.getElementById('l-list'); if (box) box.innerHTML = dirList(); }
   });
   // A finished or half-played round is forgotten as soon as the player leaves trivia / quizzes.
   window.addEventListener('hashchange', function () { if (!/^#learn\/(trivia|quizzes)/.test(location.hash)) st.run = null; });

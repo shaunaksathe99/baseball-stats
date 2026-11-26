@@ -159,10 +159,15 @@
     if (phone && !/^[0-9()+\-. xXtT]{7,25}$/.test(phone)) { errs.push('The phone number should only use digits, spaces, dashes and parentheses.'); phone = ''; }
     if (!site && !email && !phone && !errs.length) errs.push('Add at least one way to reach you: website, email or phone.');
     var st = line(r.state, 30); if (/^[a-z]{2}$/i.test(st)) st = st.toUpperCase();
+    var zip = line(r.zip, 12).replace(/\s+/g, '');
+    if (zip && !/^\d{5}$/.test(zip)) { errs.push('The ZIP code must be 5 digits.'); zip = ''; }
+    var areaRaw = Array.isArray(r.areas) ? r.areas : String(r.areas || '').split(/[;,\n ]+/), areas = [];
+    areaRaw.forEach(function (z) { z = String(z).trim(); if (/^\d{5}$/.test(z) && z !== zip && areas.indexOf(z) < 0 && areas.length < 8) areas.push(z); });
     var id = validId(r.id) && !taken[r.id] ? r.id : newId('dr', taken, 'num');
     var added = /^\d{4}-\d{2}-\d{2}$/.test(String(r.added || '')) ? String(r.added) : '';
-    var item = { id: id, type: type, name: name, tagline: line(r.tagline, 120), services: services, ages: line(r.ages, 30), city: line(r.city, 40), state: st, website: site, email: email, phone: phone, notes: str(r.notes, 300), added: added };
+    var item = { id: id, type: type, name: name, tagline: line(r.tagline, 120), services: services, ages: line(r.ages, 30), city: line(r.city, 40), state: st, zip: zip, areas: areas, website: site, email: email, phone: phone, notes: str(r.notes, 300), added: added };
     if (truthy(r.hidden)) item.hidden = true;
+    if (truthy(r.featured)) item.featured = true;
     return { item: item, errors: errs };
   }
 
@@ -230,7 +235,7 @@
     trivia: ['ID', 'Category', 'Level (A/AA/AAA)', 'Question', 'Answer A', 'Answer B', 'Answer C', 'Answer D', 'Correct answer (A-D)', 'Fun fact', 'Hide (yes/no)'],
     glossary: ['Term', 'Definition', 'Hide (yes/no)'],
     kb: ['ID', 'Category', 'Title', 'Summary', 'Article text', 'Hide (yes/no)'],
-    directory: ['ID', 'Type (trainer/coach/team/facility)', 'Name', 'Tagline', 'Services (separate with ;)', 'Ages', 'City', 'State', 'Website', 'Email', 'Phone', 'Notes', 'Hide (yes/no)'],
+    directory: ['ID', 'Type (trainer/coach/team/facility)', 'Name', 'Tagline', 'Services (separate with ;)', 'Ages', 'City', 'State', 'ZIP', 'Also serves ZIPs (separate with ;)', 'Website', 'Email', 'Phone', 'Notes', 'Featured (yes/no)', 'Hide (yes/no)'],
     quizzes: ['Quiz title', 'Quiz description', 'Question', 'Answer A', 'Answer B', 'Answer C', 'Answer D', 'Correct answer (A-D)', 'Explanation', 'Hide quiz (yes/no)']
   };
   function csvTypes() { return Object.keys(COLS); }
@@ -243,7 +248,7 @@
       if (type === 'trivia') rows.push([x.id, x.cat, LEVELS[x.lvl] || 'A', x.q, x.opts[0] || '', x.opts[1] || '', x.opts[2] || '', x.opts[3] || '', letter(x.ans), x.fact, h]);
       else if (type === 'glossary') rows.push([x.term, x.def, h]);
       else if (type === 'kb') rows.push([x.id, x.cat, x.title, x.summary, x.body, h]);
-      else if (type === 'directory') rows.push([x.id, x.type, x.name, x.tagline, x.services.join('; '), x.ages, x.city, x.state, x.website, x.email, x.phone, x.notes, h]);
+      else if (type === 'directory') rows.push([x.id, x.type, x.name, x.tagline, x.services.join('; '), x.ages, x.city, x.state, x.zip || '', (x.areas || []).join('; '), x.website, x.email, x.phone, x.notes, x.featured ? 'yes' : '', h]);
       else if (type === 'quizzes') x.questions.forEach(function (q, i) { rows.push([x.title, i ? '' : x.desc, q.q, q.opts[0] || '', q.opts[1] || '', q.opts[2] || '', q.opts[3] || '', letter(q.ans), q.why, i ? '' : h]); });
     });
     return stringifyCsv(rows);
@@ -253,7 +258,7 @@
       trivia: [['', 'History', 'AA', 'Who was nicknamed the Iron Horse?', 'Lou Gehrig', 'Babe Ruth', 'Ty Cobb', '', 'A', 'He played 2,130 straight games.', '']],
       glossary: [['Walk-off', 'A hit or run that ends the game in the home team\'s last turn at bat.', '']],
       kb: [['', 'Rules', 'What is a balk?', 'An illegal move by the pitcher.', 'A balk happens when the pitcher makes an illegal motion with runners on base.\n\nEvery runner moves up one base.', '']],
-      directory: [['', 'trainer', 'Pro Swing Academy', 'Hitting lessons for ages 7 to 14', 'Private hitting lessons; Small group clinics', '7-14', 'Austin', 'TX', 'https://example.com', 'info@example.com', '', '', '']],
+      directory: [['', 'trainer', 'Pro Swing Academy', 'Hitting lessons for ages 7 to 14', 'Private hitting lessons; Small group clinics', '7-14', 'Austin', 'TX', '78701', '78702; 78703', 'https://example.com', 'info@example.com', '', '', '', '']],
       quizzes: [['Baseball Basics', 'Five easy questions', 'How many strikes make an out?', '2', '3', '4', '', 'B', 'Three strikes and you are out.', '']]
     };
     var rows = [COLS[type]].concat(sample[type] || []);
@@ -264,7 +269,7 @@
     trivia: { id: 'id', category: 'cat', levelaaaaaa: 'lvl', level: 'lvl', question: 'q', answera: 'a0', answerb: 'a1', answerc: 'a2', answerd: 'a3', correctanswerad: 'correct', correct: 'correct', funfact: 'fact', hideyesno: 'hidden', hide: 'hidden' },
     glossary: { term: 'term', definition: 'def', hideyesno: 'hidden', hide: 'hidden' },
     kb: { id: 'id', category: 'cat', title: 'title', summary: 'summary', articletext: 'body', text: 'body', body: 'body', hideyesno: 'hidden', hide: 'hidden' },
-    directory: { id: 'id', typetrainercoachteamfacility: 'type', type: 'type', name: 'name', tagline: 'tagline', servicesseparatewith: 'services', services: 'services', ages: 'ages', city: 'city', state: 'state', website: 'website', email: 'email', phone: 'phone', notes: 'notes', hideyesno: 'hidden', hide: 'hidden' },
+    directory: { id: 'id', typetrainercoachteamfacility: 'type', type: 'type', name: 'name', tagline: 'tagline', servicesseparatewith: 'services', services: 'services', ages: 'ages', city: 'city', state: 'state', zip: 'zip', zipcode: 'zip', alsoservszipsseparatewith: 'areas', alsoserveszipsseparatewith: 'areas', website: 'website', email: 'email', phone: 'phone', notes: 'notes', featuredyesno: 'featured', featured: 'featured', hideyesno: 'hidden', hide: 'hidden' },
     quizzes: { quiztitle: 'title', title: 'title', quizdescription: 'desc', description: 'desc', question: 'q', answera: 'a0', answerb: 'a1', answerc: 'a2', answerd: 'a3', correctanswerad: 'correct', correct: 'correct', explanation: 'why', hidequizyesno: 'hidden', hide: 'hidden' }
   };
 
@@ -320,7 +325,7 @@
     return ['PLATE 450 DIARY LISTING REQUEST',
       'Type: ' + (t ? t.id : l.type || ''), 'Name: ' + (l.name || ''), 'Tagline: ' + (l.tagline || ''),
       'Services:'].concat((l.services || []).map(function (s) { return '- ' + s; })).concat([
-      'Ages: ' + (l.ages || ''), 'City: ' + (l.city || ''), 'State: ' + (l.state || ''), 'Website: ' + (l.website || ''),
+      'Ages: ' + (l.ages || ''), 'City: ' + (l.city || ''), 'State: ' + (l.state || ''), 'ZIP: ' + (l.zip || ''), 'Also serves ZIPs: ' + (Array.isArray(l.areas) ? l.areas.join(', ') : (l.areas || '')), 'Website: ' + (l.website || ''),
       'Email: ' + (l.email || ''), 'Phone: ' + (l.phone || ''), 'Notes: ' + (l.notes || ''), '',
       'I confirm that I am 18 or older, that this is my own business, team or program, and that this information may be published on Plate 450 Diary.']).join('\n');
   }
@@ -333,7 +338,8 @@
       var k = m[1].toLowerCase().trim(), v = m[2].trim();
       inSvc = k === 'services';
       if (k === 'services' && v) o.services.push(v);
-      else if (['type', 'name', 'tagline', 'ages', 'city', 'state', 'website', 'email', 'phone', 'notes'].indexOf(k) >= 0) o[k] = v;
+      else if (['type', 'name', 'tagline', 'ages', 'city', 'state', 'zip', 'website', 'email', 'phone', 'notes'].indexOf(k) >= 0) o[k] = v;
+      else if (k === 'also serves zips') o.areas = v;
     });
     var t = String(o.type || '').toLowerCase();
     if (!dirType(t)) { var hit = DIR_TYPES.filter(function (d) { return t && (d.name.toLowerCase().indexOf(t) >= 0 || t.indexOf(d.id) >= 0); })[0]; o.type = hit ? hit.id : ''; } else o.type = t;
