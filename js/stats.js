@@ -21,6 +21,14 @@
     return out;
   }
 
+  // One game's numbers: nothing above 99 in a single game, except pitches thrown (199).
+  var GAME_MAX = { pitches: 199 };
+  function cleanGameSection(obj, keys) {
+    var out = {};
+    keys.forEach(function (k) { out[k] = int(obj && obj[k], GAME_MAX[k] || 99); });
+    return out;
+  }
+
   function anyPositive(o) {
     if (!o) return false;
     for (var k in o) if (Number(o[k]) > 0) return true;
@@ -390,7 +398,7 @@
 
   return {
     BAT_KEYS: BAT_KEYS, PIT_KEYS: PIT_KEYS, FLD_KEYS: FLD_KEYS, METRICS: METRICS,
-    int: int, cleanSection: cleanSection, anyPositive: anyPositive,
+    int: int, cleanSection: cleanSection, cleanGameSection: cleanGameSection, GAME_MAX: GAME_MAX, anyPositive: anyPositive,
     hasBat: hasBat, hasPit: hasPit, hasFld: hasFld,
     batting: batting, pitching: pitching, fielding: fielding,
     fmtRate: fmtRate, fmtEra: fmtEra, fmtIP: fmtIP, fmtCount: fmtCount, fmtMetric: fmtMetric,

@@ -125,7 +125,7 @@
       if (!r || typeof r !== 'object') return null;
       const pos = POSITIONS.indexOf(r.pos) > 0 ? r.pos : '';
       if (!pos) return null;
-      return { i: Math.max(1, S.int(r.i, 12)), pos: pos, po: S.int(r.po), a: S.int(r.a), e: S.int(r.e), cs: pos === 'C' ? S.int(r.cs) : 0, ci: pos === 'C' ? S.int(r.ci) : 0 };
+      return { i: Math.max(1, S.int(r.i, 12)), pos: pos, po: S.int(r.po, 99), a: S.int(r.a, 99), e: S.int(r.e, 99), cs: pos === 'C' ? S.int(r.cs, 99) : 0, ci: pos === 'C' ? S.int(r.ci, 99) : 0 };
     }).filter(Boolean);
   }
   function cleanGame(g) {
@@ -134,8 +134,8 @@
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return null;
     const fi = cleanFi(g.fi);
     const fld = fi.length
-      ? S.cleanSection({ po: fi.reduce((n, r) => n + r.po, 0), a: fi.reduce((n, r) => n + r.a, 0), e: fi.reduce((n, r) => n + r.e, 0), cs: fi.reduce((n, r) => n + r.cs, 0), ci: fi.reduce((n, r) => n + r.ci, 0) }, S.FLD_KEYS)
-      : catcherOnly(S.cleanSection(g.fld, S.FLD_KEYS), g.pos);
+      ? S.cleanGameSection({ po: fi.reduce((n, r) => n + r.po, 0), a: fi.reduce((n, r) => n + r.a, 0), e: fi.reduce((n, r) => n + r.e, 0), cs: fi.reduce((n, r) => n + r.cs, 0), ci: fi.reduce((n, r) => n + r.ci, 0) }, S.FLD_KEYS)
+      : catcherOnly(S.cleanGameSection(g.fld, S.FLD_KEYS), g.pos);
     const us = Rv.cleanScore(g.us), them = Rv.cleanScore(g.them), scored = us !== null && them !== null;
     return {
       id: cleanId(g.id),
@@ -151,8 +151,8 @@
       rv: Rv.clean(g.rv),
       pos: fi.length ? '' : (POSITIONS.indexOf(g.pos) >= 0 ? g.pos : ''),
       fi: fi,
-      bat: S.cleanSection(g.bat, S.BAT_KEYS),
-      pit: S.cleanSection(g.pit, S.PIT_KEYS),
+      bat: S.cleanGameSection(g.bat, S.BAT_KEYS),
+      pit: S.cleanGameSection(g.pit, S.PIT_KEYS),
       fld: fld
     };
   }
@@ -362,13 +362,13 @@
   function draftToSections(d) {
     const outs = S.parseInnings(d.pit.ip);
     const inning = d.fldMode === 'inning';
-    const fi = inning ? d.fi.filter((r) => r.pos).map((r) => ({ i: S.int(r.i, 12) || 1, pos: r.pos, po: S.int(r.po), a: S.int(r.a), e: S.int(r.e), cs: r.pos === 'C' ? S.int(r.cs) : 0, ci: r.pos === 'C' ? S.int(r.ci) : 0 })) : [];
+    const fi = inning ? d.fi.filter((r) => r.pos).map((r) => ({ i: S.int(r.i, 12) || 1, pos: r.pos, po: S.int(r.po, 99), a: S.int(r.a, 99), e: S.int(r.e, 99), cs: r.pos === 'C' ? S.int(r.cs, 99) : 0, ci: r.pos === 'C' ? S.int(r.ci, 99) : 0 })) : [];
     return {
-      bat: S.cleanSection(d.bat, S.BAT_KEYS),
-      pit: S.cleanSection({ outs: outs || 0, h: d.pit.h, r: d.pit.r, er: d.pit.er, bb: d.pit.bb, k: d.pit.k, pitches: d.pit.pitches }, S.PIT_KEYS),
+      bat: S.cleanGameSection(d.bat, S.BAT_KEYS),
+      pit: S.cleanGameSection({ outs: outs || 0, h: d.pit.h, r: d.pit.r, er: d.pit.er, bb: d.pit.bb, k: d.pit.k, pitches: d.pit.pitches }, S.PIT_KEYS),
       fld: inning
-        ? S.cleanSection({ po: fi.reduce((n, r) => n + r.po, 0), a: fi.reduce((n, r) => n + r.a, 0), e: fi.reduce((n, r) => n + r.e, 0), cs: fi.reduce((n, r) => n + r.cs, 0), ci: fi.reduce((n, r) => n + r.ci, 0) }, S.FLD_KEYS)
-        : catcherOnly(S.cleanSection(d.fld, S.FLD_KEYS), d.pos),
+        ? S.cleanGameSection({ po: fi.reduce((n, r) => n + r.po, 0), a: fi.reduce((n, r) => n + r.a, 0), e: fi.reduce((n, r) => n + r.e, 0), cs: fi.reduce((n, r) => n + r.cs, 0), ci: fi.reduce((n, r) => n + r.ci, 0) }, S.FLD_KEYS)
+        : catcherOnly(S.cleanGameSection(d.fld, S.FLD_KEYS), d.pos),
       fi: fi,
       ipBad: outs === null
     };
@@ -596,10 +596,10 @@
       '<div class="grid2"><div class="field"><label for="pf-city">City</label><input id="pf-city" name="city" type="text" maxlength="40" autocomplete="off" value="' + esc(v.city) + '"></div>' +
       '<div class="field"><label for="pf-state">State</label><select id="pf-state" name="state">' + stateOptions(v.state) + '</select></div></div>' +
       '<div class="field"><label for="pf-zip">&hellip;or just a ZIP code</label><input id="pf-zip" name="zip" type="text" inputmode="numeric" maxlength="5" autocomplete="off" placeholder="5-digit ZIP" value="' + esc(v.zip) + '"></div>' +
-      '<details class="pin-opt"' + (p && (v.jersey || v.fav || v.color) ? ' open' : '') + '><summary>Make it yours (optional)</summary><div class="grid2"><div class="field"><label for="pf-jersey">Jersey number</label><input id="pf-jersey" name="jersey" type="text" inputmode="numeric" maxlength="2" autocomplete="off" placeholder="0 to 99" value="' + esc(v.jersey || '') + '"></div>' +
+      '<details class="pin-opt"' + (p ? ' open' : '') + '><summary><span>Make it yours: jersey, position, team color</span><span class="tog" aria-hidden="true"></span></summary><div class="grid2"><div class="field"><label for="pf-jersey">Jersey number</label><input id="pf-jersey" name="jersey" type="text" inputmode="numeric" maxlength="2" autocomplete="off" placeholder="0 to 99" value="' + esc(v.jersey || '') + '"></div>' +
       '<div class="field"><label for="pf-fav">Favorite position</label><select id="pf-fav" name="fav"><option value="">Any</option>' + FAV_POS.map((x) => '<option' + (x === v.fav ? ' selected' : '') + '>' + x + '</option>').join('') + '</select></div></div>' +
       '<fieldset class="swatches"><legend>Team color</legend>' + Object.keys(COLORS).map((k) => '<label class="sw" title="' + COLORS[k].name + '"><input type="radio" name="color" value="' + k + '"' + ((v.color || 'gold') === k ? ' checked' : '') + '><span style="background:' + COLORS[k].acc + '"></span><i class="sr">' + COLORS[k].name + '</i></label>').join('') + '</fieldset></details>' +
-      (p ? '' : (hasCrypto ? '<details class="pin-opt"><summary>Protect with a PIN (optional)</summary><p class="hint">Keeps teammates and siblings out of this diary on a shared device.</p>' +
+      (p ? '' : (hasCrypto ? '<details class="pin-opt"><summary><span>Protect with a PIN (optional)</span><span class="tog" aria-hidden="true"></span></summary><p class="hint">Keeps teammates and siblings out of this diary on a shared device.</p>' +
         '<div class="grid2"><div class="field"><label for="pf-pin">PIN (4 to 8 digits)</label><input id="pf-pin" name="pin" type="password" inputmode="numeric" autocomplete="off" maxlength="8"></div>' +
         '<div class="field"><label for="pf-pin2">Repeat PIN</label><input id="pf-pin2" name="pin2" type="password" inputmode="numeric" autocomplete="off" maxlength="8"></div></div></details>' : '') +
         (termsOk() ? '' : '<label class="check agree"><input type="checkbox" name="agree" id="pf-agree"> <span>I agree to the <a href="#terms">Terms &amp; Privacy Notice</a>. Younger players: please read them with a parent or guardian.</span></label>')) +
@@ -664,11 +664,11 @@
     const recent = S.sortGames(p.games).reverse().slice(0, 3);
     const streak = S.hitStreak(p.games);
     const col = COLORS[p.color] || COLORS.gold, chip = [p.jersey ? '#' + p.jersey : '', p.fav].filter(Boolean).join(' &middot; ');
-    return '<section class="card hero team" style="--team:' + col.acc + '">' + (chip ? '<span class="jchip" aria-label="Jersey and position">' + chip + '</span>' : '') + '<p class="eyebrow">' + esc(placeText(p)) + '</p><h2>Welcome back, ' + esc(p.name) + '!</h2>' +
+    return '<section class="card hero team" style="--team:' + col.acc + '">' + (chip ? '<a class="jchip" href="#about" data-action="edit-card" aria-label="Jersey and position. Tap to edit your card">' + chip + '</a>' : '') + '<p class="eyebrow">' + esc(placeText(p)) + '</p><h2>Welcome back, ' + esc(p.name) + '!</h2>' +
       '<p class="muted">' + (p.games.length ? 'You have logged ' + plural(p.games.length, 'game') + '. Keep the story going.' : 'Log your first game to start your career card.') + '</p>' +
       '<div class="stats four"><div class="stat"><b>' + p.games.length + '</b><span>Games</span></div><div class="stat"><b>' + S.fmtRate(bat.avg) + '</b><span>AVG</span></div><div class="stat"><b>' + S.fmtEra(pit.era) + '</b><span>ERA</span></div><div class="stat"><b>' + earned + '</b><span>Badges</span></div></div>' +
       '<div class="row wrap" style="margin-top:16px"><button class="btn grow" data-action="go" data-to="log">Log a game &rarr;</button><button class="btn ghost grow" data-action="go" data-to="career">My career</button></div>' +
-      (p.games.length ? '<button class="btn ghost block" style="margin-top:10px" data-action="share-open">' + SHARE_ICO + ' Share my player card</button>' : '') + '</section>' +
+      (p.games.length ? '<button class="btn ghost block" style="margin-top:10px" data-action="share-open">' + SHARE_ICO + ' Share my player card</button>' : '') + '<p style="margin:12px 0 0;text-align:center"><button class="link" data-action="edit-card">Edit my card: jersey, position, team color</button></p></section>' +
       matchCard(p) + installCard() + addPlayerCard() + idolCard(p) + iqHomeCard(p) + (ext.homeCard ? ext.homeCard(p) : '') +
       (streak.current >= 2 ? '<section class="card"><b>🔥 ' + streak.current + '-game hit streak!</b><span class="muted small"> Best: ' + streak.best + '</span></section>' : '') +
       '<section class="card fold-card">' + fold(p.id + ':recent', 'Recent games', recent.length ? 'Last ' + recent.length : '', recent.length ? '<ul class="games">' + recent.map((g) => gameItem(g, true)).join('') + '</ul>' : '<p class="muted">Nothing yet. Your first game is a big one!</p>', true) + '</section>' +
@@ -681,9 +681,9 @@
     const id = 'f-' + sec + '-' + (opts.idx !== undefined ? opts.idx + '-' : '') + key;
     const idx = opts.idx !== undefined ? ' data-idx="' + opts.idx + '"' : '';
     return '<div class="stepper' + (opts.wide ? ' wide' : '') + '"><label for="' + id + '">' + esc(label) + '</label><div class="ctl">' +
-      '<button type="button" data-action="step" data-d="-1" aria-label="Decrease ' + esc(label) + '">−</button>' +
-      '<input id="' + id + '" type="number" inputmode="numeric" min="0" max="' + (opts.max || 999) + '" value="' + val + '" data-sec="' + sec + '" data-key="' + key + '"' + idx + '>' +
-      '<button type="button" data-action="step" data-d="1" aria-label="Increase ' + esc(label) + '">+</button></div></div>';
+      '<input id="' + id + '" type="number" inputmode="numeric" min="0" max="' + (opts.max || S.GAME_MAX[key] || 99) + '" value="' + val + '" data-sec="' + sec + '" data-key="' + key + '"' + idx + '>' +
+      '<button type="button" data-action="step" data-d="1" aria-label="Increase ' + esc(label) + '">▲</button>' +
+      '<button type="button" data-action="step" data-d="-1" aria-label="Decrease ' + esc(label) + '">▼</button></div></div>';
   }
 
   function scoreHint(d) {
@@ -972,7 +972,7 @@
   }
 
   function viewAbout(p) {
-    const edit = p ? '<section class="card"><h3>Player card</h3>' + playerForm(p) +
+    const edit = p ? '<section class="card" id="player-card"><h3>Player card</h3>' + playerForm(p) +
       '<div class="field" style="margin-top:14px"><label for="s-inn">Innings in a regulation game</label><select id="s-inn" data-setting="innings"><option value="6"' + (p.innings === 6 ? ' selected' : '') + '>6 innings</option><option value="7"' + (p.innings === 7 ? ' selected' : '') + '>7 innings</option></select><p class="hint">Used to calculate ERA. Check your league’s rules.</p></div></section>' : '';
     const sec = p ? '<section class="card"><h3>Player ID &amp; PIN</h3>' +
       '<p>Player ID <b class="pid">' + esc(fmtPid(p.pid)) + '</b></p>' +
@@ -1363,6 +1363,7 @@
     if (ext.onRender) ext.onRender(tab);
     if (tab === 'print') fitSheets();
     if (ui.lastTab !== tab) { window.scrollTo(0, 0); ui.lastTab = tab; }
+    if (ui.scrollTo) { const t = document.getElementById(ui.scrollTo); ui.scrollTo = ''; if (t) setTimeout(() => t.scrollIntoView({ block: 'start' }), 0); }
   }
 
   /* ---------- actions ---------- */
@@ -1376,7 +1377,7 @@
   }
 
   function setDraftStat(sec, key, raw, max, idx) {
-    const v = S.int(raw, max || 999);
+    const v = S.int(raw, max || 99);
     if (!ui.draft) return;
     if (sec === 'fi') { if (ui.draft.fi[idx]) ui.draft.fi[idx][key] = v; } else ui.draft[sec][key] = v;
     updateLive();
@@ -1730,6 +1731,7 @@
     go: (el) => go(el.dataset.to),
     'print-now': () => { try { window.print(); } catch (e) { /* ignore */ } },
     'share-open': () => openShare('all'),
+    'edit-card': (el, e) => { if (e) e.preventDefault(); ui.scrollTo = 'player-card'; go('about'); },
     'share-game': (el) => { closeModal(); openShare('game:' + el.dataset.id); },
     'share-image': (el) => shareImage(el),
     'share-link': (el) => {
@@ -1744,7 +1746,7 @@
     seg: (el) => { ui[el.dataset.grp] = el.dataset.val; render(); },
     chart: (el) => { ui.chart[ui.careerTab] = el.dataset.val; render(); },
     step: (el) => {
-      const input = el.parentNode.querySelector('input'), max = Number(input.max) || 999;
+      const input = el.parentNode.querySelector('input'), max = Number(input.max) || 99;
       const v = Math.max(0, Math.min(max, S.int(input.value, max) + Number(el.dataset.d)));
       input.value = v;
       setDraftStat(input.dataset.sec, input.dataset.key, v, max, input.dataset.idx === undefined ? undefined : Number(input.dataset.idx));
@@ -1968,7 +1970,10 @@
     const t = e.target;
     if (t.dataset && t.dataset.rv && ui.draft && ui.draft.rv[Number(t.dataset.idx)]) ui.draft.rv[Number(t.dataset.idx)][t.dataset.rv] = t.value;
     else if (t.dataset && t.dataset.rvi && ui.draft && ui.draft.rv[Number(t.dataset.idx)]) ui.draft.rv[Number(t.dataset.idx)].i = Number(t.value) || 1;
-    else if (t.dataset && t.dataset.sec) setDraftStat(t.dataset.sec, t.dataset.key, t.value, Number(t.max) || 999, t.dataset.idx === undefined ? undefined : Number(t.dataset.idx));
+    else if (t.dataset && t.dataset.sec) {
+      setDraftStat(t.dataset.sec, t.dataset.key, t.value, Number(t.max) || 99, t.dataset.idx === undefined ? undefined : Number(t.dataset.idx));
+      if (t.value !== '' && Number(t.value) > (Number(t.max) || 99)) t.value = String(Number(t.max) || 99);
+    }
     else if (t.dataset && t.dataset.ip && ui.draft) { ui.draft.pit.ip = t.value; updateLive(); }
     else if (t.dataset && t.dataset.fi !== undefined && ui.draft) {
       const row = ui.draft.fi[Number(t.dataset.idx)];
