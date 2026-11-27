@@ -82,7 +82,7 @@
 .acct-btn[data-state=in]::after, .acct-btn[data-state=warn]::after { content: ''; position: absolute; top: 6px; right: 6px; width: 10px; height: 10px; border-radius: 50%; background: #2e9e5b; border: 2px solid var(--bg, #fff); }
 .acct-btn[data-state=warn]::after { background: #e0a100; }
 .nw { white-space: nowrap; }
-@media (max-width: 420px) { .top-row { gap: 8px; } .brand { gap: 8px; } .brand .logo { width: 36px; height: 36px; } .brand .tag { display: none; } .brand .h1 { font-size: 1.05rem; } .who { max-width: 28%; padding: 8px 10px; font-size: 0.85rem; } .theme-btn, .acct-btn { width: 40px; height: 40px; min-width: 40px; padding: 0; } }
+@media (max-width: 420px) { .top-row { gap: 8px; } .brand { gap: 8px; } .brand .logo { width: 36px; height: 36px; } .brand .tag { display: none; } .brand .h1 { font-size: 1.05rem; } .who { max-width: 28%; padding: 8px 10px; font-size: 0.85rem; } .theme-btn, .acct-btn, .tour-btn { width: 40px; height: 40px; min-width: 40px; padding: 0; } }
 .theme-btn { background: var(--ov); border: 1px solid var(--line); color: var(--chalk); width: 44px; height: 44px; border-radius: 50%; font-size: 1.15rem; cursor: pointer; flex: none; display: grid; place-items: center; }
 html[data-theme=light] body, :root:not([data-theme=dark]) body { }
 
@@ -680,3 +680,75 @@ html[data-theme=light] .tabs a[aria-current=page] svg, html[data-theme=light] na
 .listing.featured { border-color: #EF9F27; }
 .heart { background: none; border: 0; font-size: 1.5rem; line-height: 1; color: var(--gold); cursor: pointer; padding: 4px 6px; min-width: 44px; min-height: 44px; }
 .dir-count { margin: 4px 2px 10px; }
+
+/* ---------- guided tour ---------- */
+.tour-btn { background: var(--ov); border: 2px solid var(--gold); color: var(--gold); width: 44px; height: 44px; border-radius: 50%; font: inherit; font-size: 1.2rem; font-weight: 700; cursor: pointer; flex: none; display: grid; place-items: center; }
+html.tour-lock, html.tour-lock body { overflow: hidden; }
+#tour { position: fixed; inset: 0; z-index: 3000; }
+.tour-shield { position: absolute; inset: 0; background: transparent; }
+.tour-shield.dim { background: rgba(0, 0, 0, 0.6); }
+.tour-hole { position: fixed; border-radius: 14px; outline: 3px solid #EF9F27; box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.6); pointer-events: none; transition: top .35s ease, left .35s ease, width .35s ease, height .35s ease; }
+.tour-rm .tour-hole { transition: none; }
+.tour-card { position: fixed; left: max(10px, env(safe-area-inset-left, 0px)); right: max(10px, env(safe-area-inset-right, 0px)); margin: 0 auto; max-width: 520px; background: var(--card); color: var(--chalk); border: 2px solid var(--line2, var(--line)); border-radius: 18px; padding: 14px 16px 12px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45); max-height: calc(100vh - 20px); max-height: calc(100dvh - 20px); overflow-y: auto; }
+.tour-card[data-pos=bottom] { bottom: calc(10px + env(safe-area-inset-bottom, 0px)); }
+.tour-card[data-pos=top] { top: calc(10px + env(safe-area-inset-top, 0px)); }
+.tour-meta { display: flex; justify-content: space-between; gap: 8px; font-size: 0.85rem; font-weight: 600; color: var(--muted); margin-bottom: 4px; }
+.tour-card h2 { font-family: var(--display); font-size: 1.2rem; margin: 0 0 4px; outline: none; }
+.tour-card p { margin: 0; font-size: 1rem; line-height: 1.45; min-height: 4.4em; }
+.tour-bar { height: 8px; background: var(--line); border-radius: 4px; margin: 10px 0 8px; overflow: hidden; }
+.tour-bar span { display: block; height: 100%; width: 0; background: #EF9F27; }
+.tour-dots { display: flex; gap: 5px; justify-content: center; margin-bottom: 10px; }
+.tour-dots span { width: 8px; height: 8px; border-radius: 50%; background: var(--line); }
+.tour-dots span.seen { background: var(--muted); }
+.tour-dots span.now { background: #EF9F27; transform: scale(1.3); }
+.tour-ctl { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1.4fr) minmax(0, 1.05fr); gap: 8px; }
+.tour-ctl.two { grid-template-columns: 1.4fr 1fr; }
+.tour-ctl[hidden], .tour-hole[hidden] { display: none; }
+.tour-b { font: inherit; font-size: 1rem; font-weight: 700; min-height: 50px; border-radius: 12px; border: 2px solid #EF9F27; background: #EF9F27; color: #412402; cursor: pointer; padding: 0 6px; white-space: nowrap; }
+.tour-b.out { background: transparent; color: var(--chalk); border-color: var(--line2, var(--line)); }
+.tour-b.go { background: #2e7d32; border-color: #2e7d32; color: #fff; }
+.tour-b:focus-visible, .tour-links button:focus-visible, .tour-pace button:focus-visible { outline: 3px solid var(--chalk); outline-offset: 2px; }
+.tour-links { display: flex; justify-content: center; gap: 14px; margin-top: 4px; }
+.tour-links button, .tour-pace button { font: inherit; background: none; border: 0; color: var(--chalk); text-decoration: underline; min-height: 40px; padding: 0 8px; cursor: pointer; }
+.tour-links button[hidden] { display: none; }
+.tour-pace { display: flex; justify-content: center; align-items: center; gap: 6px; font-size: 0.85rem; color: var(--muted); }
+.tour-pace button { text-decoration: none; border: 1px solid var(--line); border-radius: 8px; min-height: 34px; color: var(--muted); }
+.tour-pace button.on { background: var(--tint); color: var(--chalk); border-color: var(--gold); font-weight: 700; }
+.tour-card-home { border-color: var(--gold); }
+
+/* Short screens (phones turned sideways, split screen, small laptops): a wide, low card so the spotlight stays visible. */
+@media (max-height: 520px) and (min-width: 520px) {
+  .tour-card { max-width: min(920px, calc(100vw - 20px)); display: grid; grid-template-columns: 1fr 270px; column-gap: 16px; grid-template-areas: "meta ctl" "title ctl" "desc ctl" "bar links" "bar pace"; padding: 10px 14px; align-content: start; }
+  .tour-meta { grid-area: meta; margin: 0; }
+  .tour-card h2 { grid-area: title; font-size: 1.05rem; margin: 0; }
+  .tour-card p { grid-area: desc; min-height: 0; font-size: 0.95rem; line-height: 1.35; }
+  .tour-bar { grid-area: bar; margin: 8px 0 0; align-self: center; }
+  .tour-dots { display: none; }
+  .tour-ctl { grid-area: ctl; align-self: start; }
+  .tour-b { min-height: 46px; }
+  .tour-links { grid-area: links; margin: 0; }
+  .tour-pace { grid-area: pace; }
+  .tour-links button { min-height: 34px; }
+  .tour-pace button { min-height: 30px; }
+}
+/* Short and narrow (split screen, small phones): same card, fewer extras. */
+@media (max-height: 640px) and (max-width: 519px) {
+  .tour-dots { display: none; }
+  .tour-card p { min-height: 0; }
+  .tour-card { padding: 10px 12px 8px; }
+  .tour-card h2 { font-size: 1.1rem; }
+  .tour-bar { margin: 8px 0; }
+}
+/* Very narrow screens (folded phones). */
+@media (max-width: 340px) {
+  .tour-card { left: 6px; right: 6px; padding-left: 10px; padding-right: 10px; }
+  .tour-b { font-size: 0.9rem; padding: 0 4px; }
+  .tour-ctl { gap: 6px; }
+  .tour-card p { font-size: 0.95rem; }
+}
+
+.hp { position: absolute; left: -9999px; top: auto; width: 1px; height: 1px; overflow: hidden; }
+
+/* Directory buttons: stacked on phones so each label stays on one line; side by side when there is room. */
+.dir-btns .btn { white-space: nowrap; }
+@media (max-width: 560px) { .dir-btns .btn { flex: 1 1 100%; } }

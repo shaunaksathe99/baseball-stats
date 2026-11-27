@@ -59,11 +59,12 @@
       });
       return ts.loading;
     }
-    function mountTs() {
+    function mountTs(boxId) {
+      boxId = typeof boxId === 'string' ? boxId : 'cl-ts';
       ts.token = ''; ts.id = null;
-      var box = document.getElementById('cl-ts'); if (!tsKey || !box) return;
+      var box = document.getElementById(boxId); if (!tsKey || !box) return;
       loadTs().then(function (ok) {
-        box = document.getElementById('cl-ts'); if (!ok || !box || ts.id !== null) return;
+        box = document.getElementById(boxId); if (!ok || !box || ts.id !== null) return;
         try {
           ts.id = win.turnstile.render(box, { sitekey: tsKey, appearance: 'interaction-only', callback: function (t) { ts.token = t; }, 'expired-callback': function () { ts.token = ''; }, 'error-callback': function () { ts.token = ''; } });
         } catch (e) { ts.id = null; }
@@ -259,6 +260,21 @@
         if (r.ok) { st = { s: null, last: '', dirty: false, at: 0 }; persist(); ui.status = 'idle'; A.flash('Your online account and copy were deleted. Your diary is still on this device.'); }
         else A.flash('Could not delete the account right now. Try again later, or contact us.');
         A.render();
+      });
+    };
+
+
+    /* Directory listing requests: the form's text goes to our server function, which emails it to the listing inbox.
+       The Resend key lives only in Supabase's secrets. This side sends the text plus a Turnstile token and a hidden trap field. */
+    A.ext.listingAvailable = function () { return on; };
+    A.ext.listingTsMount = function () { mountTs('lf-ts'); };
+    A.ext.listingTsToken = tsToken;
+    A.ext.listingSend = function (p) {
+      if (!on) return Promise.resolve({ ok: false, status: 0 });
+      return tsToken().then(function (token) {
+        return fetch(url + '/functions/v1/listing-request', { method: 'POST', headers: { 'Content-Type': 'application/json', apikey: key },
+          body: JSON.stringify({ text: String(p.text || ''), replyTo: String(p.replyTo || ''), name: String(p.name || ''), hp: String(p.hp || ''), token: token || '' }) })
+          .then(function (r) { return r.json().then(function (j) { return { ok: !!(r.ok && j && j.ok), status: r.status, error: j && j.error }; }, function () { return { ok: false, status: r.status }; }); }, function () { return { ok: false, status: 0 }; });
       });
     };
 

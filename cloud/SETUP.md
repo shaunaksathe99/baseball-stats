@@ -66,3 +66,26 @@ The parent's email and one JSON copy of the diary (names or nicknames, optional 
 1. In Supabase, open SQL Editor, paste the contents of `cloud/idols.sql`, and press Run.
 2. Open Table Editor > `idols` to add, rename or remove players. Only signed-in users can read the list; nobody can change it from the app.
 3. Signed-out visitors can still type any player's name. It stays on their device.
+
+
+## Directory listing requests by email (optional, about 15 minutes)
+
+The "Request a listing" form can send each request straight to a Resend inbox. The site never holds the Resend key: a small Supabase function does the sending. Every request is still reviewed by hand before anything is published, and the "Email it" and "Copy text" buttons keep working as a fallback.
+
+1. **Resend, receiving address.** In Resend, open **Emails -> Receiving** and copy your receiving address, for example `listing@xxxx.resend.app`. (A custom domain works too if you add the MX record Resend shows.) Mail sent there appears in the Receiving tab.
+2. **Resend, API key.** **API Keys -> Create API Key**, permission **Sending access**. Copy it once.
+3. **Supabase table.** SQL Editor -> New query, paste all of `cloud/listing.sql`, Run. It holds only one-way scrambled IP hashes for the rate limit.
+4. **Supabase CLI.** Install it (supabase.com/docs/guides/cli), then in this folder run `supabase login` and `supabase link --project-ref jjldpvkfnnoxrswlrcjl`.
+5. **Secrets.** Run these, replacing the values:
+   ```
+   supabase secrets set RESEND_API_KEY=re_xxxxxxxx
+   supabase secrets set LISTING_TO=listing@xxxx.resend.app
+   supabase secrets set TURNSTILE_SECRET=your-turnstile-secret-key
+   supabase secrets set RATE_SALT=any-long-random-text
+   ```
+   Optional: `LISTING_FROM` (default `Plate 450 Diary <no-reply@mail.plate450.com>`) and `ALLOWED_ORIGINS` (default `https://diary.plate450.com,https://plate450.com`). To test from your computer, add `http://localhost:8000` to `ALLOWED_ORIGINS` and remove it afterwards.
+6. **Deploy.** `supabase functions deploy listing-request --no-verify-jwt`. The flag is needed because the site's publishable key is not a JWT; the function checks Cloudflare Turnstile itself.
+7. **Turnstile hostnames.** In Cloudflare, make sure `diary.plate450.com` is allowed for the same Turnstile widget the sign-in uses.
+8. **Test.** On the live site open Learn -> Directory -> Request a listing, fill it in, tap Prepare, then Send. The email should appear in Resend's Receiving tab within a minute.
+
+Protections: Cloudflare Turnstile, a hidden trap field that bots fill in, a limit of 3 requests per visitor per hour and 40 per day in total (so the free Resend plan, 100 emails a day shared with sign-in codes, is safe), and length and format checks on the server. If the function is not deployed or fails, the form shows a friendly message and the person can still use Email it or Copy text.

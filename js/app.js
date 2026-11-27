@@ -72,7 +72,7 @@
   function str(v, max) { return String(v == null ? '' : v).replace(/[\u0000-\u001f\u007f<>]/g, '').trim().slice(0, max); }
   function cleanId(v) { v = String(v || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 32); return v || uid('x'); }
   const B32 = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
-  const TERMS_V = 4;
+  const TERMS_V = 5;
   const CONTACT_EMAIL = 'Contact.Plate450@gmail.com';   // shown as "Contact Us" in the footer and on the Terms & Privacy page
   const hasCrypto = !!(window.crypto && window.crypto.subtle && window.crypto.getRandomValues);
   function randBytes(n) { const a = new Uint8Array(n); if (window.crypto && window.crypto.getRandomValues) window.crypto.getRandomValues(a); else for (let i = 0; i < n; i++) a[i] = Math.floor(Math.random() * 256); return a; }
@@ -596,7 +596,7 @@
       '<div class="grid2"><div class="field"><label for="pf-city">City</label><input id="pf-city" name="city" type="text" maxlength="40" autocomplete="off" value="' + esc(v.city) + '"></div>' +
       '<div class="field"><label for="pf-state">State</label><select id="pf-state" name="state">' + stateOptions(v.state) + '</select></div></div>' +
       '<div class="field"><label for="pf-zip">&hellip;or just a ZIP code</label><input id="pf-zip" name="zip" type="text" inputmode="numeric" maxlength="5" autocomplete="off" placeholder="5-digit ZIP" value="' + esc(v.zip) + '"></div>' +
-      '<details class="pin-opt"' + (p ? ' open' : '') + '><summary><span>Make it yours: jersey, position, team color</span><span class="tog" aria-hidden="true"></span></summary><div class="grid2"><div class="field"><label for="pf-jersey">Jersey number</label><input id="pf-jersey" name="jersey" type="text" inputmode="numeric" maxlength="2" autocomplete="off" placeholder="0 to 99" value="' + esc(v.jersey || '') + '"></div>' +
+      '<details class="pin-opt" data-tour="mine"' + (p ? ' open' : '') + '><summary><span>Make it yours: jersey, position, team color</span><span class="tog" aria-hidden="true"></span></summary><div class="grid2"><div class="field"><label for="pf-jersey">Jersey number</label><input id="pf-jersey" name="jersey" type="text" inputmode="numeric" maxlength="2" autocomplete="off" placeholder="0 to 99" value="' + esc(v.jersey || '') + '"></div>' +
       '<div class="field"><label for="pf-fav">Favorite position</label><select id="pf-fav" name="fav"><option value="">Any</option>' + FAV_POS.map((x) => '<option' + (x === v.fav ? ' selected' : '') + '>' + x + '</option>').join('') + '</select></div></div>' +
       '<fieldset class="swatches"><legend>Team color</legend>' + Object.keys(COLORS).map((k) => '<label class="sw" title="' + COLORS[k].name + '"><input type="radio" name="color" value="' + k + '"' + ((v.color || 'gold') === k ? ' checked' : '') + '><span style="background:' + COLORS[k].acc + '"></span><i class="sr">' + COLORS[k].name + '</i></label>').join('') + '</fieldset></details>' +
       (p ? '' : (hasCrypto ? '<details class="pin-opt"><summary><span>Protect with a PIN (optional)</span><span class="tog" aria-hidden="true"></span></summary><p class="hint">Keeps teammates and siblings out of this diary on a shared device.</p>' +
@@ -643,16 +643,20 @@
       '<section class="card"><h3>Create your player card</h3>' + playerForm(null) + '</section>';
   }
   function matchCard(p) {
-    return '<section class="card match-card"><div class="row between"><div><p class="eyebrow">New</p><b>Match Up</b><br><span class="muted small">Level up against your old self, or invite a friend to compare stats</span></div><a class="btn small" href="#matchup">Open</a></div></section>';
+    return '<section class="card match-card" data-tour="match"><div class="row between"><div><p class="eyebrow">New</p><b>Match Up</b><br><span class="muted small">Level up against your old self, or invite a friend to compare stats</span></div><a class="btn small" href="#matchup">Open</a></div></section>';
+  }
+  function tourCard() {
+    if (!window.Tour || !window.Tour.needsCard(window.Tour.getState())) return '';
+    return '<section class="card tour-card-home"><div class="row between"><div><b>New here? Take the tour</b><br><span class="muted small">' + window.Tour.STEPS.length + ' short steps. Pause any time.</span></div><button class="btn small" data-action="tour-start">Take the tour</button></div></section>';
   }
   function viewHome(p) {
     if (!p) {
       return '<section class="card hero"><p class="eyebrow">Free &middot; Private &middot; No sign-up needed</p>' +
         '<h2>Build your baseball career, one game at a time.</h2>' +
         '<p class="muted">Log games in under a minute, watch your batting, pitching and fielding numbers grow, and earn badges along the way.</p>' +
-        '<div class="stats"><div class="stat"><b>3</b><span>Stat types</span></div><div class="stat"><b>Opt-in</b><span>Online sign-in</span></div><div class="stat"><b>Free</b><span>No paywall</span></div></div></section>' +
-        '<section class="card"><h3>Start your player card</h3>' + playerForm(null) + '</section>' +
-        '<section class="card"><h3>Test your Game IQ</h3><p class="muted">Try five real game situations: what would you do? No sign-up needed.</p><a class="btn ghost block" href="#iq">Try a Game IQ round &rarr;</a></section>' +
+        '<div class="stats"><div class="stat"><b>3</b><span>Stat types</span></div><div class="stat"><b>Opt-in</b><span>Online sign-in</span></div><div class="stat"><b>Free</b><span>No paywall</span></div></div></section>' + tourCard() +
+        '<section class="card" data-tour="player"><h3>Start your player card</h3>' + playerForm(null) + '</section>' +
+        '<section class="card" data-tour="iq"><h3>Test your Game IQ</h3><p class="muted">Try five real game situations: what would you do? No sign-up needed.</p><a class="btn ghost block" href="#iq">Try a Game IQ round &rarr;</a></section>' +
         (ext.homeCard ? ext.homeCard(null) : '') + '<section class="card"><h3>How it works</h3><ol class="steps">' +
         '<li><div><b>Create a player card.</b><br><span class="muted">Just a name and where you play. No birthday, no email.</span></div></li>' +
         '<li><div><b>Log a game.</b><br><span class="muted">Big buttons built for the bleachers, or <a href="#print">print a sheet</a> to fill in by hand at the game.</span></div></li>' +
@@ -664,12 +668,12 @@
     const recent = S.sortGames(p.games).reverse().slice(0, 3);
     const streak = S.hitStreak(p.games);
     const col = COLORS[p.color] || COLORS.gold, chip = [p.jersey ? '#' + p.jersey : '', p.fav].filter(Boolean).join(' &middot; ');
-    return '<section class="card hero team" style="--team:' + col.acc + '">' + (chip ? '<a class="jchip" href="#about" data-action="edit-card" aria-label="Jersey and position. Tap to edit your card">' + chip + '</a>' : '') + '<p class="eyebrow">' + esc(placeText(p)) + '</p><h2>Welcome back, ' + esc(p.name) + '!</h2>' +
+    return '<section class="card hero team" data-tour="player" style="--team:' + col.acc + '">' + (chip ? '<a class="jchip" href="#about" data-action="edit-card" aria-label="Jersey and position. Tap to edit your card">' + chip + '</a>' : '') + '<p class="eyebrow">' + esc(placeText(p)) + '</p><h2>Welcome back, ' + esc(p.name) + '!</h2>' +
       '<p class="muted">' + (p.games.length ? 'You have logged ' + plural(p.games.length, 'game') + '. Keep the story going.' : 'Log your first game to start your career card.') + '</p>' +
       '<div class="stats four"><div class="stat"><b>' + p.games.length + '</b><span>Games</span></div><div class="stat"><b>' + S.fmtRate(bat.avg) + '</b><span>AVG</span></div><div class="stat"><b>' + S.fmtEra(pit.era) + '</b><span>ERA</span></div><div class="stat"><b>' + earned + '</b><span>Badges</span></div></div>' +
       '<div class="row wrap" style="margin-top:16px"><button class="btn grow" data-action="go" data-to="log">Log a game &rarr;</button><button class="btn ghost grow" data-action="go" data-to="career">My career</button></div>' +
       (p.games.length ? '<button class="btn ghost block" style="margin-top:10px" data-action="share-open">' + SHARE_ICO + ' Share my player card</button>' : '') + '<p style="margin:12px 0 0;text-align:center"><button class="link" data-action="edit-card">Edit my card: jersey, position, team color</button></p></section>' +
-      matchCard(p) + installCard() + addPlayerCard() + idolCard(p) + iqHomeCard(p) + (ext.homeCard ? ext.homeCard(p) : '') +
+      tourCard() + matchCard(p) + installCard() + addPlayerCard() + idolCard(p) + iqHomeCard(p) + (ext.homeCard ? ext.homeCard(p) : '') +
       (streak.current >= 2 ? '<section class="card"><b>🔥 ' + streak.current + '-game hit streak!</b><span class="muted small"> Best: ' + streak.best + '</span></section>' : '') +
       '<section class="card fold-card">' + fold(p.id + ':recent', 'Recent games', recent.length ? 'Last ' + recent.length : '', recent.length ? '<ul class="games">' + recent.map((g) => gameItem(g, true)).join('') + '</ul>' : '<p class="muted">Nothing yet. Your first game is a big one!</p>', true) + '</section>' +
       '<section class="card"><div class="row between"><div><b>No phone in the dugout?</b><br><span class="muted small">Print a game sheet, fill it in by hand, then enter it here later.</span></div><a class="btn small" href="#print">Print</a></div></section>' +
@@ -897,7 +901,7 @@
 
     const matchCta = '<section class="card match-card"><div class="row between"><div><b>Match Up</b><br><span class="muted small">Compare me with me, or invite a friend</span></div><a class="btn small" href="#matchup">Open</a></div></section>';
     const planCta = matchCta + '<section class="card"><div class="row between"><div><b>My improvement plan</b><br><span class="muted small">See which habits are fixed and which still need work</span></div><button class="btn small" data-action="go" data-to="plan">Open</button></div></section>';
-    const shareCta = planCta + '<section class="card"><div class="row between"><div><b>Show off your card</b><br><span class="muted small">A shareable image and link for friends and family</span></div><button class="btn small" data-action="share-open">Share</button></div></section>';
+    const shareCta = planCta + '<section class="card" data-tour="share"><div class="row between"><div><b>Show off your card</b><br><span class="muted small">A shareable image and link for friends and family</span></div><button class="btn small" data-action="share-open">Share</button></div></section>';
     const path = shareCta + '<section class="card fold-card">' + fold(p.id + ':path', 'My path', plural(grp.length, 'season'), '<ul class="path">' + grp.map((g) =>
       '<li><b>' + esc(g.season) + (g.level ? '<span class="level">' + esc(g.level) + '</span>' : '') + '</b><span class="muted small">' + (g.team ? esc(g.team) + ' &middot; ' : '') + plural(g.games.length, 'game') + '</span></li>').join('') + '</ul>') + '</section>';
 
@@ -980,7 +984,7 @@
       (p.lock ? '<p><b>PIN is on.</b></p><div class="row wrap"><button class="btn ghost grow" data-action="lock-now">Lock now</button><button class="btn ghost grow" data-action="pin-change">Change PIN</button><button class="btn ghost grow" data-action="pin-remove">Remove PIN</button></div>'
         : (hasCrypto ? '<p><b>No PIN set.</b></p><button class="btn block" data-action="pin-set">Set a PIN</button>' : '<p class="muted">PINs need a secure (https) connection, so they are not available here.</p>')) +
       '<p class="hint">A PIN keeps teammates, siblings, and curious friends out of this diary on a shared device. It does not encrypt the data stored in this browser, and it travels with your backup file.</p></section>' : '';
-    const backup = '<section class="card"><h3>Backup &amp; restore</h3><p class="muted">Your stats live only in this browser. Export a backup file now and then, especially before clearing browser data or switching phones.</p>' +
+    const backup = '<section class="card" data-tour="backup"><h3>Backup &amp; restore</h3><p class="muted">Your stats live only in this browser. Export a backup file now and then, especially before clearing browser data or switching phones.</p>' +
       (db.players.length ? '<p><b>Last backup:</b> ' + esc(backupAgo()) + (backupDue() ? ' <span style="color:var(--gold)">&middot; time for a new one</span>' : '') + '</p>' : '') +
       (ui.persist ? '<p class="hint">Browser storage protection is on, so your browser is less likely to clear this data on its own.</p>' : '') +
       '<div class="row wrap"><button class="btn grow" data-action="export">Export backup</button><button class="btn ghost grow" data-action="import">Import backup</button></div>' +
@@ -989,10 +993,11 @@
       (db.players.length ? '<button class="btn danger block" data-action="reset-all">Erase everything on this device</button>' : '');
     return '<section class="card hero"><p class="eyebrow">About</p><h2>A free diary for every ballplayer</h2>' +
       '<p class="muted">Plate 450 Diary helps players and parents keep a lasting record of batting, pitching and fielding across every season, from the first tee ball swing and beyond. It is free, with no paywall and no ads.</p></section>' +
+      '<section class="card"><div class="row between"><div><b>Guided tour</b><br><span class="muted small">A quick walk through the app, one step at a time</span></div><button class="btn small" data-action="tour-start">Replay the tour</button></div></section>' +
       '<section class="card"><h3>Your privacy</h3><p><b>What is stored:</b> a name or nickname, a city and state or ZIP code, the stats you enter, a random Player ID, and (if you choose) a PIN. All of it stays on your device. By default nothing leaves your device. If a parent or guardian chooses to sign in, the diary is also saved online under their email so it can follow them across devices.</p>' +
       '<p><b>What we never ask for:</b> birthdates, phone numbers, photos, passwords, or payment info. An email address is asked for only if a parent or guardian turns on online saving.</p>' +
       '<p class="muted small">Clearing your browser data erases it, so keep a backup. Read the full <a href="#terms">Terms &amp; Privacy Notice</a>.</p></section>' +
-      '<section class="card"><h3>Coaches, trainers &amp; teams</h3><p class="muted">Find a trainer, clinic or travel ball team, or request a listing (listings are reviewed and approved first).</p><div class="row wrap"><a class="btn grow" href="#learn/directory">Browse the directory</a><a class="btn ghost grow" href="#find-list">Request a listing</a></div></section>' +
+      '<section class="card"><h3>Coaches, trainers &amp; teams</h3><p class="muted">Find a trainer, clinic or travel ball team, or request a listing (listings are reviewed and approved first).</p><div class="row wrap dir-btns"><a class="btn grow" href="#learn/directory">Browse directory</a><a class="btn ghost grow" href="#find-list">Request a listing</a></div></section>' +
 
       '<section class="card"><h3>Print sheets</h3><p class="muted">Take a paper game sheet or season grid to the field, then enter the numbers later.</p><a class="btn block" href="#print">Open printable sheets</a></section>' +
       edit + sec + (ext.aboutCard ? ext.aboutCard(p) : '') + backup + (danger ? '<section class="card"><h3>Reset</h3>' + danger + '</section>' : '') +
@@ -1070,8 +1075,8 @@
   }
   function idolCard(p) {
     const i = p.idol, col = COLORS[p.color] || COLORS.gold;
-    if (!i) return '<section class="card"><div class="row between"><div><b>🖼️ My Idol</b><br><span class="muted small">Stick a favorite player on your wall.</span></div><button class="btn small ghost" data-action="idol-edit">Add</button></div></section>';
-    return '<section class="card idol" style="--team:' + col.acc + '"><div class="idol-mat"><div class="idol-frame"><div class="idol-canvas"><p class="eyebrow">My Idol</p><h3>' + esc(i.n) + '</h3><div class="idol-rule"></div><span class="idol-tag">' + esc(i.lg) + '</span></div></div></div>' +
+    if (!i) return '<section class="card" data-tour="idol"><div class="row between"><div><b>🖼️ My Idol</b><br><span class="muted small">Stick a favorite player on your wall.</span></div><button class="btn small ghost" data-action="idol-edit">Add</button></div></section>';
+    return '<section class="card idol" data-tour="idol" style="--team:' + col.acc + '"><div class="idol-mat"><div class="idol-frame"><div class="idol-canvas"><p class="eyebrow">My Idol</p><h3>' + esc(i.n) + '</h3><div class="idol-rule"></div><span class="idol-tag">' + esc(i.lg) + '</span></div></div></div>' +
       '<div class="row wrap" style="margin-top:12px"><a class="btn small grow" href="' + esc(idolLink(i)) + '" target="_blank" rel="noopener noreferrer">' + (i.lg === 'AUSL' ? 'AUSL website' : 'See stats on MLB.com') + ' &#8599;</a><button class="btn small ghost" data-action="idol-edit">Change</button></div>' +
       '<p class="hint">Not affiliated with or endorsed by any league, team or player.</p></section>';
   }
@@ -1090,7 +1095,7 @@
   function iqHomeCard(p) {
     if (!Sim.SCENARIOS.length) return '';
     const m = Sim.masteredCount(p.iq.r), rk = Sim.rank(m, Sim.SCENARIOS.length);
-    return dailyCard(p.iq) + '<section class="card"><div class="row between"><div><b>' + rk.icon + ' Game IQ: ' + esc(rk.name) + '</b><br><span class="muted small">' + m + ' of ' + Sim.SCENARIOS.length + ' situations mastered</span></div><a class="btn small" href="#iq">Train</a></div></section>';
+    return '<div data-tour="daily">' + dailyCard(p.iq) + '</div><section class="card"><div class="row between"><div><b>' + rk.icon + ' Game IQ: ' + esc(rk.name) + '</b><br><span class="muted small">' + m + ' of ' + Sim.SCENARIOS.length + ' situations mastered</span></div><a class="btn small" href="#iq">Train</a></div></section>';
   }
   function viewIq(p) {
     if (ui.sim.pid !== (p ? p.id : '')) { ui.sim.round = null; ui.sim.pid = p ? p.id : ''; }
@@ -1177,6 +1182,7 @@
       '<h4>2. What we collect</h4>' +
       '<p><b>On your device only (the default).</b></p><ul><li>A name or nickname, and an optional city and state or ZIP code</li><li>The games and stats you enter, your goals, Game IQ progress, and the review notes you write about each game</li><li>Optional extras you choose: a jersey number, favorite position, team color, and the name of a favorite pro player (&ldquo;My Idol&rdquo;, not affiliated with or endorsed by any league, team or player)</li><li>A random Player ID made on your device</li><li>If you choose one, a scrambled (hashed) PIN and recovery code</li></ul>' +
       '<p><b>Only if a parent or guardian signs in.</b> Their email address, the date and version of the Terms they agreed to, and an online copy of the diary described above (including any PIN hash). Sign-in uses a one-time code sent to that email, so there is no password.</p>' +
+      '<p><b>Only if an adult sends a directory listing request.</b> The business details typed into the request form: the name of the business, program or team, a description, services, ages, city, state and ZIP codes, website, business email and phone, and notes. These are sent to our listing inbox when the Send button is tapped. They are meant to be published if we approve them, so please do not include anything private. Never include player names or any child&rsquo;s details.</p>' +
       '<p><b>Technical data.</b> Like any website, the services that deliver the pages and run the online account (see section 5) may record technical details such as an IP address when a request is made. We do not use those logs to identify or follow anyone.</p>' +
       '<p><b>Never collected:</b> birthdates or ages; phone numbers or home addresses; photos, video, microphone or camera access; precise location (GPS); payment information; advertising or analytics data, cookies, or third-party trackers, fonts or scripts. We do not ask for health or injury details, so please do not type them into notes.</p>' +
 
@@ -1187,14 +1193,14 @@
       '<h4>5. Who else handles information</h4><p>Only service providers that run the site for us, and only for that purpose:</p>' +
       '<table class="ptable"><thead><tr><th>Who</th><th>Why</th><th>What they receive</th></tr></thead><tbody>' +
       row('GitHub Pages', 'Delivers the web pages', 'Ordinary request details (such as IP address). It does not receive your diary.') +
-      row('Supabase', 'Online accounts and storage (only if a parent signs in)', 'The parent’s email and the online copy of the diary.') +
-      row('Cloudflare Turnstile', 'Checks that a sign-in request comes from a person and not a robot (only when a parent signs in)', 'Ordinary request details (such as IP address) and a browser check. No diary or account information.') +
-      row('Email delivery service', 'Sends the one-time approval code', 'The parent’s email address and the code message.') +
+      row('Supabase', 'Online accounts and storage (only if a parent signs in), and a small function that passes listing requests to our inbox', 'The parent’s email and the online copy of the diary. For a listing request: the request text, plus a one-way scrambled version of the sender’s IP address kept for up to two days to limit how many requests one person can send.') +
+      row('Cloudflare Turnstile', 'Checks that a sign-in or listing request comes from a person and not a robot (only when a parent signs in or an adult sends a listing request)', 'Ordinary request details (such as IP address) and a browser check. No diary or account information.') +
+      row('Email delivery service (Resend)', 'Sends the one-time approval code, and delivers listing requests to our listing inbox', 'The parent’s email address and the code message. For a listing request: the business details typed into the form, including the business email and phone.') +
       row('Our email provider', 'Replying to messages sent to Contact Us', 'Your email address and what you write.') +
       row('Domain registrar', 'Holds the plate450.com name', 'No diary or account information.') + '</tbody></table>' +
       '<p>We may also disclose information if the law requires it, to protect the safety of users, or in a merger or sale of the business, in which case we will give notice before it becomes subject to a different policy.</p>' +
 
-      '<h4>6. How long we keep it</h4><ul><li><b>On your device:</b> until you erase it or clear your browser data. That is in your hands.</li><li><b>Online copy and account:</b> until a parent or guardian deletes the account. Residual copies may remain in provider backups for a short time afterward.</li><li><b>Messages to us:</b> only as long as needed to help, then deleted.</li><li><b>Provider server logs:</b> kept briefly by those providers under their own policies.</li></ul>' +
+      '<h4>6. How long we keep it</h4><ul><li><b>On your device:</b> until you erase it or clear your browser data. That is in your hands.</li><li><b>Online copy and account:</b> until a parent or guardian deletes the account. Residual copies may remain in provider backups for a short time afterward.</li><li><b>Messages to us:</b> only as long as needed to help, then deleted.</li><li><b>Listing requests:</b> kept in our listing inbox only as long as needed to review them and keep a listing accurate, then deleted.</li><li><b>Provider server logs:</b> kept briefly by those providers under their own policies.</li></ul>' +
 
       '<h4>7. Your choices and rights</h4><p>Wherever you live in the United States, you (or, for a child, the parent or guardian) can:</p><ul><li>Use the app with no account at all. This is the most private option and no feature is withheld for choosing it.</li><li>See, correct or delete any game or goal directly in the app, and export or back up everything from About.</li><li>Delete the online account and copy from About &rarr; Delete my online account. This is immediate and cannot be undone. The diary on the device stays unless you also erase it.</li><li>Ask us, through ' + mail + ', what we hold about you, for a correction or deletion, or for a copy in a portable format. We confirm the request comes from the account email, respond within 45 days, and never charge for it. If we decline, you can appeal by replying, and you can contact your state Attorney General.</li></ul>' +
       '<p>Several states, including California, Virginia, Colorado, Connecticut, Utah, Texas, Oregon and Montana, give residents extra privacy rights. We offer the rights above to every US resident. Because we do not sell or share information for advertising, there is nothing to opt out of.</p>' +
@@ -1206,6 +1212,7 @@
       '<h4>9. Security</h4><p>Traffic between the app and the online service uses HTTPS, and each online diary can be read only by its own account. We are straight about the limits: the online copy is not end-to-end encrypted and we can technically access it, a PIN is a privacy lock and not encryption, and no system is perfectly secure. The most protective choice is using the app without an account. Write down your recovery code, because we cannot reset a PIN for you.</p>' +
 
       '<h4>10. Directory of trainers, coaches and teams</h4><p>The Learn section includes a directory of trainers, coaches, clinics, facilities and travel ball teams. Listings are added by hand at the request of the businesses and teams themselves and contain business contact details only, never player information. We do not run background checks, verify credentials or results, or endorse anyone listed, and we are not part of any agreement between you and a listing. Do your own research, meet in public or with other families, and never let a child arrange anything alone: a parent or guardian should always make the contact. Links go to outside websites with their own rules and privacy practices.</p>' +
+      '<p>Adults who run a business, program or team can ask to be listed. If you tap Send on the request form, the business details you typed (including your business email and phone) are emailed to our listing inbox so we can review them by hand; if you use Email it or Copy text instead, they go only where you send them. Nothing is published until we approve it, and you can ask us to change or remove a listing at any time by writing to us.</p>' +
 
       '<h4>11. Changes and contact</h4><p>If this notice changes in a meaningful way, the version number above changes, and you will be asked to agree again. For a change that affects information already collected from a child, we will ask the parent or guardian first. Questions, requests and everything else: ' + mail + '.</p></section>' +
 

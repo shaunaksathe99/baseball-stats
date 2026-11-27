@@ -73,7 +73,7 @@
       (n.glossary ? tile('learn/glossary', '🔤', 'Glossary', n.glossary + ' baseball terms') : '') +
       '</div></section>' +
       '<section class="card"><h3>Trainers, coaches &amp; travel teams</h3><p class="muted">' + (n.dir ? 'Browse ' + n.dir + (n.dir === 1 ? ' listing' : ' listings') + ' from local trainers, clinics and teams.' : 'The directory is just getting started. Trainers, coaches and teams can submit their details for review and approval.') + '</p>' +
-      '<div class="row wrap"><a class="btn grow" href="#learn/directory">Browse the directory</a><a class="btn ghost grow" href="#find-list">Request a listing</a></div></section>' + A.footer();
+      '<div class="row wrap dir-btns"><a class="btn grow" href="#learn/directory">Browse directory</a><a class="btn ghost grow" href="#find-list">Request a listing</a></div></section>' + A.footer();
   }
 
   function viewTrivia(p) {
@@ -231,12 +231,22 @@
   /* ---------- listing request ---------- */
   function viewFind() {
     var r = st.req;
+    if (r && r.sent) {
+      return back('Directory', 'learn/directory') + head('Request sent', 'Thank you', 'We review every request by hand before anything is published, usually within a few days. If we have a question, we will use the business email you gave.') +
+        '<section class="card"><p class="hint" role="status">Nothing is published until we approve it.</p><a class="btn block" href="#learn/directory">Back to the directory</a><button class="btn ghost block" style="margin-top:10px" data-action="l-reqnew">Send another request</button></section>' + A.footer();
+    }
     if (r) {
       var mail = A.contactEmail ? 'mailto:' + A.contactEmail + '?subject=' + encodeURIComponent('Plate 450 Diary listing request') + '&body=' + encodeURIComponent(r.text) : '';
-      return back('Directory', 'learn/directory') + head('Your request is ready', 'One more step', A.contactEmail ? 'Send this to us and we will review it. Listings are added by hand, usually within a few days.' : 'Copy this and send it to the person who runs this site. Listings are added by hand.') +
+      var can = !!(A.ext.listingAvailable && A.ext.listingAvailable());
+      var msg = can ? 'Check it over, then tap Send. We review each request by hand and add listings usually within a few days.' : (A.contactEmail ? 'Send this to us and we will review it. Listings are added by hand, usually within a few days.' : 'Copy this and send it to the person who runs this site. Listings are added by hand.');
+      return back('Directory', 'learn/directory') + head('Your request is ready', 'One more step', msg) +
         '<section class="card"><label for="l-reqtxt" class="small muted">Your request</label><textarea id="l-reqtxt" rows="12" readonly>' + esc(r.text) + '</textarea>' +
-        '<div class="row wrap" style="margin-top:10px">' + (mail ? '<a class="btn grow" href="' + esc(mail) + '">Email it</a>' : '') + '<button class="btn ' + (mail ? 'ghost ' : '') + 'grow" data-action="l-copy">Copy text</button></div>' +
-        '<p class="hint">Nothing has been sent or saved. Your request only goes out if you email it yourself.</p>' +
+        (can ? '<div class="error" id="l-senderr" role="alert"' + (r.err ? '' : ' hidden') + '>' + esc(r.err || '') + '</div><div id="lf-ts"></div>' +
+          '<button class="btn block" style="margin-top:10px" data-action="l-send"' + (r.sending ? ' disabled' : '') + '>' + (r.sending ? 'Sending\u2026' : 'Send to Plate 450') + '</button>' +
+          '<p class="hint">When you tap Send, the business details above, including the business email and phone you typed, go to our listing inbox so we can review them. Nothing is published until we approve it.</p>' +
+          '<p class="small muted" style="margin:14px 0 6px">Or send it yourself:</p>' : '') +
+        '<div class="row wrap" style="margin-top:' + (can ? '0' : '10px') + '">' + (mail ? '<a class="btn ' + (can ? 'ghost ' : '') + 'grow" href="' + esc(mail) + '">Email it</a>' : '') + '<button class="btn ghost grow" data-action="l-copy">Copy text</button></div>' +
+        (can ? '' : '<p class="hint">Nothing has been sent or saved. Your request only goes out if you email it yourself.</p>') +
         '<button class="btn ghost block" style="margin-top:10px" data-action="l-reqnew">Start over</button></section>' + A.footer();
     }
     function inp(id, label, ph, extra) { return '<div class="field"><label for="lf-' + id + '">' + label + '</label><input id="lf-' + id + '" name="' + id + '" type="text" autocomplete="off" placeholder="' + esc(ph || '') + '"' + (extra || '') + '></div>'; }
@@ -248,12 +258,13 @@
       inp('ages', 'Ages or levels', '8-14', ' maxlength="30"') + '<div class="grid2">' + inp('city', 'City', '', ' maxlength="40"') + inp('state', 'State', 'CA', ' maxlength="30"') + '</div>' + inp('zip', 'ZIP code', '78701', ' maxlength="5" inputmode="numeric" autocomplete="postal-code"') + inp('areas', 'Other ZIP codes you serve (optional)', '78702, 78703', ' maxlength="60" inputmode="numeric"') +
       inp('website', 'Website', 'https://example.com', ' maxlength="200" inputmode="url"') + inp('email', 'Business email', '', ' maxlength="100" inputmode="email"') + inp('phone', 'Business phone', '', ' maxlength="25" inputmode="tel"') +
       '<div class="field"><label for="lf-notes">Anything else (optional)</label><textarea id="lf-notes" name="notes" rows="3" maxlength="300"></textarea></div>' +
+      '<div class="hp" aria-hidden="true"><label for="lf-web2">Leave this empty</label><input id="lf-web2" name="web2" type="text" tabindex="-1" autocomplete="off"></div>' +
       '<label class="check agree"><input type="checkbox" name="confirm"> <span>I am 18 or older, this is my own business, program or team, and this information may be published on Plate 450 Diary. I understand this site does not endorse listings.</span></label>' +
-      '<button class="btn block" type="submit">Prepare my listing request</button><p class="hint">Nothing is sent until you email it yourself.</p></form></section>' + A.footer();
+      '<button class="btn block" type="submit">Prepare my listing request</button><p class="hint">Nothing is sent yet. You will review your request first, then choose to send it.</p></form></section>' + A.footer();
   }
 
   /* ---------- home card ---------- */
-  function findCard() { return '<section class="card"><div class="row between"><div><b>Find a coach or trainer</b><br><span class="muted small">Search by ZIP code or city</span></div><a class="btn small" href="#learn/directory">Search</a></div></section>'; }
+  function findCard() { return '<section class="card" data-tour="find"><div class="row between"><div><b>Find a coach or trainer</b><br><span class="muted small">Search by ZIP code or city</span></div><a class="btn small" href="#learn/directory">Search</a></div></section>'; }
   A.ext.homeCard = function () {
     var all = list('trivia');
     if (!all.length) return '<section class="card"><div class="row between"><div><b>📚 Learn</b><br><span class="muted small">Trivia, quizzes, articles and a coach directory</span></div><a class="btn small" href="#learn">Open</a></div></section>' + findCard();
@@ -319,6 +330,17 @@
   };
   X['l-find'] = function (el) { st.dtype = el.dataset.t || ''; st.dq = el.dataset.q || ''; st.dloc = ''; st.dskill = ''; st.dsaved = false; st.dmore = 20; A.go('learn/directory'); };
   X['l-reqnew'] = function () { st.req = null; A.render(); };
+  X['l-send'] = function () {
+    var r = st.req; if (!r || r.sending || r.sent || !A.ext.listingSend) return;
+    r.sending = true; r.err = ''; A.render();
+    A.ext.listingSend({ text: r.text, replyTo: r.email, name: r.name, hp: r.hp }).then(function (res) {
+      r.sending = false;
+      if (res && res.ok) { r.sent = true; A.render(); return; }
+      var why = !res || res.status === 0 ? 'We could not reach the server. Check your connection.' : res.status === 429 ? 'Too many requests right now. Please try again later.' : res.status === 403 ? 'The security check did not pass. Please try again.' : 'That did not go through.';
+      r.err = why + ' You can also use Email it or Copy text below, and we will add it by hand.';
+      A.render(); if (A.ext.listingTsMount) A.ext.listingTsMount();
+    });
+  };
   X['l-copy'] = function (el) {
     var ta = document.getElementById('l-reqtxt'); if (!ta) return;
     function done() { el.textContent = 'Copied!'; }
@@ -333,7 +355,8 @@
     if (!/^\d{5}$/.test(String(el.zip.value).replace(/\s+/g, '')) && errs.indexOf('The ZIP code must be 5 digits.') < 0) errs.push('Add your 5-digit ZIP code so families nearby can find you.');
     if (!el.confirm.checked) errs.push('Please confirm that you are 18 or older and that this is your own business or team.');
     if (errs.length) { box.hidden = false; box.innerHTML = errs.length === 1 ? esc(errs[0]) : '<ul>' + errs.map(function (e) { return '<li>' + esc(e) + '</li>'; }).join('') + '</ul>'; box.scrollIntoView({ block: 'center', behavior: 'smooth' }); return; }
-    st.req = { text: C.buildRequest(res.item) }; A.render();
+    st.req = { text: C.buildRequest(res.item), name: res.item.name || '', email: res.item.email || '', hp: el.web2 ? el.web2.value : '', sending: false, sent: false, err: '' };
+    A.render(); if (A.ext.listingTsMount) A.ext.listingTsMount();
   };
 
   // Live search and filter boxes update only the results list, so typing never loses focus.
