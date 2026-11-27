@@ -2095,7 +2095,7 @@
    ],
    "website": "https://pasadenabaseballtraining.com",
    "email": "saulk@pasadenabaseballtraining.com",
-   "phone": "8185551212",
+   "phone": "(818)555-1212",
    "notes": "",
    "added": "2026-11-27"
   }
