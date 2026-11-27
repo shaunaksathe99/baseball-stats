@@ -753,3 +753,13 @@ html.tour-lock, html.tour-lock body { overflow: hidden; }
 /* Directory buttons: stacked on phones so each label stays on one line; side by side when there is room. */
 .dir-btns .btn { white-space: nowrap; }
 @media (max-width: 560px) { .dir-btns .btn { flex: 1 1 100%; } }
+
+/* Tour complete screen: keep Replay / Close clear of the pace buttons. */
+#t-fin:not([hidden]) ~ .tour-pace { margin-top: 12px; }
+
+/* Phones: the name and the round buttons drop to their own row, so "Plate 450 Diary" always has room. */
+@media (max-width: 560px) {
+  .top-row { flex-wrap: wrap; row-gap: 8px; justify-content: flex-end; }
+  .brand { flex: 1 1 100%; }
+  .who { flex: 1 1 0; min-width: 0; max-width: none; margin-right: auto; text-align: left; }
+}
