@@ -705,12 +705,13 @@ html.tour-lock, html.tour-lock body { overflow: hidden; }
 .tour-ctl.two { grid-template-columns: 1.4fr 1fr; }
 .tour-ctl[hidden], .tour-hole[hidden] { display: none; }
 .tour-b { font: inherit; font-size: 1rem; font-weight: 700; min-height: 50px; border-radius: 12px; border: 2px solid #EF9F27; background: #EF9F27; color: #412402; cursor: pointer; padding: 0 6px; white-space: nowrap; }
-.tour-b.out { background: transparent; color: var(--chalk); border-color: var(--line2, var(--line)); }
+.tour-b.alt { background: transparent; color: var(--chalk); border-color: var(--line2, var(--line)); }
 .tour-b.go { background: #2e7d32; border-color: #2e7d32; color: #fff; }
 .tour-b:focus-visible, .tour-links button:focus-visible, .tour-pace button:focus-visible { outline: 3px solid var(--chalk); outline-offset: 2px; }
 .tour-links { display: flex; justify-content: center; gap: 14px; margin-top: 4px; }
 .tour-links button, .tour-pace button { font: inherit; background: none; border: 0; color: var(--chalk); text-decoration: underline; min-height: 40px; padding: 0 8px; cursor: pointer; }
 .tour-links button[hidden] { display: none; }
+.tour-links:not(:has(button:not([hidden]))) { display: none; }
 .tour-pace { display: flex; justify-content: center; align-items: center; gap: 6px; font-size: 0.85rem; color: var(--muted); }
 .tour-pace button { text-decoration: none; border: 1px solid var(--line); border-radius: 8px; min-height: 34px; color: var(--muted); }
 .tour-pace button.on { background: var(--tint); color: var(--chalk); border-color: var(--gold); font-weight: 700; }
