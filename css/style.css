@@ -763,3 +763,9 @@ html.tour-lock, html.tour-lock body { overflow: hidden; }
   .brand { flex: 1 1 100%; }
   .who { flex: 1 1 0; min-width: 0; max-width: none; margin-right: auto; text-align: left; }
 }
+
+/* Tour examples: a real screen filled with sample data. The badge and the top bar say so. */
+.tour-ex{display:inline-block;margin-left:6px;padding:1px 9px;border-radius:999px;background:#EF9F27;color:#412402;font-weight:800;font-size:.78em;letter-spacing:.05em;text-transform:uppercase;vertical-align:1px}
+html.demo::before{content:"";position:fixed;top:0;left:0;right:0;height:5px;background:#EF9F27;z-index:2147483000;pointer-events:none}
+/* While the tour runs, leave room under short screens so any target can scroll up above the tour card. */
+html.tour-lock body{padding-bottom:min(62vh,440px)}
