@@ -12,7 +12,7 @@
   /* route: where the step lives. routeNo: where to go when no player exists yet. sel: first selector found is spotlighted. */
   var STEPS = [
     { title: 'Welcome to Plate 450 Diary', text: 'Your free baseball and softball stat diary. Track your games, see yourself grow, and have fun.', route: 'home', sel: ['.top .brand'] },
-    { title: 'Create your player card', text: 'Tap Add player and enter a name or nickname. No birthday or sign-up needed.', route: 'home', sel: ['[data-tour="player"]'] },
+    { title: 'Create your player card', text: 'Make a card for each ballplayer in the family. Just a name or nickname. No birthday or sign-up needed.', route: 'home', sel: ['[data-tour="player"]'] },
     { title: 'Log stats from the dugout', text: 'Log hitting, pitching and fielding stats during the game, right from the dugout, or after it. Type a number or use the arrows.', route: 'log', sel: [TAB('log')] },
     { title: 'See your career', text: 'Every saved game adds up here. Watch your averages and totals grow.', route: 'career', sel: [TAB('career')] },
     { title: 'Share your card', text: 'Share a beautiful picture of your card with family and friends. You choose what gets shared, and when.', route: 'career', sel: ['[data-tour="share"]', TAB('career')] },
@@ -65,9 +65,9 @@
         '<div class="tour-meta"><span id="t-step"></span><span id="t-next"></span></div>' +
         '<h2 id="t-title" tabindex="-1"></h2><p id="t-desc" aria-live="polite"></p>' +
         '<div class="tour-bar" aria-hidden="true"><span id="t-bar"></span></div><div class="tour-dots" id="t-dots" aria-hidden="true"></div>' +
-        '<div class="tour-ctl" id="t-ctl"><button type="button" class="tour-b out" data-t="back" aria-label="Back one step">&lsaquo; Back</button><button type="button" class="tour-b" id="t-pause" data-t="pause" aria-label="Pause tour">Pause</button><button type="button" class="tour-b" id="t-nextb" data-t="next" aria-label="Next step">Next &rsaquo;</button></div>' +
-        '<div class="tour-ctl two" id="t-fin" hidden><button type="button" class="tour-b go" data-t="replay">Replay tour</button><button type="button" class="tour-b out" data-t="close">Close</button></div>' +
-        '<div class="tour-links"><button type="button" data-t="restart">Restart tour</button><button type="button" data-t="skip" id="t-skip">Skip tour</button></div>' +
+        '<div class="tour-ctl" id="t-ctl"><button type="button" class="tour-b alt" data-t="back" aria-label="Back one step">&lsaquo; Back</button><button type="button" class="tour-b" id="t-pause" data-t="pause" aria-label="Pause tour">Pause</button><button type="button" class="tour-b" id="t-nextb" data-t="next" aria-label="Next step">Next &rsaquo;</button></div>' +
+        '<div class="tour-ctl two" id="t-fin" hidden><button type="button" class="tour-b go" data-t="replay">Replay tour</button><button type="button" class="tour-b alt" data-t="close">Close</button></div>' +
+        '<div class="tour-links"><button type="button" data-t="restart" id="t-restart">Restart tour</button><button type="button" data-t="skip" id="t-skip">Skip tour</button></div>' +
         '<div class="tour-pace"><span>Pace</span><button type="button" data-t="p1" id="t-p1">Normal</button><button type="button" data-t="p15" id="t-p15">Slower</button></div></div>';
       var dots = d.querySelector('#t-dots');
       STEPS.forEach(function () { dots.appendChild(doc.createElement('span')); });
@@ -149,7 +149,7 @@
       var hole = $('t-hole'); hole.hidden = true; $('t-shield').className = 'tour-shield dim';
       $('t-step').textContent = 'All ' + STEPS.length + ' steps seen'; $('t-next').textContent = '';
       $('t-title').textContent = 'Tour complete'; $('t-desc').textContent = 'Tap the ? at the top any time to see it again.';
-      $('t-bar').style.width = '100%'; $('t-ctl').hidden = true; $('t-fin').hidden = false; $('t-skip').hidden = true;
+      $('t-bar').style.width = '100%'; $('t-ctl').hidden = true; $('t-fin').hidden = false; $('t-skip').hidden = true; $('t-restart').hidden = true;
       $('t-card').setAttribute('data-pos', 'bottom');
       var b = $('t-fin').querySelector('button'); if (b) b.focus();
     }
@@ -180,7 +180,7 @@
         run.timer = setInterval(tick, 100); run.on = true;
       }
       run.pace = getPace(); run.done = false; paintPace();
-      $('t-ctl').hidden = false; $('t-fin').hidden = true; $('t-skip').hidden = false;
+      $('t-ctl').hidden = false; $('t-fin').hidden = true; $('t-skip').hidden = false; $('t-restart').hidden = false;
       if (getState() !== 'done') setState('started');
       setPlay(true); go(0);
       var pb = $('t-pause'); if (pb) pb.focus();
