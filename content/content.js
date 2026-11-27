@@ -1,7 +1,7 @@
 /* Plate 450 Diary content. Do not edit by hand: use the Content Studio (#studio on the site), download this file, and upload it to the content folder on GitHub. */
 (function (r) { r.DD_CONTENT = {
  "version": 1,
- "updated": "2026-11-17",
+ "updated": "2026-11-27",
  "scenarios": [
   {
    "id": "run1",
@@ -2072,5 +2072,32 @@
    "def": "A pitch so far off target that the catcher cannot reasonably stop it, allowing runners to advance."
   }
  ],
- "directory": []
+ "directory": [
+  {
+   "id": "dr1",
+   "type": "trainer",
+   "name": "Saul Goodman",
+   "tagline": "Hitting and fitness training for ages 6-18",
+   "services": [
+    "Private and small group lessons",
+    "Flexible hours, including weekends",
+    "No charge for cancellations with at least 24 hours notice",
+    "Multiple location throughout LA county"
+   ],
+   "ages": "6-18",
+   "city": "Pasadena",
+   "state": "CA",
+   "zip": "91101",
+   "areas": [
+    "91006",
+    "91007",
+    "91024"
+   ],
+   "website": "https://pasadenabaseballtraining.com",
+   "email": "saulk@pasadenabaseballtraining.com",
+   "phone": "8185551212",
+   "notes": "",
+   "added": "2026-11-27"
+  }
+ ]
 }; })(typeof window !== "undefined" ? window : (typeof module === "object" && module.exports ? module.exports : this));
