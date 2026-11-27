@@ -250,11 +250,13 @@
     }
   }
   function save(quiet) {
+    if (demo) return; // tour examples never touch saved data
     try { localStorage.setItem(KEY, JSON.stringify(db)); } catch (e) { memoryOnly = true; renderBanner(); }
     if (!quiet && ext.onSave) { try { ext.onSave(); } catch (e2) { /* sync problems never block saving */ } }
   }
   // Replaces the whole diary (used by online sync). quiet = do not treat it as a local edit.
   function setDb(next, quiet) {
+    if (demo) { demo.pending = { next: next, quiet: quiet }; return; } // online sync that lands during the tour waits until it ends
     const d = sanitizeDb(next);
     if (!d.terms && db.terms) d.terms = db.terms;
     if (!d.cons && db.cons) d.cons = db.cons;
@@ -263,6 +265,41 @@
   }
 
   let db = load();
+  /* ---------- tour examples ----------
+     The guided tour can show a real screen filled with sample data when the visitor has none yet. While that is on, nothing is saved
+     (save() returns early), online sync cannot read the sample (getDb returns the real diary) and the few extra storage keys the screens
+     use are held in memory. Turning it off puts the visitor's own data back exactly as it was. */
+  let demo = null, demoMem = null;
+  const DEMO_KEYS = { 'plate450.friends': 1, 'plate450.matchid': 1, 'plate450.savedlistings': 1, 'plate450.dirage': 1, 'plate450.folds': 1 };
+  DEMO_KEYS[KEY] = 1;
+  const SP = (typeof Storage !== 'undefined' && Storage.prototype) || null, SORIG = SP ? { g: SP.getItem, s: SP.setItem, r: SP.removeItem } : null;
+  function sandboxOn(seed) {
+    demoMem = {}; Object.keys(seed || {}).forEach((k) => { if (DEMO_KEYS[k]) demoMem[k] = String(seed[k]); });
+    if (!SP || SP.getItem.__demo) return;
+    const mine = function (self, k) { let ls = null; try { ls = window.localStorage; } catch (e) { /* blocked */ } return !!(demoMem && ls && self === ls && DEMO_KEYS[k]); };
+    SP.getItem = function (k) { if (mine(this, k)) return Object.prototype.hasOwnProperty.call(demoMem, k) ? demoMem[k] : null; return SORIG.g.apply(this, arguments); };
+    SP.setItem = function (k, v) { if (mine(this, k)) { demoMem[k] = String(v); return; } return SORIG.s.apply(this, arguments); };
+    SP.removeItem = function (k) { if (mine(this, k)) { delete demoMem[k]; return; } return SORIG.r.apply(this, arguments); };
+    SP.getItem.__demo = true;
+  }
+  function sandboxOff() { demoMem = null; if (SP && SORIG && SP.getItem.__demo) { SP.getItem = SORIG.g; SP.setItem = SORIG.s; SP.removeItem = SORIG.r; } }
+  // sample = a diary object to show instead of the real one, or null to keep the real diary and only hold the extra keys in memory.
+  function demoOn(sample, seed) {
+    if (!demo) demo = { real: db, pending: null }; else db = demo.real;
+    sandboxOn(seed);
+    if (sample) {
+      const d = sanitizeDb(sample);
+      d.terms = demo.real.terms; d.cons = demo.real.cons; d.bk = demo.real.bk; d.bkN = demo.real.bkN; d.snooze = demo.real.snooze;
+      db = d;
+    }
+    document.documentElement.classList.add('demo');
+  }
+  function demoOff() {
+    if (!demo) { sandboxOff(); return; }
+    const d = demo; demo = null; db = d.real; sandboxOff();
+    document.documentElement.classList.remove('demo');
+    if (d.pending) setDb(d.pending.next, d.pending.quiet);
+  }
   const ui = { sim: { round: null, pid: '', lvl: 0 }, simGuest: null, unlocked: loadUnlocked(), careerTab: 'bat', careerSeason: '', chart: { bat: 'avg', pit: 'era', fld: 'fpct' }, logTab: 'bat', draft: null, flash: '', lastTab: null, restore: null, ackKey: '', print: { fmt: 'game', copies: 2, prefill: true } };
 
   function loadUnlocked() {
@@ -1656,7 +1693,8 @@
     ext: ext, Sim: Sim, content: () => CONTENT, preview: () => PREVIEW, contactEmail: CONTACT_EMAIL, esc: esc,
     player: () => { const p = player(); return p && isUnlocked(p) ? p : null; },
     iqData: iqData, recordQuiz: recordQuiz, diamondSvg: diamondSvg, scoreboard: scoreboard, render: render, go: go, footer: footer, emptyState: emptyState,
-    flash: (m) => { ui.flash = m; }, save: () => save(), getDb: () => db, setDb: setDb, setConsent: () => { db.cons = { v: TERMS_V, at: today() }; save(); }, sanitizeDb: sanitizeDb, openModal: openModal, closeModal: closeModal,
+    flash: (m) => { ui.flash = m; }, save: () => save(), getDb: () => (demo ? demo.real : db), setDb: setDb, setConsent: () => { db.cons = { v: TERMS_V, at: today() }; save(); }, sanitizeDb: sanitizeDb, openModal: openModal, closeModal: closeModal,
+    demo: { on: demoOn, off: demoOff, active: () => !!demo },
     shareBase: shareBase, colors: COLORS, fmtPid: fmtPid, closeShare: () => closeModal()
   };
 

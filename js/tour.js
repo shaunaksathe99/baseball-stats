@@ -9,20 +9,21 @@
   'use strict';
 
   var TAB = function (t) { return '.tabs a[data-tab="' + t + '"]'; };
+  /* need: what the screen needs before it is worth looking at: 'player' (a player card), 'games' (a logged game) or 'match' (a Match Up friend). Without it the tour shows the same real screen filled with sample data, labeled Example. */
   /* route: where the step lives. routeNo: where to go when no player exists yet. sel: first selector found is spotlighted. */
   var STEPS = [
     { title: 'Welcome to Plate 450 Diary', text: 'Your free baseball and softball stat diary. Track your games, see yourself grow, and have fun.', route: 'home', sel: ['.top .brand'] },
     { title: 'Create your player card', text: 'Make a card for each ballplayer in the family. Just a name or nickname. No birthday or sign-up needed.', route: 'home', sel: ['[data-tour="player"]'] },
-    { title: 'Log stats from the dugout', text: 'Log hitting, pitching and fielding stats during the game, right from the dugout, or after it. Type a number or use the arrows.', route: 'log', sel: [TAB('log')] },
-    { title: 'See your career', text: 'Every saved game adds up here. Watch your averages and totals grow.', route: 'career', sel: [TAB('career')] },
-    { title: 'Share your card', text: 'Share a beautiful picture of your card with family and friends. You choose what gets shared, and when.', route: 'career', sel: ['[data-tour="share"]', TAB('career')] },
-    { title: 'Set a goal', text: 'Pick a number to aim for. Check back to see how close you are.', route: 'goals', sel: [TAB('goals')] },
-    { title: 'Match Up with a friend', text: 'Have fun with stats - share, compare, grow.', route: 'home', sel: ['[data-tour="match"]', '[data-tour="player"]'] },
+    { title: 'Log stats from the dugout', text: 'Log hitting, pitching and fielding stats during the game, right from the dugout, or after it. Type a number or use the arrows.', route: 'log', need: 'games', sel: ['.steppers', TAB('log')] },
+    { title: 'See your career', text: 'Every saved game adds up here. Watch your averages and totals grow.', route: 'career', need: 'games', sel: ['.tiles', TAB('career')] },
+    { title: 'Share your card', text: 'Share a beautiful picture of your card with family and friends. You choose what gets shared, and when.', route: 'career', need: 'games', sel: ['[data-tour="share"]', TAB('career')] },
+    { title: 'Set a goal', text: 'Pick a number to aim for. Check back to see how close you are.', route: 'goals', need: 'games', sel: ['.goal', '.badges', TAB('goals')] },
+    { title: 'Match Up with a friend', text: 'Have fun with stats - share, compare, grow.', route: 'home', need: 'match', sel: ['.mu-vs', '.mu-friends', '.card.hero', '[data-tour="match"]'] },
     { title: 'Daily Fun', text: 'Test your Game IQ, answer the daily trivia and take quizzes.', route: 'home', sel: ['[data-tour="daily"]', '[data-tour="iq"]'] },
     { title: 'Learn it your way', text: 'Follow an improvement plan on your own, or find coaches and trainers near you.', route: 'home', sel: ['[data-tour="find"]'] },
     { title: 'Your stats stay with you', text: 'Stats are saved on this device only. A parent can approve an optional account to keep them on other devices.', route: 'about', sel: ['[data-tour="backup"]'] },
-    { title: 'Make it yours', text: 'Add your jersey number, favorite position and team color to your card.', route: 'about', routeNo: 'home', sel: ['[data-tour="mine"]'] },
-    { title: 'Pick your idol', text: 'Choose a favorite MLB or AUSL player for your wall, then jump to their stats.', route: 'home', sel: ['[data-tour="idol"]', '[data-tour="player"]'] }
+    { title: 'Make it yours', text: 'Add your jersey number, favorite position and team color to your card.', route: 'about', routeNo: 'home', need: 'player', sel: ['[data-tour="mine"]'] },
+    { title: 'Pick your idol', text: 'Choose a favorite MLB or AUSL player for your wall, then jump to their stats.', route: 'home', need: 'player', sel: ['[data-tour="idol"]', '[data-tour="player"]'] }
   ];
 
   /* How long a step stays up: slow enough for young readers (about 2 words a second plus time to look). */
@@ -31,7 +32,55 @@
     var words = String(s.text).split(/\s+/).filter(Boolean).length;
     return Math.round(Math.max(7000, words * 450 + 2500) * (pace === 1.5 ? 1.5 : 1));
   }
-  function routeFor(i, hasPlayer) { var s = STEPS[i]; return (!hasPlayer && s.routeNo) ? s.routeNo : s.route; }
+  /* Match Up shows the real comparison screen: with a sample friend while it is an example, otherwise the visitor's own friends list. */
+  var SAMPLE_FRIEND = 'demo1abcd';
+  function routeFor(i, hasPlayer, flavor) {
+    var s = STEPS[i];
+    if (s.need === 'match') return flavor ? 'matchup/friend/' + SAMPLE_FRIEND : 'matchup/friends';
+    return (!hasPlayer && s.routeNo) ? s.routeNo : s.route;
+  }
+  /* '' = show the visitor's own screen. 'full' = sample player, games and friends. 'friends' = the visitor's own diary with sample friends only. */
+  function demoFlavor(need, ctx) {
+    ctx = ctx || {};
+    if (!need) return '';
+    if (need === 'player') return ctx.hasPlayer ? '' : 'full';
+    if (need === 'games') return ctx.hasPlayer && ctx.hasGames ? '' : 'full';
+    if (need === 'match') return ctx.hasFriends ? '' : (ctx.hasPlayer && ctx.hasGames ? 'friends' : 'full');
+    return '';
+  }
+  var SAMPLE_NAMES = ['Sam', 'Maya', 'Ben', 'Comets', 'Hawks', 'Sharks', 'Bears', 'Pythons', 'Spring'];
+  function dayStr(d) { function z(n) { return (n < 10 ? '0' : '') + n; } return d.getFullYear() + '-' + z(d.getMonth() + 1) + '-' + z(d.getDate()); }
+  /* A made-up player with a believable season. First names only: no real players, teams or leagues. */
+  function sampleDb(now) {
+    now = now || new Date();
+    var AB = [4, 3, 4, 5, 4, 4, 3, 4, 4, 5, 4, 4], H = [2, 1, 1, 3, 2, 0, 2, 1, 3, 2, 1, 2], D = [1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1],
+        T3 = [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0], HR = [0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0], RBI = [1, 0, 1, 3, 1, 0, 1, 0, 3, 1, 0, 2],
+        R = [1, 0, 0, 2, 1, 0, 1, 0, 2, 1, 0, 1], BB = [0, 1, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0], K = [1, 1, 2, 1, 0, 2, 1, 1, 0, 1, 2, 1],
+        SB = [0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0], OPP = ['Hawks', 'Sharks', 'Bears', 'Pythons'], games = [];
+    for (var i = 0; i < 12; i++) {
+      var dt = new Date(now.getFullYear(), now.getMonth(), now.getDate() - (12 - i) * 5), us = 4 + (i % 5), them = 2 + ((i * 3) % 6), pitched = i % 3 === 1;
+      games.push({
+        id: 'gdemo' + (i + 1), created: dt.getTime(), date: dayStr(dt), season: 'Spring', team: 'Comets', level: 'Minors', jersey: '12', opp: OPP[i % 4], us: us, them: them, pos: 'SS',
+        bat: { ab: AB[i], h: H[i], d: D[i], t: T3[i], hr: HR[i], rbi: RBI[i], r: R[i], bb: BB[i], k: K[i], hbp: 0, sf: 0, sb: SB[i] },
+        pit: pitched ? { outs: 9, h: 3, r: 1, er: 1, bb: 1, k: 4, pitches: 58 } : { outs: 0, h: 0, r: 0, er: 0, bb: 0, k: 0, pitches: 0 },
+        fld: { po: 2, a: 3, e: i % 5 === 4 ? 1 : 0, cs: 0, ci: 0 }
+      });
+    }
+    return {
+      v: 1, active: 'pdemo1',
+      players: [{ id: 'pdemo1', name: 'Sam', jersey: '12', fav: 'SS', color: 'blue', innings: 6, last: { season: 'Spring', team: 'Comets', level: 'Minors', jersey: '12' }, games: games,
+        goals: [{ id: 'gdemo-a', metric: 'h', target: 30, scope: 'career', created: now.getTime() }, { id: 'gdemo-b', metric: 'avg', target: 0.4, scope: 'career', created: now.getTime() }] }]
+    };
+  }
+  /* Two made-up friends in the same stored shape the Match Up screen uses. */
+  function sampleFriends(M, now) {
+    var day = dayStr(now || new Date()), out = [];
+    [['Maya', 1, [['avg', 0.333], ['obp', 0.412], ['slg', 0.5], ['ops', 0.912], ['bbpct', 0.11]]], ['Ben', 2, [['avg', 0.285], ['obp', 0.35], ['slg', 0.4], ['ops', 0.75], ['bbpct', 0.08]]]].forEach(function (d, k) {
+      var inv = M && M.parseInvite(M.makeInvite({ name: d[0], period: 'Spring', frame: d[1], rid: 'demo' + (k + 1) + 'abcd', stats: d[2] }));
+      if (inv) out.push({ id: inv.id, n: inv.n, p: inv.p, f: inv.f, t: day, s: inv.s });
+    });
+    return out;
+  }
   function cleanState(v) { return v === 'started' || v === 'done' || v === 'skipped' ? v : ''; }
   function shouldAutoStart(state, hash) {
     if (cleanState(state)) return false;
@@ -126,7 +175,8 @@
     }
     function show() {
       var s = STEPS[run.i];
-      $('t-step').textContent = 'Step ' + (run.i + 1) + ' of ' + STEPS.length;
+      var st = $('t-step'); st.textContent = 'Step ' + (run.i + 1) + ' of ' + STEPS.length;
+      if (run.fl) { var ex = doc.createElement('span'); ex.className = 'tour-ex'; ex.textContent = 'Example'; st.appendChild(doc.createTextNode(' ')); st.appendChild(ex); }
       $('t-title').textContent = s.title; $('t-desc').textContent = s.text;
       var dots = $('t-dots').children;
       for (var k = 0; k < dots.length; k++) dots[k].className = k < run.i ? 'seen' : k === run.i ? 'now' : '';
@@ -135,17 +185,30 @@
       $('t-ctl').querySelector('[data-t="back"]').style.opacity = run.i === 0 ? '.5' : '1';
       run.el = 0; run.last = Date.now(); paintProgress();
     }
+    /* Pick the real screen or the same screen with sample data. Sample data is never saved; see DDApp.demo in app.js. */
+    function applyDemo(i) {
+      var fl = '';
+      try {
+        A.demo.off();
+        var p = A.player(), hf = false;
+        try { var f = JSON.parse(localStorage.getItem('plate450.friends')); hf = Array.isArray(f) && f.length > 0; } catch (e0) { hf = false; }
+        fl = demoFlavor(STEPS[i].need, { hasPlayer: !!p, hasGames: !!(p && p.games && p.games.length), hasFriends: hf });
+        if (fl) { var seed = {}; seed['plate450.friends'] = JSON.stringify(sampleFriends(win.MatchCore)); A.demo.on(fl === 'full' ? sampleDb() : null, seed); }
+      } catch (e) { try { A.demo.off(); } catch (e2) { /* ignore */ } fl = ''; }
+      run.fl = fl; return fl;
+    }
     function go(n) {
       if (n >= STEPS.length) { finishScreen(); return; }
       if (n < 0) n = 0;
-      run.i = n; show();
-      var want = routeFor(n, hasPlayer()), cur = (location.hash || '#home').replace(/^#/, '') || 'home';
+      run.i = n; applyDemo(n); show();
+      var want = routeFor(n, hasPlayer(), run.fl), cur = (location.hash || '#home').replace(/^#/, '') || 'home';
       if (cur !== want) location.hash = want; else A.render();
       /* Give the screen a moment to draw, then spotlight. Twice, because images and fonts can nudge the layout. */
       setTimeout(place, 80); setTimeout(place, 350);
     }
     function finishScreen() {
       run.done = true; setState('done');
+      try { A.demo.off(); A.render(); } catch (e) { /* ignore */ }
       var hole = $('t-hole'); hole.hidden = true; $('t-shield').className = 'tour-shield dim';
       $('t-step').textContent = 'All ' + STEPS.length + ' steps seen'; $('t-next').textContent = '';
       $('t-title').textContent = 'Tour complete'; $('t-desc').textContent = 'Tap the ? at the top any time to see it again.';
@@ -188,6 +251,7 @@
     function end(how) {
       if (!run.on) return;
       if (how === 'skipped' && getState() !== 'done') setState('skipped');
+      try { A.demo.off(); } catch (e0) { /* ignore */ }
       clearInterval(run.timer); run.timer = null; run.on = false;
       doc.removeEventListener('keydown', onKey); doc.removeEventListener('visibilitychange', onHide); win.removeEventListener('resize', onResize); win.removeEventListener('orientationchange', onResize);
       doc.documentElement.classList.remove('tour-lock');
@@ -209,6 +273,6 @@
     });
   }
 
-  var api = { STEPS: STEPS, duration: duration, routeFor: routeFor, cleanState: cleanState, shouldAutoStart: shouldAutoStart, needsCard: needsCard, getState: getState, boot: boot, start: function () {}, active: function () { return false; } };
+  var api = { STEPS: STEPS, demoFlavor: demoFlavor, sampleDb: sampleDb, sampleFriends: sampleFriends, SAMPLE_NAMES: SAMPLE_NAMES, duration: duration, routeFor: routeFor, cleanState: cleanState, shouldAutoStart: shouldAutoStart, needsCard: needsCard, getState: getState, boot: boot, start: function () {}, active: function () { return false; } };
   return api;
 });
