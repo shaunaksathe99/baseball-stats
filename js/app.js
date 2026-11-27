@@ -73,7 +73,7 @@
   function cleanId(v) { v = String(v || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 32); return v || uid('x'); }
   const B32 = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
   const TERMS_V = 5;
-  const CONTACT_EMAIL = 'Contact.Plate450@gmail.com';   // shown as "Contact Us" in the footer and on the Terms & Privacy page
+  const CONTACT_EMAIL = 'contact@plate450.com';   // shown as "Contact Us" in the footer and on the Terms & Privacy page
   const hasCrypto = !!(window.crypto && window.crypto.subtle && window.crypto.getRandomValues);
   function randBytes(n) { const a = new Uint8Array(n); if (window.crypto && window.crypto.getRandomValues) window.crypto.getRandomValues(a); else for (let i = 0; i < n; i++) a[i] = Math.floor(Math.random() * 256); return a; }
   function randChars(n) { let o = ''; randBytes(n).forEach((b) => { o += B32[b % 32]; }); return o; }
